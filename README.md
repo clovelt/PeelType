@@ -2,17 +2,49 @@
 
 PeelType is a tiny framework for experimental interactive typography. It treats text like physical material: letters can be peeled, pulled, censored, shaken, tethered, attracted by force fields, constrained into shapes, and used as narrative triggers.
 
-It began as the engine for **Pill After Reading**, an interactive personal story about peeling words away to advance through a poem. The editor is included, so you can make your own scenes and ship them as your own non-commercial interactive work with attribution.
-
-<p align="center">
-  <a href="https://clovelt.github.io/PeelType/tirita.html">
-    <img src="docs/media/peel_after_reading_gameplay.gif" alt="PeelType gameplay preview" width="860">
-  </a>
-</p>
+It began as the engine for **Peel After Reading**, an interactive personal story about peeling words away to advance through a poem. The editor is included, so you can make your own scenes and ship them as your own non-commercial interactive work with attribution.
 
 <h1 align="center">
   <a href="https://clovelt.github.io/PeelType/tirita.html">PLAY THE DEMO</a>
 </h1>
+
+<p align="center">
+  <a href="https://clovelt.github.io/PeelType/tirita.html">
+    <img src="docs/media/peel_after_reading_gameplay.gif" alt="PeelType gameplay preview" width="680">
+  </a>
+</p>
+
+## Visual Mechanics
+
+PeelType works best when the interaction changes the sentence itself. You can peel away censorship instead of peeling the words, revealing text as a physical action.
+
+<p align="center">
+  <img src="docs/media/censor.gif" alt="Peeling censorship from text" width="560">
+</p>
+
+Force fields can pull, repel, orbit, or disturb letters while the player peels them.
+
+<p align="center">
+  <img src="docs/media/3_forces.gif" alt="Force fields affecting peelable letters" width="560">
+</p>
+
+Letters can move through custom paths and loops, so paragraphs can behave like drawn objects instead of static lines.
+
+<p align="center">
+  <img src="docs/media/3_loop.gif" alt="Looping drawn text path" width="520">
+</p>
+
+Simple motion systems let letters orbit or float as the paragraph comes apart.
+
+<p align="center">
+  <img src="docs/media/orbit.gif" alt="Orbiting loose letters" width="560">
+</p>
+
+Constraints can tether letters and blocks together, making text behave like a connected physical structure.
+
+<p align="center">
+  <img src="docs/media/constraints.gif" alt="Constrained peelable text" width="560">
+</p>
 
 ## What It Does
 
@@ -24,7 +56,17 @@ It began as the engine for **Pill After Reading**, an interactive personal story
 - Constrain paragraphs to shapes or draw custom paths for text.
 - Save scene JSON and include it in the project as a standalone interactive work.
 
-![Editor overview](docs/media/2_editorOverview.gif)
+Selective peel modes can turn grammar, syllables, vowels, consonants, and punctuation into part of the interaction.
+
+<p align="center">
+  <img src="docs/media/selective.gif" alt="Selective peel modes" width="560">
+</p>
+
+Fade and meaning-shift scenes can reveal the emotional logic hidden inside a paragraph.
+
+<p align="center">
+  <img src="docs/media/fade.gif" alt="Meaning shift and fade reveal" width="520">
+</p>
 
 ## Install
 
@@ -79,11 +121,15 @@ It also enables a few editor authoring endpoints:
 
 Static hosting works for playback and for editing in browser storage, but saving files back into the project requires the local Node server.
 
-![Editor panel](docs/media/editorPanel.gif)
-
 ## Using The Editor
 
 Open the demo and use the editor panel to modify the active scene. The editor supports live changes to text, peel modes, colors, gradients, paths, force fields, events, particles, sounds, constraints, illustrations, and branching behavior.
+
+The overview is the fastest way to see the editor's shape: choose a scene, change the paragraph, adjust behavior, then peel directly inside the authoring view.
+
+<p align="center">
+  <img src="docs/media/2_editorOverview.gif" alt="Editor overview" width="560">
+</p>
 
 Useful authoring controls:
 
@@ -94,9 +140,19 @@ Useful authoring controls:
 - **Freeze**: pause physics while editing.
 - **JSON**: inspect or export the current scene data.
 
-The browser stores editor state in `localStorage`, so experiments can survive a refresh. Use the JSON export when you want a durable file you can commit.
+The panel view exposes the lower-level controls for scenes, text blocks, events, force fields, local assets, and exported JSON.
 
-![Selective peel modes](docs/media/selective.gif)
+<p align="center">
+  <img src="docs/media/editorPanel.gif" alt="Editor panel" width="520">
+</p>
+
+The spoiler overview is useful if you want to study the built-in story as a technical reference after playing it.
+
+<p align="center">
+  <img src="docs/media/peel_after_reading_spoilerOverview.gif" alt="Peel After Reading technical spoiler overview" width="560">
+</p>
+
+The browser stores editor state in `localStorage`, so experiments can survive a refresh. Use the JSON export when you want a durable file you can commit.
 
 ## Ship Your Own Scene
 
@@ -113,8 +169,6 @@ The simplest workflow is:
 
 You can use PeelType to publish your own non-commercial interactive story, poem, essay, typographic toy, or visual-novel experiment. Please keep attribution to the original framework and link back to this repository.
 
-![Force fields](docs/media/3_forces.gif)
-
 ## Authoring Ideas
 
 PeelType is especially good for narrative mechanics where the interaction is part of the sentence:
@@ -127,7 +181,11 @@ PeelType is especially good for narrative mechanics where the interaction is par
 - Attach illustrations to words and release them as physics objects.
 - Create conditional paths with flags and timed choices.
 
-![Meaning shift and fade reveal](docs/media/fade.gif)
+Another gameplay excerpt shows the main story's slower, more narrative side.
+
+<p align="center">
+  <img src="docs/media/peel_after_reading_gameplay_pt2.gif" alt="Peel After Reading gameplay excerpt" width="560">
+</p>
 
 ## Hosting
 
@@ -156,8 +214,6 @@ If a static host caches aggressively, bump the query string in `tirita.html`:
 ```html
 <script type="module" src="./js/main.js?v=45"></script>
 ```
-
-![Constraints](docs/media/constraints.gif)
 
 ## Project Structure
 

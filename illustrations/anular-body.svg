@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180">
+  <style>
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); }
+      48%       { transform: scale(1.042); }
+    }
+    @keyframes fade-inner {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.35; }
+    }
+    @keyframes rotate-marks {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .rings       { animation: breathe 4.2s ease-in-out infinite; transform-origin: 120px 88px; }
+    .inner-dot   { animation: fade-inner 4.2s ease-in-out infinite; }
+    .tick-marks  { animation: rotate-marks 28s linear infinite; transform-origin: 120px 88px; }
+  </style>
+
+  <!-- Tick marks ring (slow orbit) -->
+  <g class="tick-marks" stroke="#4a4a4a" stroke-linecap="round" fill="none" opacity="0.38">
+    <line x1="120" y1="30" x2="120" y2="37" stroke-width="0.8"/>
+    <line x1="120" y1="139" x2="120" y2="146" stroke-width="0.8"/>
+    <line x1="62"  y1="88" x2="69"  y2="88" stroke-width="0.8"/>
+    <line x1="171" y1="88" x2="178" y2="88" stroke-width="0.8"/>
+    <line x1="79"  y1="47" x2="83"  y2="54" stroke-width="0.7"/>
+    <line x1="161" y1="47" x2="157" y2="54" stroke-width="0.7"/>
+    <line x1="79"  y1="129" x2="83" y2="122" stroke-width="0.7"/>
+    <line x1="161" y1="129" x2="157" y2="122" stroke-width="0.7"/>
+  </g>
+
+  <!-- Three concentric rings (breathe together) -->
+  <g class="rings" stroke="#4a4a4a" fill="none" stroke-linecap="round">
+    <circle cx="120" cy="88" r="46" stroke-width="1.15"/>
+    <circle cx="120" cy="88" r="30" stroke-width="0.9"/>
+    <circle cx="120" cy="88" r="13" stroke-width="0.75"/>
+    <!-- Axis lines (finger band suggestion) -->
+    <line x1="58"  y1="88" x2="74"  y2="88" stroke-width="1.1"/>
+    <line x1="166" y1="88" x2="182" y2="88" stroke-width="1.1"/>
+    <line x1="120" y1="22" x2="120" y2="42" stroke-width="1.0"/>
+    <line x1="120" y1="134" x2="120" y2="154" stroke-width="1.0"/>
+  </g>
+
+  <!-- Inner dot blinks gently -->
+  <circle class="inner-dot" cx="120" cy="88" r="3.5" fill="#4a4a4a"/>
+</svg>

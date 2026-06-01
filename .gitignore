@@ -1,0 +1,22 @@
+# Local dependencies and logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
+# Local editor/runtime state
+.env
+.env.*
+*.local
+
+# Internal AI/project memory kept local only
+.claude/
+PROJECT_CONTEXT.md
+memory/
+docs/implementation-plan.md
+docs/ideas-inventory.md
+docs/milestones.md
+docs/next-steps.md
+docs/open-questions.md
+docs/split-plan.md

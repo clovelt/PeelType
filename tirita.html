@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>peel after reading</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css?v=11">
+</head>
+<body>
+  <canvas id="effectsCanvas"></canvas>
+  <canvas id="pileCanvas"></canvas>
+  <div id="container"></div>
+  <select id="sceneSelect" title="Scene" aria-hidden="true"></select>
+  <button id="sceneResetBtn" title="Reset current scene to default">Reset</button>
+  <button id="sceneClearOnceBtn" title="Clear saved local state for this scene once">Clean once</button>
+  <button id="sceneNewBtn" title="Create a new blank scene">New</button>
+  <div id="sceneSelectCustom">
+    <button id="sceneSelectTrigger" type="button" title="Switch scene" aria-haspopup="listbox" aria-expanded="false">
+      <span class="scene-icon" aria-hidden="true">⊞</span>
+      <span id="sceneSelectCurrentLabel" class="scene-select-label"></span>
+      <span class="scene-select-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div id="sceneSelectDropdown" role="listbox" aria-label="Scene" hidden></div>
+  </div>
+  <select id="languageSelect" title="Language"></select>
+  <button id="editorToggle" title="Editor">✎</button>
+  <button id="reloadButton" title="Reload scene">Reload</button>
+  <button id="headerApply" type="button" data-help="Apply changes and reload physics simulation">Apply & Reset</button>
+  <button id="muteButton" title="Mute sound">Mute</button>
+  <button id="skipButton" title="Skip paragraph">Skip</button>
+  <button id="editorQuickAdd" title="Add paragraph">+</button>
+  <section id="debugPanel" aria-label="Debug panel">
+    <button id="debugToggle" type="button">Debug<span id="debugHeaderStats"></span></button>
+    <div id="debugBody"></div>
+  </section>
+  <div id="mobileFps">-- fps</div>
+  <div id="editorTooltip"></div>
+  <div id="customDialog" role="dialog" aria-modal="true" style="display:none">
+    <div class="custom-dialog-box">
+      <p id="customDialogMessage"></p>
+      <input id="customDialogInput" type="text" autocomplete="off">
+      <div class="custom-dialog-buttons">
+        <button id="customDialogCancel" type="button">Cancel</button>
+        <button id="customDialogConfirm" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="toastNotification" aria-live="polite"></div>
+  <section id="editorPanel" aria-label="Editor">
+    <header>
+      <span data-help="Global configuration for the current scene">Scene</span>
+      <label data-help="Freeze the physics simulation while the editor is open"><input id="pauseInput" type="checkbox"> Freeze</label>
+      <label data-help="Automatically reload when core properties change"><input id="autoReloadHeader" type="checkbox" checked> Auto update</label>
+      <button id="rawToggle" type="button" data-help="Toggle between visual editor and raw JSON">JSON</button>
+      <button id="editorCollapseToggle" type="button" data-help="Collapse editor to this top bar">⌃</button>
+    </header>
+    <div id="editorTools">
+      <div id="editorTabs" class="editor-tabs">
+        <button type="button" data-tab="content" class="active">Content</button>
+        <button type="button" data-tab="design">Design</button>
+        <button type="button" data-tab="behavior">Behavior</button>
+      </div>
+      <div class="content-meta-row" id="contentMetaRow">
+        <div class="editor-row">
+          <label for="blockSelect" data-help="Select which paragraph to edit">Block</label>
+          <div class="block-select-row">
+            <select id="blockSelect"></select>
+            <button type="button" id="copyBlockIdBtn" data-help="Copy the selected block's ID to clipboard" title="Copy block ID">⎘</button>
+          </div>
+        </div>
+        <div class="editor-row" id="localeRow">
+          <label for="localeSelect" data-help="Switch between available translation files">Language</label>
+          <select id="localeSelect"></select>
+        </div>
+        <div class="editor-row" id="mainLocaleRow">
+          <label for="mainLocaleSelect" data-help="Main language owns shared editor properties. Other languages inherit these values unless a field is overridden.">Main</label>
+          <select id="mainLocaleSelect"></select>
+        </div>
+      </div>
+      <div class="editor-row">
+        <label for="blockText" data-help="Content of the selected block. Supports BBCode: [b], [i], [color=#hex], [nopeel], [censor], [peel], [shake], [float]">Text</label>
+        <div class="bbcode-toolbar" aria-label="Text formatting">
+          <button type="button" data-bb-wrap="b" data-help="Wrap selected text in bold BBCode">B</button>
+          <button type="button" data-bb-wrap="i" data-help="Wrap selected text in italic BBCode">I</button>
+          <button type="button" data-bb-wrap="u" data-help="Wrap selected text in underline BBCode">U</button>
+          <button type="button" id="bbColorBtn" data-help="Wrap selected text with the picked color">Color</button>
+          <input id="bbColorPicker" type="color" value="#4a4a4a" data-help="Color used by the Color BBCode button">
+          <button type="button" id="bbMoreToggle" data-help="Show or hide less-used text tools">+</button>
+          <button type="button" class="bb-extra" data-bb-wrap="s" data-help="Wrap selected text in strike BBCode">S</button>
+          <button type="button" class="bb-extra" data-bb-wrap="nopeel" data-help="Keep selected text from peeling">No</button>
+          <button type="button" class="bb-extra" data-bb-wrap="censor" data-help="Cover selected text with a black bar that peels away to reveal the text">Censor</button>
+          <button type="button" class="bb-extra" data-bb-wrap="peel" data-help="Mark selected words as peelable — everything outside [peel] tags becomes an anchor (stays in place). Multi mode (default): each group gets its own handle. Single peel sequence mode: groups activate one at a time.">Peel</button>
+          <button type="button" class="bb-extra" data-bb-wrap="shake" data-help="Make selected letters subtly shake until peeled">Shake</button>
+          <button type="button" class="bb-extra" data-bb-wrap="float" data-help="Make selected letters hover in a per-letter wave until peeled">Float</button>
+          <button type="button" class="bb-extra" id="bbGradientBtn" data-help="Wrap selected text with a saved gradient preset">Grad</button>
+          <select class="bb-extra" id="bbGradientPreset" data-help="Gradient preset used by the Grad BBCode button"></select>
+          <button type="button" class="bb-extra" id="bbFontBtn" data-help="Wrap selected text with a font family">Font</button>
+          <input id="bbFontValue" type="text" list="fontOptions" placeholder="Font">
+          <button type="button" class="bb-extra" id="bbSizeBtn" data-help="Wrap selected text with a font size">Size</button>
+          <input id="bbSizeValue" type="number" min="8" max="160" step="1" value="24">
+          <button type="button" class="bb-extra" id="bbUrlBtn" data-help="Wrap selected text with a link URL">URL</button>
+          <input id="bbUrlValue" type="url" placeholder="https://">
+        </div>
+        <textarea id="blockText" spellcheck="false"></textarea>
+      </div>
+      <details class="editor-section" open>
+        <summary>Peel</summary>
+        <div class="editor-section-body">
+          <div class="editor-grid-2" id="peelAutoRow">
+            <label id="peelStartLabel" class="editor-checkbox-field" data-help="If checked, the block is peeled from the start of the text; otherwise, from the end."><input id="peelFromBeginningInput" type="checkbox"> Block peel start</label>
+            <div class="editor-row inline">
+              <label for="starterLettersInput" data-help="How many letters are automatically detached when a paragraph appears.">Initially loose</label>
+              <input id="starterLettersInput" type="number" min="0" max="200" step="1">
+            </div>
+          </div>
+          <div class="editor-grid-2" id="peelSettingsGrid">
+            <div class="editor-row inline">
+              <label for="peelModeInput" data-help="The mathematical pattern used to order the chain of letters.">Peel mode</label>
+              <select id="peelModeInput">
+                <option value="linear">Linear</option>
+                <option value="zigzag">Zigzag</option>
+                <option value="spiral">Spiral</option>
+                <option value="spiral-center">Spiral Inside-out</option>
+                <option value="random">Random</option>
+                <option value="drunken">Drunken Zigzag</option>
+                <option value="outward">Outward (Book)</option>
+                <option value="inward">Inward (Margins)</option>
+                <option value="random-neighbors">Random Neighbors</option>
+                <option value="center">Center-out</option>
+                <option value="random-walk">Random Walk</option>
+                <option value="alternating-ends">Alternating Ends</option>
+                <option value="vowels-first">Vowels First</option>
+                <option value="punctuation-last">Punctuation Last</option>
+                <option value="odd-even">Odd / Even</option>
+                <option value="first-letters">Nth Letter Of Words</option>
+                <option value="syllables-in-order">Syllables In Order</option>
+                <option value="first-syllables">First Syllables</option>
+                <option value="last-syllables">Last Syllables</option>
+              </select>
+            </div>
+            <label class="editor-checkbox-field peel-save-row" data-help="Stores the loose letter positions in local storage to resume after refresh."><input id="persistPeelInput" type="checkbox"> Save peel state</label>
+            <div class="peel-handles-row" id="peelHandlesRow">
+              <div class="peel-seq-selector" id="peelSeqSelector">
+                <button type="button" class="active" data-peel-mode="none" data-help="Default: each [peel] group or peel point gets its own independent handle, all visible at once.">Default</button>
+                <button type="button" data-peel-mode="multi" data-help="Works with [peel] tags and multiple peel points. Handles activate one at a time — finish peeling one group to reveal the next.">Sequence</button>
+                <button type="button" data-peel-mode="single" data-help="Only works with [peel] tagged text. All [peel] groups merge into one continuous chain — one handle peels everything, anchors stay.">Merge</button>
+              </div>
+              <label class="editor-checkbox-field" id="reflowAnchorsRow" data-help="Anchor words gradually slide together as you peel, closing the gaps left behind."><input id="reflowAnchorsInput" type="checkbox"> Close anchor gaps</label>
+              <div class="editor-row inline" id="reflowMotionRow" data-help="How anchor words travel to their closed-gap positions. Pathfind moves sideways first, then changes lines.">
+                <label for="reflowMotionInput">Gap motion</label>
+                <select id="reflowMotionInput">
+                  <option value="pathfind">Pathfind</option>
+                  <option value="direct">Direct</option>
+                </select>
+              </div>
+            </div>
+            <label class="editor-checkbox-field shrink-gaps-cell" data-help="Gradually tightens large gaps in the peel strip over time — works for any peel mode or shape-constrained paragraph."><input id="shrinkGapsInput" type="checkbox"> Shrink gaps</label>
+            <label class="editor-checkbox-field" data-help="Unlocks the whole block as a grid and cascades letters above a popped cell."><input id="popGridInput" type="checkbox"> Pop grid</label>
+          </div>
+          <div class="editor-row letter-motion-row">
+            <label data-help="Motion applied to loose letters after they peel. Multiple supported motions can be combined.">Letter motion</label>
+            <div class="letter-motion-list">
+              <div class="letter-motion-item">
+                <label class="editor-checkbox-field" data-help="Loose letters are pulled into a rotating band around a center point. Combine with buoyancy for softer satellite motion."><input id="motionOrbitInput" type="checkbox"> Orbit</label>
+                <div class="editor-grid-2 letter-motion-fields" id="motionOrbitFields">
+                  <div class="editor-row inline"><label for="motionOrbitCx" data-help="Horizontal center of the orbit, in scene pixels.">Center X</label><input id="motionOrbitCx" type="number" step="1"></div>
+                  <div class="editor-row inline"><label for="motionOrbitCy" data-help="Vertical center of the orbit, in scene pixels.">Center Y</label><input id="motionOrbitCy" type="number" step="1"></div>
+                  <div class="editor-row inline"><label for="motionOrbitRadius" data-help="Target orbit size. Higher values keep loose letters farther from the center.">Radius</label><input id="motionOrbitRadius" type="number" min="1" step="1"></div>
+                  <div class="editor-row inline"><label for="motionOrbitStrength" data-help="How strongly letters are pulled into the orbit band.">Strength</label><input id="motionOrbitStrength" type="number" min="0" step="0.01"></div>
+                  <div class="editor-row inline"><label for="motionOrbitSpin" data-help="Tangential push around the orbit. Negative values reverse direction.">Spin</label><input id="motionOrbitSpin" type="number" step="0.05"></div>
+                  <div class="editor-row inline"><label for="motionOrbitBand" data-help="Orbit band tightness relative to radius. Lower values pull letters closer to center.">Band</label><input id="motionOrbitBand" type="number" min="0" step="0.01"></div>
+                </div>
+              </div>
+              <div class="letter-motion-item">
+                <label class="editor-checkbox-field" data-help="Loose letters float upward with a small per-letter wave and horizontal drift."><input id="motionBuoyancyInput" type="checkbox"> Buoyancy</label>
+                <div class="editor-grid-2 letter-motion-fields" id="motionBuoyancyFields">
+                  <div class="editor-row inline"><label for="motionBuoyancyStrength" data-help="Overall force multiplier for lift, wave, and drift.">Strength</label><input id="motionBuoyancyStrength" type="number" min="0" step="0.001"></div>
+                  <div class="editor-row inline"><label for="motionBuoyancyLift" data-help="Baseline upward pull applied to loose letters.">Lift</label><input id="motionBuoyancyLift" type="number" step="0.1"></div>
+                  <div class="editor-row inline"><label for="motionBuoyancyWave" data-help="Vertical wave amount added per letter.">Wave</label><input id="motionBuoyancyWave" type="number" step="0.1"></div>
+                  <div class="editor-row inline"><label for="motionBuoyancyDrift" data-help="Sideways wave amount added while letters float.">Drift</label><input id="motionBuoyancyDrift" type="number" step="0.1"></div>
+                  <div class="editor-row inline"><label for="motionBuoyancyFrequency" data-help="How quickly the buoyancy wave changes over time.">Frequency</label><input id="motionBuoyancyFrequency" type="number" min="0" step="0.01"></div>
+                </div>
+              </div>
+              <div class="letter-motion-item">
+                <label class="editor-checkbox-field" data-help="Loose letters can move sideways, but are pulled back to their original text line vertically."><input id="motionLineLockInput" type="checkbox"> Line-lock</label>
+                <div class="editor-grid-2 letter-motion-fields" id="motionLineLockFields">
+                  <div class="editor-row inline"><label for="motionLineLockStrength" data-help="How strongly each loose letter returns to its original line.">Strength</label><input id="motionLineLockStrength" type="number" min="0" step="0.01"></div>
+                  <div class="editor-row inline"><label for="motionLineLockDamping" data-help="Horizontal velocity damping while the letter is line-locked.">Damping</label><input id="motionLineLockDamping" type="number" min="0" max="1" step="0.01"></div>
+                </div>
+              </div>
+              <div class="letter-motion-item">
+                <label class="editor-checkbox-field" data-help="Loose letters reassemble one line lower, mirrored horizontally; useful for palindromes."><input id="motionPalindromeInput" type="checkbox"> Palindrome flip</label>
+                <div class="editor-grid-2 letter-motion-fields" id="motionPalindromeFields">
+                  <div class="editor-row inline"><label for="motionPalindromeLineGap" data-help="Vertical distance between each mirrored line.">Line gap</label><input id="motionPalindromeLineGap" type="number" min="1" step="1"></div>
+                  <div class="editor-row inline"><label for="motionPalindromeStrength" data-help="How strongly loose letters seek the mirrored line.">Strength</label><input id="motionPalindromeStrength" type="number" min="0" step="0.01"></div>
+                  <div class="editor-row inline"><label for="motionPalindromeDamping" data-help="Velocity damping while letters reassemble.">Damping</label><input id="motionPalindromeDamping" type="number" min="0" max="1" step="0.01"></div>
+                  <div class="letter-motion-toggles">
+                    <label class="editor-checkbox-field" data-help="Reveal the next letter only after the current one settles into its mirrored position."><input id="motionPalindromeManual" type="checkbox"> One-by-one</label>
+                    <label class="editor-checkbox-field" data-help="Dragging farther down advances to the next mirrored line, alternating sides like a worm."><input id="motionPalindromeLoop" type="checkbox"> Worm loop</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="editor-row">
+            <label id="peelPointsLabel" data-help="Manual points override 'Block peel start'.">Peel points</label>
+            <div class="peel-point-header"><span>Line</span><span>From</span><span>To</span><span>Dir</span><span>Starters</span></div>
+            <div id="peelPointsList"></div>
+          </div>
+          <div class="editor-actions">
+            <button id="peelPointAddLeft" type="button" data-help="Add a handle that peels to the left">Add Left Peel Point</button>
+            <button id="peelPointAddRight" type="button" data-help="Add a handle that peels to the right">Add Right Peel Point</button>
+          </div>
+          <div class="editor-row" id="breakPointsHeaderRow" style="display:none">
+            <label data-help="Seam positions: normal peel stops here. A hard yank past the threshold snaps the chain in two permanently.">Seam points</label>
+          </div>
+          <div id="breakPointsList"></div>
+          <div class="editor-actions">
+            <button id="breakPointAdd" type="button" data-help="Add a seam at a specific grapheme index — peel halts there until forced">Add Seam</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>Draw Text Path</summary>
+        <div class="editor-section-body">
+          <div class="editor-row inline">
+            <label for="drawTextEnabled" data-help="Place this paragraph along a hand-drawn Bezier path.">Enabled</label>
+            <input id="drawTextEnabled" type="checkbox">
+          </div>
+          <div id="drawTextFields">
+            <div class="editor-row">
+              <label data-help="Draw a paragraph path, then refine anchors and Bezier handles on the page.">Path tool</label>
+              <div class="draw-text-tools">
+                <button id="drawTextDrawBtn" type="button" data-draw-text-tool="draw">Draw</button>
+                <button id="drawTextEditBtn" type="button" data-draw-text-tool="edit">Edit</button>
+                <button id="drawTextAddBtn" type="button" data-draw-text-tool="add">Add</button>
+                <button id="drawTextDeleteBtn" type="button" data-draw-text-tool="delete">Delete</button>
+                <button id="drawTextClearBtn" type="button">Clear</button>
+                <span id="drawTextToolStatus" class="draw-text-tool-status">Off</span>
+              </div>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline">
+                <label for="drawTextSpacing" data-help="Extra spacing added between drawn letters.">Spacing</label>
+                <input id="drawTextSpacing" type="range" min="-8" max="32" step="1" value="2">
+              </div>
+              <div class="editor-row inline">
+                <label for="drawTextAngleMix" data-help="How strongly letters follow the movement angle.">Angle</label>
+                <input id="drawTextAngleMix" type="range" min="0" max="1" step="0.05" value="1">
+              </div>
+            </div>
+            <div class="draw-text-example-label">Example presets</div>
+            <div class="editor-actions draw-text-examples">
+              <button id="drawTextExampleWave" type="button" data-help="Example: a breath-like wave sentence.">Wave</button>
+              <button id="drawTextExampleSpiral" type="button" data-help="Example: a paragraph curling inward.">Spiral</button>
+              <button id="drawTextExampleMargin" type="button" data-help="Example: a side-note climbing the margin.">Margin</button>
+              <button id="drawTextExampleUnderline" type="button" data-help="Example: a sentence that starts as an underline.">Underline</button>
+              <button id="drawTextExampleFall" type="button" data-help="Example: a paragraph falling diagonally.">Fall</button>
+              <button id="drawTextExampleLoop" type="button" data-help="Example: a looped repeated thought.">Loop</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>Dynamics</summary>
+        <div class="editor-section-body">
+          <div class="effect-item">
+            <label data-help="Only reveal letters within a certain distance of the active peel point."><input id="fadeRevealInput" type="checkbox"> Fade reveal</label>
+            <div id="fadeRevealFields" class="editor-grid-2 effect-fields">
+              <div class="editor-row inline">
+                <label for="fadeRevealVisible" data-help="Number of letters fully visible behind the active peel handle.">Reveal letters</label>
+                <input id="fadeRevealVisible" type="number" min="1" max="2000" step="1">
+              </div>
+              <div class="editor-row inline">
+                <label for="fadeRevealSteps" data-help="Number of letters transitioning through partial opacity.">Fade steps</label>
+                <input id="fadeRevealSteps" type="number" min="0" max="2000" step="1">
+              </div>
+            </div>
+          </div>
+          <div class="effect-item">
+            <label data-help="Hides future paragraphs until the previous ones are completed."><input id="stepParagraphsInput" type="checkbox"> Step paragraphs</label>
+            <div id="stepParagraphFields" class="editor-grid-2 effect-fields">
+              <div class="editor-row inline">
+                <label for="visibleParagraphs" data-help="How many uncompleted blocks are shown at once.">Visible blocks</label>
+                <input id="visibleParagraphs" type="number" min="1" max="20" step="1">
+              </div>
+              <div class="editor-row inline">
+                <label for="blockVisibleOverride" data-help="Optional visible-block count while this paragraph is the active incomplete one.">This block</label>
+                <input id="blockVisibleOverride" type="number" min="1" max="20" step="1" placeholder="global">
+              </div>
+              <div class="editor-row inline">
+                <label for="globalStepAdvanceDelay" data-help="Default seconds to wait after a completed paragraph before revealing the next paragraph.">Global delay</label>
+                <input id="globalStepAdvanceDelay" type="number" min="0" max="120" step="0.1">
+              </div>
+              <div class="editor-row inline">
+                <label for="stepAdvanceDelay" data-help="Optional seconds to wait after this paragraph completes before revealing the next paragraph.">This delay</label>
+                <input id="stepAdvanceDelay" type="number" min="0" max="120" step="0.1" placeholder="global">
+              </div>
+              <div class="editor-row inline">
+                <label data-help="Keeps the active paragraph centered vertically on the screen."><input id="compactFlowInput" type="checkbox"> Center visible</label>
+              </div>
+            </div>
+          </div>
+          <div class="effect-item">
+            <label data-help="Shows an arrow pointing to the handle of the first active paragraph."><input id="dragHintInput" type="checkbox"> Drag hint</label>
+            <div id="dragHintFields" class="editor-grid-2 effect-fields">
+              <div class="editor-row inline">
+                <label for="dragHintPeelPoint" data-help="Which peel point should the hint point to?">Point</label>
+                <input id="dragHintPeelPoint" type="number" min="0" max="100" step="1">
+              </div>
+              <div class="editor-row inline">
+                <label for="dragHintAppearMs" data-help="Delay before the hint appears.">Show after</label>
+                <input id="dragHintAppearMs" type="number" min="0" max="60000" step="250">
+              </div>
+              <div class="editor-row inline">
+                <label for="dragHintTextMs" data-help="Delay before the text label appears.">Text after</label>
+                <input id="dragHintTextMs" type="number" min="0" max="60000" step="250">
+              </div>
+              <div class="editor-row inline">
+                <label for="dragHintText" data-help="Text shown after the text delay.">Text</label>
+                <input id="dragHintText" type="text" placeholder="arrastra aqui">
+              </div>
+            </div>
+          </div>
+          <div class="effect-item">
+            <label data-help="Block starts invisible and cannot be interacted with until a revealBlock trigger makes it appear."><input id="blockHiddenToggle" type="checkbox"> Starts hidden</label>
+          </div>
+          <div class="effect-item">
+            <label data-help="Shows a button after a delay on the selected block."><input id="timedBtnEnabled" type="checkbox"> Timed button</label>
+            <div id="timedBtnFields" class="effect-fields open">
+              <div class="editor-grid-2">
+                <div class="editor-row inline">
+                  <label for="timedBtnDelay">Delay</label>
+                  <input id="timedBtnDelay" type="number" min="500" max="60000" step="500" value="7000">
+                </div>
+                <div class="editor-row inline">
+                  <label for="timedBtnLabel">Text</label>
+                  <input id="timedBtnLabel" type="text" value="→">
+                </div>
+                <div class="editor-row inline">
+                  <label for="timedBtnAction">Action</label>
+                  <select id="timedBtnAction">
+                    <option value="none">none</option>
+                    <option value="addText">add text below</option>
+                    <option value="nextBlock">scroll to next</option>
+                    <option value="url">open URL</option>
+                  </select>
+                </div>
+                <div class="editor-row inline">
+                  <label for="timedBtnSpawnAt">Spawn</label>
+                  <select id="timedBtnSpawnAt">
+                    <option value="afterNoPeel">noPeel block</option>
+                    <option value="afterAll">last letter</option>
+                  </select>
+                </div>
+              </div>
+              <div class="editor-row inline" id="timedBtnAddTextRow">
+                <label for="timedBtnAddText">Add text</label>
+                <input id="timedBtnAddText" type="text" placeholder="fin." value="fin.">
+              </div>
+            </div>
+            <button type="button" id="timedBtnEnable" style="display:none">Enable on selected block</button>
+            <button type="button" id="timedBtnDisable" class="danger-button" style="display:none">Remove from selected block</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="editor-row">
+        <label for="fontSearch" data-help="Change the base typeface for this paragraph.">Base Font</label>
+        <input id="fontSearch" list="fontOptions" placeholder="Search or type a Google Font">
+        <datalist id="fontOptions">
+          <option value="EB Garamond"></option>
+          <option value="Garamond"></option>
+          <option value="Manrope"></option>
+          <option value="Work Sans"></option>
+          <option value="Georgia"></option>
+          <option value="Inter"></option>
+          <option value="Cormorant Garamond"></option>
+          <option value="Libre Baskerville"></option>
+        </datalist>
+      </div>
+
+      <details class="editor-section color-group" open>
+        <summary>Color</summary>
+        <div class="editor-section-body">
+          <div class="editor-row">
+            <div id="colorModeButtons" class="mode-selector color-mode-selector">
+              <button type="button" data-mode="solid">Solid</button>
+              <button type="button" data-mode="linear">Linear</button>
+              <button type="button" data-mode="radial">Radial</button>
+              <button type="button" data-mode="sequential">Letters</button>
+              <button type="button" data-mode="random">Random</button>
+              <button type="button" data-mode="variation">Stutter</button>
+            </div>
+          </div>
+
+          <div id="variationTools" class="editor-row inline" style="display:none; margin-top:4px;">
+            <label for="variationStrength" data-help="Strength of the random HSL jitter per letter">Variation</label>
+            <input id="variationStrength" type="range" min="0" max="1" step="0.01" value="0.15">
+          </div>
+
+          <div id="gradientTools" class="gradient-tools">
+            <div class="gradient-preset-row">
+              <span>Presets</span>
+              <div id="gradientPresetPalette" class="gradient-preset-palette"></div>
+              <button id="gradientPresetSave" type="button" data-help="Save the current gradient as a preset">+</button>
+              <button id="gradientPresetDelete" type="button" data-help="Delete the selected gradient preset">×</button>
+            </div>
+            <div class="editor-row inline">
+              <label for="gradientAngle" data-help="Angle for linear gradients (degrees)">Angle</label>
+              <input id="gradientAngle" type="number" min="0" max="360" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="gradientRadiusX">Center X</label>
+              <input id="gradientRadiusX" type="number" min="0" max="100" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="gradientRadiusY">Center Y</label>
+              <input id="gradientRadiusY" type="number" min="0" max="100" step="1">
+            </div>
+            <div id="gradientStops" class="gradient-stop-list"></div>
+            <div class="editor-actions">
+              <button id="gradientStopAdd" type="button" data-help="Add a new color stop to the gradient">Add Stop</button>
+            </div>
+          </div>
+
+          <div class="color-section">
+            <div class="color-pair">
+              <label for="blockColor">Txt</label>
+              <input id="blockColor" type="color" data-help="Primary color for the text">
+            </div>
+            <div class="color-pair">
+              <label for="backgroundColor">Bg</label>
+              <input id="backgroundColor" type="color" data-help="Page background color">
+            </div>
+            <div class="palette-container">
+              <label class="palette-label">Palette</label>
+              <div class="palette-row">
+                <div id="editorPalette" class="color-palette"></div>
+                <button id="paletteEditBtn" type="button" data-help="Edit saved color palette swatches">✎</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
+        <summary>Illustration</summary>
+        <div class="editor-section-body">
+          <div class="editor-grid-2" id="illustrationAndShapeToggles">
+            <div class="editor-row inline">
+              <label for="attachTypeSelect" data-help="Attach an image or a peelable SVG drawing below this block">Illustration</label>
+              <select id="attachTypeSelect">
+                <option value="">None</option>
+                <option value="placeholder">Placeholder</option>
+                <option value="image">Image (PNG/GIF/…)</option>
+                <option value="lineart">Line art SVG</option>
+              </select>
+            </div>
+          </div>
+          <div id="attachFields" style="display:none">
+            <div class="editor-row" id="attachLabelRow">
+              <label for="attachLabel">Label</label>
+              <input id="attachLabel" type="text" placeholder="Illustration placeholder">
+            </div>
+            <div class="editor-row" id="attachSrcRow">
+              <label for="attachSrc" data-help="The main background image or SVG that represents the illustration. For lineart, changing this will clear existing peelable strokes.">Illustration Src (SVG/PNG/JPG)</label>
+              <div class="path-picker-row">
+                <input id="attachSrc" type="text" placeholder="illustrations/image.svg">
+                <select id="attachSrcSelect" data-help="Choose an image from the illustrations folder"></select>
+                <button id="attachOpen" type="button" data-help="Open the illustration source in a new tab">Open</button>
+              </div>
+            </div>
+            <div class="editor-row" id="attachLooseSrcRow">
+              <label for="attachLooseSrc" data-help="A separate SVG file for a piece (like a leaf or band-aid) that is pinned to the illustration but can be torn off or dragged away.">Interactive Fragment Src (SVG)</label>
+              <div class="path-picker-row">
+                <input id="attachLooseSrc" type="text" placeholder="illustrations/loose.svg">
+                <select id="attachLooseSrcSelect" data-help="Choose an SVG fragment from the illustrations folder"></select>
+                <button id="attachLooseOpen" type="button" data-help="Open the fragment source in a new tab">Open</button>
+              </div>
+            </div>
+            <div class="editor-row inline" id="roughPresetRow">
+              <label for="roughPresetSelect" data-help="Change only the rendered texture of the peel lines; SVG geometry stays the same.">Line texture</label>
+              <select id="roughPresetSelect">
+                <option value="solid">Solid</option>
+                <option value="hand">Hand width</option>
+                <option value="rough">Rough</option>
+                <option value="sketch">Sketch</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline" id="attachSvgOpacityRow">
+                <label for="attachSvgOpacity" data-help="Opacity of the original SVG image behind peelable lines.">SVG opacity</label>
+                <input id="attachSvgOpacity" type="number" min="0" max="1" step="0.01" value="0.06">
+              </div>
+              <div class="editor-row inline" id="attachStrokeResistanceRow">
+                <label for="attachStrokeResistance" data-help="How far a peel line must be dragged before more of it releases.">Resistance</label>
+                <input id="attachStrokeResistance" type="number" min="1" max="200" step="1" value="45">
+              </div>
+            </div>
+            <div class="editor-grid-2" id="lineartPeelTuningRows">
+              <div class="editor-row inline editor-range-field">
+                <label for="roughLineQuantity" data-help="How many SVG lines become peelable.">Lines</label>
+                <div class="range-with-value">
+                  <input id="roughLineQuantity" type="range" min="1" max="240" step="1" value="30">
+                  <input id="roughLineQuantityValue" type="number" min="1" max="240" step="1" value="30">
+                </div>
+              </div>
+              <div class="editor-row inline editor-range-field">
+                <label for="roughLinePrecision" data-help="How many physics nodes are used per peel line.">Precision</label>
+                <div class="range-with-value">
+                  <input id="roughLinePrecision" type="range" min="0.5" max="2.5" step="0.1" value="1">
+                  <input id="roughLinePrecisionValue" type="number" min="0.5" max="2.5" step="0.1" value="1">
+                </div>
+              </div>
+              <div class="editor-row inline editor-range-field">
+                <label for="roughInitialPeeled" data-help="How many nodes start already peelable on each line.">Initial peel</label>
+                <div class="range-with-value">
+                  <input id="roughInitialPeeled" type="range" min="1" max="20" step="1" value="2">
+                  <input id="roughInitialPeeledValue" type="number" min="1" max="20" step="1" value="2">
+                </div>
+              </div>
+              <div class="editor-row inline editor-range-field">
+                <label for="roughStrokeWidth" data-help="Stroke width multiplier for generated peel lines.">Stroke width</label>
+                <div class="range-with-value">
+                  <input id="roughStrokeWidth" type="range" min="0.4" max="5" step="0.1" value="1">
+                  <input id="roughStrokeWidthValue" type="number" min="0.4" max="5" step="0.1" value="1">
+                </div>
+              </div>
+            </div>
+            <div class="editor-row" id="lineartCanvasToolRow">
+              <label data-help="Draw new peelable lines directly on the illustration, or erase existing peel lines.">Canvas tool</label>
+              <div class="lineart-draw-tools">
+                <button id="lineartDrawBtn" type="button" data-lineart-tool="draw">Draw</button>
+                <button id="lineartEraseBtn" type="button" data-lineart-tool="erase">Erase</button>
+                <label for="lineartBrushSize">Size</label>
+                <input id="lineartBrushSize" type="range" min="4" max="48" step="1" value="18">
+                <span id="lineartToolStatus" class="lineart-tool-status">Off</span>
+              </div>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline editor-range-field">
+                <label for="attachScale" data-help="Scale the rendered illustration around its measured width and height.">Scale</label>
+                <div class="range-with-value">
+                  <input id="attachScale" type="range" min="0.1" max="3" step="0.01" value="1">
+                  <input id="attachScaleValue" type="number" min="0.1" max="3" step="0.01" value="1">
+                </div>
+              </div>
+              <div class="editor-row inline editor-range-field">
+                <label for="attachOpacity" data-help="Opacity of the whole illustration attachment.">Opacity</label>
+                <div class="range-with-value">
+                  <input id="attachOpacity" type="range" min="0" max="1" step="0.01" value="1">
+                  <input id="attachOpacityValue" type="number" min="0" max="1" step="0.01" value="1">
+                </div>
+              </div>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline">
+                <label for="attachWidth" data-help="Rendered width of the illustration attachment.">Width</label>
+                <input id="attachWidth" type="number" min="40" max="760" step="1">
+              </div>
+              <div class="editor-row inline">
+                <label for="attachHeight" data-help="Rendered height of the illustration attachment.">Height</label>
+                <input id="attachHeight" type="number" min="20" max="600" step="1">
+              </div>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline">
+                <label for="attachX" data-help="Horizontal offset for the illustration attachment.">Offset X</label>
+                <input id="attachX" type="number" min="-1000" max="1000" step="1" value="0">
+              </div>
+              <div class="editor-row inline">
+                <label for="attachY" data-help="Vertical offset for the illustration attachment.">Offset Y</label>
+                <input id="attachY" type="number" min="-1000" max="1000" step="1" value="0">
+              </div>
+            </div>
+            <div class="editor-grid-2">
+              <div class="editor-row inline">
+                <label for="attachGap">Gap</label>
+                <input id="attachGap" type="number" min="0" max="120" step="1">
+              </div>
+              <div class="editor-row inline">
+                <label for="attachOffsetY">Optical Y</label>
+                <input id="attachOffsetY" type="number" min="-120" max="120" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" open>
+        <summary>Shape Constraint</summary>
+        <div class="editor-section-body">
+          <div class="editor-row inline">
+            <label for="shapeToggle" data-help="Restrict letters to a specific geometric container">Enabled</label>
+            <input id="shapeToggle" type="checkbox">
+          </div>
+          <div id="shapeFields" class="editor-grid-2">
+            <div class="editor-row inline" id="shapeTypeRow">
+              <label for="shapeTypeSelect" data-help="Choose a predefined shape or 'Custom' to define your own SVG path.">Type</label>
+              <select id="shapeTypeSelect">
+                <option value="circle">Circle</option>
+                <option value="tshirt">T-Shirt</option>
+                <option value="star5">5-Point Star</option>
+                <option value="diamond">Diamond</option>
+                <option value="triangle">Triangle</option>
+                <option value="heart">Heart</option>
+                <option value="custom">Custom Path</option>
+              </select>
+            </div>
+            <div class="editor-row inline" id="shapeOpacityRow" style="display:none;">
+              <label for="shapeOpacity" data-help="Visibility of the container outline">Opacity</label>
+              <input id="shapeOpacity" type="range" min="0" max="1" step="0.05" value="0.22">
+            </div>
+            <div class="editor-row inline" id="shapeScaleRow" style="display:none;">
+              <label for="shapeScale" data-help="Scale the shape constraint around its center.">Scale</label>
+              <input id="shapeScale" type="range" min="0.2" max="2" step="0.01" value="1">
+            </div>
+            <div class="editor-row inline" id="shapeRotationRow" style="display:none;">
+              <label for="shapeRotation" data-help="Rotate the shape constraint in degrees.">Rotation</label>
+              <input id="shapeRotation" type="range" min="-180" max="180" step="1" value="0">
+            </div>
+            <label id="shapeClipOverflowRow" class="editor-checkbox-field" style="display:none" data-help="Hide text that no longer fits inside the shape instead of flowing it below as a normal paragraph."><input id="shapeClipOverflow" type="checkbox"> Clip overflow</label>
+          </div>
+          <div class="editor-row" id="shapeCustomPathDRow" style="display:none;">
+            <label for="shapeCustomPathD" data-help="Paste an SVG path 'd' attribute for a custom shape. Coordinates should be relative to a 0-W, 0-H bounding box.">Custom SVG Path D</label>
+            <textarea id="shapeCustomPathD" spellcheck="false" placeholder="M 0,0 L 100,0 L 100,100 L 0,100 Z"></textarea>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" open>
+        <summary data-help="Trigger visual, audio, color, and physics effects from paragraph events.">Events & effects</summary>
+        <div class="editor-section-body">
+          <div id="eventTriggerList" class="event-trigger-list"></div>
+          <div class="editor-actions">
+            <button id="eventTriggerAdd" type="button" data-help="Add a new event trigger to the selected paragraph">Add event</button>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" open>
+        <summary data-help="Invisible fields that push loose letters during the physics simulation.">Force Fields</summary>
+        <div class="editor-section-body">
+          <div id="forceFieldList" class="force-field-list"></div>
+          <div class="editor-actions">
+            <button id="forceFieldAddWind" type="button" data-help="Add a rectangular directional wind field">Add wind</button>
+            <button id="forceFieldAddMagnet" type="button" data-help="Add a circular magnetic attractor">Add magnet</button>
+            <button id="forceFieldAddCursor" type="button" data-help="Add a pointer field that repels loose letters while dragging">Add cursor repel</button>
+          </div>
+        </div>
+      </details>
+    </div>
+    <textarea id="editorJson" spellcheck="false"></textarea>
+    <footer>
+      <button id="editorReset" data-help="Wipe all local changes and revert to default scene.">Reset</button>
+      <button id="editorDownload" data-help="Download current configuration as a .json file.">Download JSON</button>
+      <button id="editorApply" data-help="Save current state and reload the entire simulation.">Save + Reload</button>
+    </footer>
+  </section>
+
+  <section id="editorUtilityPanel" class="editor-floating-panel" aria-label="Editor utility panel">
+    <header>
+      <span data-help="General tools for the selected paragraph and scene edits">Tools</span>
+      <button id="utilityCollapseToggle" type="button" data-help="Collapse general tools">⌃</button>
+    </header>
+    <div id="utilityTools">
+      <details class="editor-section" open>
+        <summary>Properties & Actions</summary>
+        <div class="editor-section-body">
+          <div class="properties-grid transform-grid">
+            <div class="property-field">
+              <label for="blockXInput" data-help="Horizontal paragraph offset.">X</label>
+              <input id="blockXInput" type="number" min="-2000" max="2000" step="1">
+            </div>
+            <div class="property-field">
+              <label for="blockYInput" data-help="Vertical paragraph offset.">Y</label>
+              <input id="blockYInput" type="number" min="-2000" max="2000" step="1">
+            </div>
+            <div class="property-field">
+              <label for="blockScaleInput" data-help="Paragraph scale.">Scale</label>
+              <input id="blockScaleInput" type="number" min="0.2" max="3" step="0.05">
+            </div>
+            <div class="property-field opacity-property editor-range-field">
+              <label for="blockOpacityRange" data-help="Paragraph text opacity.">Opacity</label>
+              <div class="range-with-value">
+                <input id="blockOpacityRange" type="range" min="0" max="1" step="0.01">
+                <input id="blockOpacityInput" type="number" min="0" max="1" step="0.01">
+              </div>
+            </div>
+            <div class="property-field">
+              <label for="blockWidthInput" data-help="Text wrap width for this paragraph.">W</label>
+              <input id="blockWidthInput" type="number" min="80" max="1200" step="1">
+            </div>
+            <div class="property-field">
+              <label for="blockHeightInput" data-help="Minimum paragraph box height.">H</label>
+              <input id="blockHeightInput" type="number" min="0" max="2000" step="1">
+            </div>
+          </div>
+          <div class="editor-actions utility-actions">
+            <button id="editorUndo" data-help="Step back to the previous saved state (Ctrl+Z)." disabled>← Undo</button>
+            <button id="editorRedo" data-help="Step forward to the next saved state (Ctrl+Shift+Z)." disabled>Redo →</button>
+            <button id="blockAdd" data-help="Insert a new paragraph after the selection">Add</button>
+            <button id="blockRemove" class="danger-button" data-help="Delete the selected paragraph">Remove</button>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" id="editorOptionsSection">
+        <summary>Options</summary>
+        <div class="editor-section-body">
+          <div class="editor-grid-2">
+            <div class="editor-row inline">
+              <label for="paragraphGapInput" data-help="Vertical distance between paragraphs in pixels.">Block gap</label>
+              <input id="paragraphGapInput" type="number" min="0" max="240" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="desktopDynamicLimit" data-help="Max number of loose letters allowed on screen before they start disappearing.">Max loose PC</label>
+              <input id="desktopDynamicLimit" type="number" min="1" max="1000" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="mobileDynamicLimit" data-help="Max number of loose letters for mobile/narrow screens.">Max loose Mobile</label>
+              <input id="mobileDynamicLimit" type="number" min="1" max="1000" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="initialPeelActiveBlocks" data-help="Max number of paragraphs that can have active handles on start.">Active starters</label>
+              <input id="initialPeelActiveBlocks" type="number" min="1" max="100" step="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="historySnapshotMinutes" data-help="Minutes between automatic history snapshots while the editor is open.">Snapshot min</label>
+              <input id="historySnapshotMinutes" type="number" min="1" max="120" step="1">
+            </div>
+          </div>
+          <div class="editor-actions utility-actions">
+            <button id="editorOptionResetPanels" type="button" data-help="Reset panel positions and sizes.">Reset panels</button>
+            <button id="editorOptionOpenGroups" type="button" data-help="Open every editor group in both panels.">Open all groups</button>
+            <button id="editorOptionCloseGroups" type="button" data-help="Collapse every editor group in both panels.">Close all groups</button>
+            <button id="editorOptionToggleRaw" type="button" data-help="Show or hide the raw JSON editor.">Toggle JSON</button>
+            <button id="editorOptionClearPeel" type="button" data-help="Delete saved loose-letter positions.">Clear peel</button>
+            <button id="editorOptionClearHistory" type="button" data-help="Delete editor history and undo stack.">Clear history</button>
+            <button id="editorOptionResetApp" class="danger-button" type="button" data-help="Delete Tirita localStorage and reload.">Reset app</button>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" id="historySection">
+        <summary data-help="Auto-snapshots at the interval set in Options.">History snapshots</summary>
+        <div class="editor-section-body">
+          <div id="editorHistoryList" class="editor-history-list"></div>
+        </div>
+      </details>
+      <details id="bulkImportDetails" class="editor-section">
+        <summary>Bulk import</summary>
+        <div class="editor-section-body">
+          <div class="editor-row">
+            <label for="bulkTextInput" data-help="Paste long text here. Double line breaks create separate paragraphs.">Import full text</label>
+            <textarea id="bulkTextInput" spellcheck="false" placeholder="Paragraph one&#10;&#10;Paragraph two"></textarea>
+          </div>
+          <div class="editor-grid-2">
+            <div class="editor-row inline">
+              <label for="bulkPeelMode" data-help="Which side handles are added to during import.">Import peel</label>
+              <select id="bulkPeelMode">
+                <option value="start">Start</option>
+                <option value="end">End</option>
+                <option value="alternating">Alternating</option>
+                <option value="random">Random</option>
+              </select>
+            </div>
+            <div class="editor-row inline">
+              <label for="bulkStarterMode" data-help="Whether handle lengths are fixed or randomized.">Import type</label>
+              <select id="bulkStarterMode">
+                <option value="fixed">Fixed</option>
+                <option value="random">Random range</option>
+              </select>
+            </div>
+            <div class="editor-row inline">
+              <label for="bulkStarterFixed" data-help="Fixed starter count for all imported blocks.">Fixed count</label>
+              <input id="bulkStarterFixed" type="number" min="0" max="200" step="1" value="3">
+            </div>
+            <div class="editor-row inline">
+              <label for="bulkStarterMin" data-help="Min value for random import handles.">Rand min</label>
+              <input id="bulkStarterMin" type="number" min="0" max="200" step="1" value="1">
+            </div>
+            <div class="editor-row inline">
+              <label for="bulkStarterMax" data-help="Max value for random import handles.">Rand max</label>
+              <input id="bulkStarterMax" type="number" min="0" max="200" step="1" value="4">
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button id="bulkImportReplace" type="button" data-help="Delete all current blocks and replace with the text above.">Import Replace</button>
+            <button id="bulkImportAppend" type="button" data-help="Add the paragraphs above to the end of the current piece.">Import Append</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <script>
+    // Global error tracker to catch silent module failures
+    window.addEventListener('error', function(e) {
+      console.error("FATAL SCRIPT ERROR:", e.message, "at", e.filename, ":", e.lineno);
+    });
+  </script>
+
+  <script>
+  (function () {
+    var nativeSel = document.getElementById('sceneSelect');
+    var trigger   = document.getElementById('sceneSelectTrigger');
+    var labelEl   = document.getElementById('sceneSelectCurrentLabel');
+    var panel     = document.getElementById('sceneSelectDropdown');
+
+    function rebuild() {
+      panel.innerHTML = '';
+      Array.from(nativeSel.options).forEach(function (opt) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'scene-option' + (opt.value === nativeSel.value ? ' active' : '');
+        btn.textContent = opt.text;
+        btn.dataset.value = opt.value;
+        btn.addEventListener('click', function () {
+          nativeSel.value = btn.dataset.value;
+          nativeSel.dispatchEvent(new Event('change'));
+          sync();
+          closePanel();
+        });
+        panel.appendChild(btn);
+      });
+    }
+
+    function sync() {
+      var sel = nativeSel.options[nativeSel.selectedIndex];
+      labelEl.textContent = sel ? sel.text : '';
+      panel.querySelectorAll('.scene-option').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.value === nativeSel.value);
+      });
+    }
+
+    function openPanel() {
+      panel.removeAttribute('hidden');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function closePanel() {
+      panel.setAttribute('hidden', '');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    new MutationObserver(function () {
+      rebuild();
+      sync();
+    }).observe(nativeSel, { childList: true });
+
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (panel.hasAttribute('hidden')) { openPanel(); } else { closePanel(); }
+    });
+
+    document.addEventListener('click', closePanel);
+    panel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    panel.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closePanel(); trigger.focus(); }
+    });
+  })();
+  </script>
+  <script type="module" src="./js/main.js?v=141"></script>
+</body>
+</html>

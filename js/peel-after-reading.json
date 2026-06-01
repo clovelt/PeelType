@@ -1,0 +1,3573 @@
+{
+  "id": "tirita-poema",
+  "version": 30,
+  "title": "tirar después de leer",
+  "editor": {
+    "enabled": true
+  },
+  "style": {
+    "font": "20px \"EB Garamond\"",
+    "lineHeight": 30,
+    "color": "#7e7e7e",
+    "backgroundColor": "#f5f0e8"
+  },
+  "layout": {
+    "type": "paragraph",
+    "blockGap": 34,
+    "margin": 20,
+    "topMargin": 72,
+    "bottomMargin": 96
+  },
+  "peel": {
+    "fromBeginning": true,
+    "zigzag": true,
+    "mode": "zigzag",
+    "initialUnlockCount": 3,
+    "unlockThreshold": 1
+  },
+  "physics": {
+    "constraintDistance": 1.2,
+    "iterations": 12,
+    "damping": 0.97,
+    "gravity": 0.15,
+    "gravityOn": true
+  },
+  "optimization": {
+    "dynamicLetterLimitDesktop": 370,
+    "dynamicLetterLimitMobile": 110,
+    "dynamicLetterLimitNarrow": 370,
+    "initialPeelActiveBlocks": 1
+  },
+  "behaviors": {
+    "fadeReveal": {
+      "enabled": false,
+      "visibleLetters": 24,
+      "fadeSteps": 8
+    },
+    "stepParagraphs": {
+      "enabled": true,
+      "visibleCount": 1,
+      "compactFlow": true,
+      "perBlockVisibleCount": {},
+      "advanceDelayMs": 0,
+      "perBlockAdvanceDelayMs": {
+        "tit-b06": 3000,
+        "tit-b09": 1000
+      }
+    }
+  },
+  "blocks": [
+    {
+      "id": "tit-titulo",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 2.4,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "peel after reading.",
+      "hint": {
+        "enabled": true,
+        "peelPointIndex": 0,
+        "appearMs": 2600,
+        "textMs": 8200,
+        "text": "drag here"
+      },
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b01",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 640,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "The process of getting to know someone deeply - in the truest sense of the word - \n[b]I think is similar to pulling back the cuticle of a finger.[/b]",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 192,
+        "scale": 0.78,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_cuticula.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 1,
+        "shrinkGaps": true
+      }
+    },
+    {
+      "id": "tit-b02",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 645,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "latido-bajo",
+              "mode": "crossfade"
+            },
+            {
+              "type": "bgColor",
+              "color": "#cfc2ac",
+              "duration": 1600
+            }
+          ]
+        },
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "latido-bajo",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You meet [i]someone[/i] and take them, almost carried by the air, to a secret place. It calls to you from afar, and when you visit, [b]it summons you[/b]: you look at their [i]ring finger[/i].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 1,
+        "shrinkGaps": true
+      }
+    },
+    {
+      "id": "tit-b03",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 596,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "At first it's curious; you feel like pulling just for the simple satisfaction of learning something about another person so you can feel [b]human[/b] for a bit.",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 274,
+        "height": 300,
+        "scale": 0.59,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_mente.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 1
+      },
+      "triggers": [
+        {
+          "on": "blockComplete",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "setForceField",
+              "fieldId": "magnet-mp72xj7v",
+              "enabled": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tit-b04",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 462,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "What could go wrong? You've taken a liking to the person, and you have to practice empathy… [b]Right[/b]?",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 297,
+        "scale": 0.53,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_corazones.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b05",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#7e7e7e",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "........................................................................................... Sure.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 20
+      }
+    },
+    {
+      "id": "tit-b06",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You see the indentation of a tiny [b]crease[/b] - the smaller it is, the more frustrating it is that you can't pull on it - scraping a bit, you barely manage to [nopeel][i]grip it with your nails[/i].[/nopeel]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-b07",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#ece5db",
+              "duration": 1600
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You hear a noise. [b]It stops you dead in your tracks.[/b]",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b08",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "They've told you something. Not something trivial; it's something [b]important[/b]. Someone they [i]met[/i], [i]broke up[/i], [i]died[/i]. Something they [i]lost[/i], [i]discovered[/i], had to [i]give up[/i].",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 272,
+        "height": 300,
+        "scale": 0.76,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_neuro.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 30,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-b09",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 413,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "lead",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "smokePoof",
+              "count": 34
+            },
+            {
+              "type": "sound",
+              "name": "poof"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "It's not hard to hear; it rolled off their tongue easily - but that sentence [b]hung in the air[/b] as if it were [color=#778899]lead[/color].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 1
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 249,
+        "scale": 0.84,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_humo.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b10",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 625,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You can't help but ask, as if questioning the silence: [b]Why?[/b] What went wrong? What could they have foreseen? - there's usually not much more to it.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "vowels-first",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b11",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "color": "#6e6e6e",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[i]It's just life.[/i]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "vowels-first",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b12",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#e8ddd0",
+              "duration": 1800
+            },
+            {
+              "type": "ambient",
+              "name": "tension",
+              "mode": "layer",
+              "gain": 0.022
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "And then, you start [b]pulling[/b].",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "inward",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b13",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 620,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "It's a look you hadn't seen before, somewhere between [i]confidence[/i] and [i]regret[/i], some kind of [color=#8a7a70]dirty melancholy[/color]. More is going to flow out; I can see it.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 2
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 166,
+        "height": 300,
+        "scale": 0.84,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_grifo.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b14",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 592,
+        "height": 0
+      },
+      "style": {
+        "color": "#4a4a4a",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Turns out that part of their life has disappeared, or wasn't there to begin with. They didn't have, couldn't, or didn't know. [color=#784830][b]They suffered and endured[/b].[/color]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "odd-even",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-b15",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#e0d2bf",
+              "duration": 2500
+            }
+          ]
+        },
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "silence",
+              "mode": "crossfade",
+              "gain": 0
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#7e7e7e",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You take a moment. [b]One deep breath.[/b]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "outward",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b16",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 563,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "tension",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Then, [b]you continue the inertia[/b] - you peel away bit by bit, moving down the side of the nail, and each hairstrand of skin is added to the pile.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 3
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 163,
+        "height": 300,
+        "scale": 0.69,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_tira.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 22,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b17",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "cruel",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 10
+            },
+            {
+              "type": "bgColor",
+              "color": "#d8cab5",
+              "duration": 1200
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "linear",
+        "fontFamily": "EB Garamond",
+        "color": "#7e7e7e",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#545454",
+              "alpha": 1,
+              "position": 77
+            },
+            {
+              "color": "#b42727",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[b]They say something that makes your blood run cold.[/b] The world is [color=#b74040][b]cruel[/b][/color].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b18",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 574,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Suddenly, the dish is no longer an appetizer, but a [b]generous[/b] main course. You feel your stomach growl [i]cold[/i], [i]broken[/i], [i]distant[/i] moans.",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 3
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 274,
+        "height": 300,
+        "scale": 0.85,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_ondas.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b19",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "spark",
+              "count": 18,
+              "color": "#b77713"
+            },
+            {
+              "type": "sound",
+              "name": "spark"
+            }
+          ],
+          "words": [
+            "idea",
+            "memory"
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Your eyes begin to shift to the [b]right[/b]; the mind sparks from [color=#b77713]idea[/color] to [color=#b77713]memory[/color], and without opening your mouth, your throat has already spit it.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 4
+      }
+    },
+    {
+      "id": "tit-b20",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "silence",
+              "mode": "crossfade",
+              "gain": 0
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[b]You confessed something.[/b]",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "odd-even",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b21",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "It's [b]a whole lot worse[/b] than what they said. [i]Did I fuck up?[/i]",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b22",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 460,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#cfc2ac",
+              "duration": 1600
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You lower your gaze - you see your hand and discover, terrified, that [b]a gash has just opened on your index finger[/b].",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "random-walk",
+        "initialUnlockCount": 2
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 268,
+        "height": 300,
+        "scale": 0.38,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_ojos.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b23",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "latido-bajo",
+              "mode": "crossfade"
+            },
+            {
+              "type": "bgColor",
+              "color": "#c5b89e",
+              "duration": 1800
+            }
+          ]
+        },
+        {
+          "on": "blockComplete",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 5
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "They start [b]to pull[/b] -",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "vowels-first",
+        "initialUnlockCount": 2
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 97,
+        "height": 300,
+        "scale": 0.87,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_fuera.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 1,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b24",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "tears",
+              "count": 1
+            }
+          ]
+        },
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "latido-bajo",
+              "mode": "layer",
+              "gain": 0.04
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "A tear wells up, you pretend you don't care and [b]vomit out linked letters[/b] until your body bears a new hole, cleaner and smoother than marble.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "vowels-first",
+        "initialUnlockCount": 1
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 180,
+        "scale": 1.07,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_vista.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 1,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b25",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "beforeLetterUnlock",
+          "once": true,
+          "word": "",
+          "target": "readingLast",
+          "holdMs": 1600,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "violentGeyser",
+              "count": 60,
+              "duration": 1700
+            },
+            {
+              "type": "sound",
+              "name": "geyser"
+            }
+          ],
+          "condition": {
+            "completedBlock": "tit-b10"
+          }
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "They open a question and without even finishing it, you've already answered it wholly with a [b]hydraulically[/b] propelled bile that makes [i]a hole on the wall[/i].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 5
+      }
+    },
+    {
+      "id": "tit-b26",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 320,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "lung",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "physicsObject",
+              "radius": 48,
+              "label": "lung"
+            },
+            {
+              "type": "sound",
+              "name": "drop"
+            }
+          ]
+        },
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "eye",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "physicsObject",
+              "radius": 36,
+              "label": "eye"
+            },
+            {
+              "type": "sound",
+              "name": "drop"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Another, and another, and another. You spit out a [b]lung[/b], an [b]eye[/b] pops out, you lose your balance.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 4
+      }
+    },
+    {
+      "id": "tit-b27",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "silence",
+              "mode": "crossfade",
+              "gain": 0
+            },
+            {
+              "type": "bgColor",
+              "color": "#bfb09a",
+              "duration": 2200
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[b]Everything slows down again.[/b]",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-b28",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You look at each other, and suddenly you're no longer [i]people[/i].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b29",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "sigilo",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[b]You're slices of memories.[/b]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 1
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 205,
+        "height": 300,
+        "scale": 0.79,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_mente2.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b30",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You know you're not going to do any kind of small talk.",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b31",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 2,
+          "toGrapheme": 39
+        },
+        {
+          "line": 0,
+          "direction": "left",
+          "starterCount": 2,
+          "fromGrapheme": 40
+        }
+      ],
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#b5a48c",
+              "duration": 2000
+            },
+            {
+              "type": "ambient",
+              "name": "tension",
+              "mode": "layer",
+              "gain": 0.03
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You remain stoic, spitting at each other, but now [b]the two of us at once[/b].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      }
+    },
+    {
+      "id": "tit-b32",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 627,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 2,
+          "fromRatio": 0,
+          "toRatio": 0.5
+        },
+        {
+          "line": 1,
+          "direction": "left",
+          "starterCount": 2,
+          "fromRatio": 0.5,
+          "toRatio": 1
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You have a lot in common; otherwise, it wouldn't have come to this. Empathy grows into a clumsy [i]intimacy[/i]; the air is thick with sweat and a hint of copper.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      }
+    },
+    {
+      "id": "tit-b33",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 490,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 1,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 2,
+          "direction": "left",
+          "starterCount": 2
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Suddenly you have fewer clothes on; you've drawn closer, and fluids fly through the air as you exchange them with mouths that open and close on their own in high-frequency cycles.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      },
+      "triggers": [
+        {
+          "on": "wordComplete",
+          "once": true,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "tears",
+              "count": 12,
+              "duration": 900,
+              "color": "#4a4a4a"
+            }
+          ],
+          "word": "fluids"
+        }
+      ]
+    },
+    {
+      "id": "tit-b34",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 629,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 1,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 2,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 3,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 4,
+          "direction": "right",
+          "starterCount": 2
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "There are external factors like commitments, bad memories, or emotional obstacles, but at this point the only ones that exist are, if anything, avoiding mucosal contact for fear of breaking something in your life for no good reason.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 410,
+        "height": 120,
+        "scale": 0.49,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_encriptado.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b35",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 370,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 0,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 1,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 2,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 2,
+          "direction": "right",
+          "starterCount": 2
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "However, you're already [censor][b]touching[/b] each other.[/censor] [censor]Caressing each other's hands, even.[/censor] Depending on the situation, this could be a problem, but there's little left that can stop this now.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 231,
+        "scale": 0.5,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_manos.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b36",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 690,
+        "height": 0
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 0,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 1,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 2,
+          "direction": "left",
+          "starterCount": 2
+        },
+        {
+          "line": 3,
+          "direction": "right",
+          "starterCount": 2
+        },
+        {
+          "line": 4,
+          "direction": "left",
+          "starterCount": 2
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "The conversation flows so fast and escalates so dizzyingly that we can barely process the number of needles stuck in our respective chests - [i]acupuncture[/i] that deactivated the nervous system of the extremities, secondary organs and the left hemisphere.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag"
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 264,
+        "height": 300,
+        "scale": 0.43,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_rodilla.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 1,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b37",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 300,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#ac9c82",
+              "duration": 1800
+            },
+            {
+              "type": "ambient",
+              "name": "latido-alto",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "At this point you're not talking to each other; you're in a deep hug while tumbling down a hill, spinning on your own axes with your hearts - which long ago melted into an amorphous mass of tendons, valves, and fibers - acting as the anchor of your frenetic rotation.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "spiral",
+        "initialUnlockCount": 1
+      },
+      "clipShape": {
+        "type": "circle",
+        "svgOpacity": 0.2,
+        "scale": 1,
+        "rotation": 0,
+        "clipOverflow": false
+      }
+    },
+    {
+      "id": "tit-b38",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 297,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "The outside no longer matters; it scrapes and stumbles, spinning several times per second against the rough asphalt of that park, coming loose as a raw tangle full of dirt and pus. Eventually, the surface - increasingly spherical - slowly was becoming pure,  smooth, raw flesh.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "spiral-center",
+        "initialUnlockCount": 2
+      },
+      "clipShape": {
+        "type": "circle",
+        "svgOpacity": 0.2,
+        "scale": 1,
+        "rotation": 0,
+        "clipOverflow": false
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#ac9c82",
+              "duration": 1800
+            },
+            {
+              "type": "ambient",
+              "name": "latido-alto",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tit-b39",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.1,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#a39077",
+              "duration": 1200
+            },
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 20
+            }
+          ]
+        },
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 10,
+              "duration": 1400,
+              "color": "#7e7e7e"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "linear",
+        "fontFamily": "EB Garamond",
+        "color": "#7e7e7e",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#000000",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#ba3636",
+              "alpha": 1,
+              "position": 55
+            }
+          ]
+        }
+      },
+      "text": "We became. [b]Raw.[/b] [color=#b74040][b]Flesh.[/b][/color]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 1
+      }
+    },
+    {
+      "id": "tit-preg1",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 0.85,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#9e8e74",
+              "duration": 1400
+            },
+            {
+              "type": "ambient",
+              "name": "spiral",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#707070",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Questions, questions, questions,",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-preg2",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#6e6e6e",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "questions, questions,",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 4
+      }
+    },
+    {
+      "id": "tit-preg3",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.3,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#5c5c5c",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "QUESTIONS, QUESTIONS,",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 5
+      }
+    },
+    {
+      "id": "tit-preg4",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.6,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "QUESTIONS, QUESTIONS,",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 5
+      }
+    },
+    {
+      "id": "tit-preg5",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.9,
+        "width": 660,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#967d62",
+              "duration": 1000
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#1a1a1a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "QUESTIONS, QUESTIONS, QUESTIONS.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 5
+      }
+    },
+    {
+      "id": "tit-b45",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 247,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#a08870",
+              "duration": 1600
+            }
+          ]
+        },
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "on": "letterUnlock",
+          "once": true,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 3,
+              "duration": 1200,
+              "color": "#946161"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#946161",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Why did it have to be this way? I didn't need to meet someone like you. But now I want more. [color=#b74040][b]I need more.[/b][/color] We start pressing our faces together while grabbing the parts of our body that still remains.",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "random-walk",
+        "initialUnlockCount": 4
+      }
+    },
+    {
+      "id": "tit-tq",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.4,
+        "width": 238,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#c4aa92",
+              "duration": 1800
+            },
+            {
+              "type": "ambient",
+              "name": "latido-bajo",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#1a1a1a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color], [color=#b74040]I LOVE YOU[/color].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "spiral",
+        "initialUnlockCount": 7
+      }
+    },
+    {
+      "id": "tit-b47",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 592,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#cdb8a2",
+              "duration": 2400
+            },
+            {
+              "type": "ambient",
+              "name": "sigilo",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Suddenly, the hill ends. The rhythm slows down, there isn't much left to say, and everything your body could physically feel, you felt at least a dozen times. [b]You are now raw flesh[/b].",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "random-walk",
+        "initialUnlockCount": 3
+      },
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 270,
+        "height": 300,
+        "scale": 1.13,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_masa.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "tit-b48",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "And I'll say more: nothing will ever be able to tear you apart even if you try, and few people will understand what happened, no matter how hard you try to explain.",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 297,
+        "scale": 0.53,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_corazones.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "outward",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b49",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "[i]Snuggled up, sitting on something floating, asleep in the moonlight.[/i]",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 163,
+        "scale": 0.78,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_hamaca.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 2,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "mode": "zigzag",
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b50",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 585,
+        "height": 0
+      },
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "You tell each other it was incredible, that you've never connected with someone like that before, and that you'll need some time to process it all. That you'll see each other [i]next time[/i].",
+      "attachment": {
+        "strokes": [],
+        "type": "lineart",
+        "width": 300,
+        "height": 228,
+        "scale": 1.27,
+        "opacity": 1,
+        "gap": 16,
+        "opticalOffsetY": 0,
+        "src": "illustrations/tirita/t_cara.svg",
+        "svgOpacity": 0.15,
+        "strokeResistance": 12,
+        "roughPreset": "hand",
+        "lineQuantity": 30,
+        "linePrecision": 1,
+        "initialPeeled": 1,
+        "lineWidth": 3,
+        "x": 0,
+        "y": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "random-walk",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-b51",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 629,
+        "height": 0
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#d8c4b0",
+              "duration": 2000
+            }
+          ]
+        },
+        {
+          "on": "beforeLetterUnlock",
+          "once": true,
+          "word": "",
+          "target": "readingLast",
+          "holdMs": 2200,
+          "actions": [
+            {
+              "type": "ambient",
+              "name": "sigilo",
+              "mode": "crossfade"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "color": "#4a4a4a",
+        "opacity": 1,
+        "variationStrength": 0.15,
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        }
+      },
+      "text": "Confidant? Future travel companion? A possible something? A possible partner? A possible marriage? A possible life? A possible -",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "mode": "linear",
+        "initialUnlockCount": 3
+      }
+    },
+    {
+      "id": "tit-b52",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#1a1a1a",
+              "duration": 1800
+            },
+            {
+              "type": "textColor",
+              "color": "#f0ece3"
+            }
+          ]
+        },
+        {
+          "on": "beforeLetterUnlock",
+          "target": "readingLast",
+          "holdMs": 3000,
+          "actions": [
+            {
+              "type": "sound",
+              "name": "crack"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      },
+      "text": "[b]We have to stop talking.[/b]",
+      "peel": {
+        "fromBeginning": true,
+        "initialUnlockCount": 2
+      }
+    },
+    {
+      "id": "tit-b53",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660
+      },
+      "linkButton": {
+        "text": "+",
+        "url": "https://gustavochico.com"
+      },
+      "triggers": [
+        {
+          "on": "blockAppear",
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#f5f0e8",
+              "duration": 3000
+            },
+            {
+              "type": "textColor",
+              "color": "#7e7e7e"
+            }
+          ]
+        },
+        {
+          "on": "beforeLetterUnlock",
+          "target": "readingLast",
+          "holdMs": 2000,
+          "condition": {
+            "completedBlock": "tit-b10"
+          },
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "violentGeyser",
+              "count": 60,
+              "duration": 2000
+            },
+            {
+              "type": "sound",
+              "name": "geyser"
+            }
+          ]
+        }
+      ],
+      "style": {
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      },
+      "text": "Gustavo Chico, 2026.",
+      "peel": {
+        "fromBeginning": true,
+        "initialUnlockCount": 1
+      }
+    }
+  ],
+  "mobileBlocks": [],
+  "forceFields": [
+    {
+      "id": "magnet-mp72xj7v",
+      "type": "magnetic",
+      "enabled": true,
+      "global": false,
+      "autoWake": true,
+      "mode": "attract",
+      "active": "hover",
+      "blocks": [
+        "tit-b02",
+        "tit-b03"
+      ],
+      "x": 0,
+      "y": 80,
+      "width": 760,
+      "height": 240,
+      "direction": "right",
+      "cx": 660,
+      "cy": 690,
+      "radius": 340,
+      "strength": 0.22,
+      "feather": 130,
+      "lockedStrength": 0.95,
+      "gust": 0
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "peeltype",
+  "version": "1.0.0",
+  "description": "Experimental interactive typography framework for peelable narrative text.",
+  "license": "CC-BY-NC-4.0",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

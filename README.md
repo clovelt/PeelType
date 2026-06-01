@@ -9,7 +9,7 @@ It began as the engine for **[Peel After Reading](https://clovelt.github.io/Peel
 Now it has 25+ scenes showcasing some of its potential - the editor is included, so you can remix or make your own scenes and ship them as your own interactive work.
 
 <h1 align="center">
-  <a href="https://clovelt.github.io/PeelType/tirita.html">PLAY THE DEMO</a>
+  <a href="https://clovelt.github.io/PeelType/tirita.html">▶️ PLAY HERE (PC/Mobile)</a> / <a href="https://youtu.be/m9ygPuZ19MY">Watch video showcase</a>
 </h1>
 
 <p align="center">
@@ -20,11 +20,11 @@ Now it has 25+ scenes showcasing some of its potential - the editor is included,
 
 ## What Is It For?
 
-- Peel text letter by letter, by word structure, by syllable, by vowels/consonants, through narrative-specific ordering...
+- Peel text letter by letter, by word structure, syllable, vowels/consonants, through narrative or triggers...
 - Build your own scenes in the browser with a live editor.
 - Write rich text with BBCode-style tags for color, size, gradients, shake, float, links, no-peel sections...
-- Add force fields, particles, sounds, ambient changes, timed buttons, branching flags, reveal/hide events, and physics objects.
-- Import SVG line art and make its strokes peelable.
+- Add force fields, particles, SFX, ambient changes, timed buttons, branching, reveal/hide events, physics objects...
+- Import SVG line art and make its strokes peelable, or conjoined as compound objects.
 - Constrain paragraphs to shapes or draw custom paths for text.
 - Save scene JSON and publish it as a standalone interactive work.
 
@@ -42,7 +42,7 @@ Force fields can pull, repel, orbit, or disturb letters while the player peel th
   <img src="docs/media/3_forces.gif" alt="Force fields affecting peelable letters" width="560">
 </p>
 
-Letters can move through custom paths and loops, so paragraphs can behave like drawn objects instead of static lines.
+Letters can move through custom paths, so paragraphs can behave like drawn objects instead of regular lines.
 
 <p align="center">
   <img src="docs/media/3_loop.gif" alt="Looping drawn text path" width="520">

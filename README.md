@@ -10,9 +10,9 @@ It began as the engine for **Pill After Reading**, an interactive personal story
   </a>
 </p>
 
-<p align="center">
-  <a href="https://clovelt.github.io/PeelType/tirita.html"><strong style="font-size: 28px;">PLAY THE DEMO</strong></a>
-</p>
+<h1 align="center">
+  <a href="https://clovelt.github.io/PeelType/tirita.html">PLAY THE DEMO</a>
+</h1>
 
 ## What It Does
 

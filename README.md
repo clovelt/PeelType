@@ -1,8 +1,12 @@
 # PeelType
 
-PeelType is a tiny framework for experimental interactive typography. It treats text like physical material: letters can be peeled, pulled, censored, shaken, tethered, attracted by force fields, constrained into shapes, and used as narrative triggers.
+PeelType is an editor and framework for experimental interactive typography.
 
-It began as the engine for **Peel After Reading**, an interactive personal story about peeling words away to advance through a poem. The editor is included, so you can make your own scenes and ship them as your own non-commercial interactive work with attribution.
+It treats text like physical material: letters can be peeled, pulled, shaken, tethered, attracted by force fields, constrained into shapes and used as narrative triggers.
+
+It began as the engine for **[Peel After Reading](https://clovelt.github.io/PeelType/tirita.html?tirita)**, a personal interactive story about meeting someone deeply.
+
+Now it has 25+ scenes showcasing some of its potential - the editor is included, so you can remix or make your own scenes and ship them as your own interactive work.
 
 <h1 align="center">
   <a href="https://clovelt.github.io/PeelType/tirita.html">PLAY THE DEMO</a>
@@ -14,15 +18,25 @@ It began as the engine for **Peel After Reading**, an interactive personal story
   </a>
 </p>
 
+## What Is It For?
+
+- Peel text letter by letter, by word structure, by syllable, by vowels/consonants, through narrative-specific ordering...
+- Build your own scenes in the browser with a live editor.
+- Write rich text with BBCode-style tags for color, size, gradients, shake, float, links, no-peel sections...
+- Add force fields, particles, sounds, ambient changes, timed buttons, branching flags, reveal/hide events, and physics objects.
+- Import SVG line art and make its strokes peelable.
+- Constrain paragraphs to shapes or draw custom paths for text.
+- Save scene JSON and publish it as a standalone interactive work.
+
 ## Visual Mechanics
 
-PeelType works best when the interaction changes the sentence itself. You can peel away censorship instead of peeling the words, revealing text as a physical action.
+PeelType has around 30 distinct mechanics built around interacting with text - like the [censor] tag, which lets you obscure text and makes you peel the overlay instead of the letters themselves.
 
 <p align="center">
   <img src="docs/media/censor.gif" alt="Peeling censorship from text" width="560">
 </p>
 
-Force fields can pull, repel, orbit, or disturb letters while the player peels them.
+Force fields can pull, repel, orbit, or disturb letters while the player peel them.
 
 <p align="center">
   <img src="docs/media/3_forces.gif" alt="Force fields affecting peelable letters" width="560">
@@ -34,7 +48,7 @@ Letters can move through custom paths and loops, so paragraphs can behave like d
   <img src="docs/media/3_loop.gif" alt="Looping drawn text path" width="520">
 </p>
 
-Simple motion systems let letters orbit or float as the paragraph comes apart.
+Motion systems let letters orbit or float, given by triggers or targetting specific blocks.
 
 <p align="center">
   <img src="docs/media/orbit.gif" alt="Orbiting loose letters" width="560">
@@ -46,27 +60,19 @@ Constraints can tether letters and blocks together, making text behave like a co
   <img src="docs/media/constraints.gif" alt="Constrained peelable text" width="560">
 </p>
 
-## What It Does
-
-- Peel text letter by letter, by word structure, by syllable, by vowels/consonants, or through narrative-specific ordering.
-- Write formatted text with BBCode-style tags for color, size, gradients, shake, float, links, no-peel sections, and more.
-- Build scenes in the browser with a live editor.
-- Add force fields, particles, sounds, ambient changes, timed buttons, branching flags, reveal/hide events, and physics objects.
-- Import SVG line art and make its strokes peelable.
-- Constrain paragraphs to shapes or draw custom paths for text.
-- Save scene JSON and include it in the project as a standalone interactive work.
-
-Selective peel modes can turn grammar, syllables, vowels, consonants, and punctuation into part of the interaction.
+Selective peel modes can let you peel vowels, consonants, syllables (English & Spanish supported) and punctuation specifically.
 
 <p align="center">
   <img src="docs/media/selective.gif" alt="Selective peel modes" width="560">
 </p>
 
-Fade and meaning-shift scenes can reveal the emotional logic hidden inside a paragraph.
+Fade letters ahead to build a specific narrative for your story, or add narrative branching to build your own choose-your-own-adventure games.
 
 <p align="center">
   <img src="docs/media/fade.gif" alt="Meaning shift and fade reveal" width="520">
 </p>
+
+Check out the rest of the examples for much, much more ways you can use interactive text and apply it to your own stories.
 
 ## Install
 
@@ -146,7 +152,7 @@ The panel view exposes the lower-level controls for scenes, text blocks, events,
   <img src="docs/media/editorPanel.gif" alt="Editor panel" width="520">
 </p>
 
-The spoiler overview is useful if you want to study the built-in story as a technical reference after playing it.
+You can scroll through your story and the editor will remember your viewport position so you can live edit or refresh the physics.
 
 <p align="center">
   <img src="docs/media/peel_after_reading_spoilerOverview.gif" alt="Peel After Reading technical spoiler overview" width="560">
@@ -169,19 +175,17 @@ The simplest workflow is:
 
 You can use PeelType to publish your own non-commercial interactive story, poem, essay, typographic toy, or visual-novel experiment. Please keep attribution to the original framework and link back to this repository.
 
-## Authoring Ideas
+## Potential
 
 PeelType is especially good for narrative mechanics where the interaction is part of the sentence:
 
 - Peel censorship away instead of peeling the text itself.
 - Reveal intrusive thoughts one loose letter at a time.
 - Change a sentence's meaning by removing selected words.
-- Pull syllables, punctuation, first letters, or vowels before the rest.
+- Pull syllables, punctuation, first letters, or vowels.
 - Use force fields as metaphors for attraction, repulsion, wind, pressure, or orbit.
 - Attach illustrations to words and release them as physics objects.
 - Create conditional paths with flags and timed choices.
-
-Another gameplay excerpt shows the main story's slower, more narrative side.
 
 <p align="center">
   <img src="docs/media/peel_after_reading_gameplay_pt2.gif" alt="Peel After Reading gameplay excerpt" width="560">
@@ -243,6 +247,8 @@ See [LICENSE](LICENSE) for the full license text.
 
 ## Credits
 
-Created by Jose Gustavo Chico.
+Created by **[Gustavo Chico](https://gustavochico.com/)**.
 
-The censorship-peeling and meaning-shift interaction ideas came from StaffWombat / Josh during development conversations. Please credit the framework if you fork it, remix it, or publish a piece made with it. I would love to see what people make.
+The censorship-peeling and meaning-shift interaction ideas came from [StuffedWombat](stuffedwomb.at).
+
+Please credit the framework if you fork it, remix it, or publish a piece made with it, and [send it to me](https://gustavochico.com/) if you'd like. I would love to see what you make.

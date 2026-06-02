@@ -418,7 +418,7 @@
         "delayMs": 4,
         "text": "→",
         "action": "addText",
-        "addText": "Del poemario 'anuncio', todavía en construcción.",
+        "addText": "Del poemario 'anuncio'.",
         "spawnAt": "afterNoPeel"
       }
     }

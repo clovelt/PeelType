@@ -3977,7 +3977,9 @@ function updateBehaviorVisibility() {
   const blockStart = mobileRuntime ? cachedVisibleBlockWindow.start : 0;
   const blockEnd = (mobileRuntime && !isEditor) ? cachedVisibleBlockWindow.end : blockRanges.length;
   const currentBlockIdx = getFirstIncompleteBlock();
-  const behaviorStart = Math.min(blockStart, currentBlockIdx);
+  const behaviorStart = isCompact && !isEditor
+    ? Math.max(0, Math.min(blockStart, currentBlockIdx) - 1)
+    : Math.min(blockStart, currentBlockIdx);
   const behaviorEnd = Math.max(blockEnd, currentBlockIdx + 1);
   const layerInfo = computeLayerInfo();
   for (let blockIdx = behaviorStart; blockIdx < behaviorEnd; blockIdx++) {

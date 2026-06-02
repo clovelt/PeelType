@@ -1,0 +1,780 @@
+{
+  "id": "laberinto",
+  "version": 1,
+  "title": "laberinto",
+  "editor": {
+    "enabled": true
+  },
+  "style": {
+    "font": "20px \"EB Garamond\"",
+    "lineHeight": 30,
+    "color": "#d8cdb8",
+    "backgroundColor": "#171a1f"
+  },
+  "layout": {
+    "type": "paragraph",
+    "blockGap": 40,
+    "margin": 20,
+    "topMargin": 72,
+    "bottomMargin": 96
+  },
+  "peel": {
+    "fromBeginning": true,
+    "zigzag": false,
+    "mode": "linear",
+    "initialUnlockCount": 1,
+    "unlockThreshold": 1
+  },
+  "physics": {
+    "constraintDistance": 1.2,
+    "iterations": 12,
+    "damping": 0.97,
+    "gravity": 0.12,
+    "gravityOn": true
+  },
+  "optimization": {
+    "dynamicLetterLimitDesktop": 600,
+    "dynamicLetterLimitMobile": 160,
+    "dynamicLetterLimitNarrow": 200,
+    "initialPeelActiveBlocks": 4
+  },
+  "behaviors": {
+    "fadeReveal": {
+      "enabled": false,
+      "visibleLetters": 24,
+      "fadeSteps": 8
+    },
+    "stepParagraphs": {
+      "enabled": false,
+      "visibleCount": 4,
+      "compactFlow": false,
+      "advanceDelayMs": 0,
+      "perBlockAdvanceDelayMs": {},
+      "perBlockVisibleCount": {}
+    }
+  },
+  "blocks": [
+    {
+      "id": "laberinto-1",
+      "text": "las paredes recuerdan tu nombre al revés y lo escupen contra el suelo mojado de los espejos",
+      "drawPath": {
+        "enabled": true,
+        "anchors": [
+          {
+            "x": 37,
+            "y": 53,
+            "in": {
+              "x": 0,
+              "y": 0
+            },
+            "out": {
+              "x": 100,
+              "y": 0
+            }
+          },
+          {
+            "x": 591,
+            "y": 53,
+            "in": {
+              "x": -100,
+              "y": -22
+            },
+            "out": {
+              "x": 100,
+              "y": 22
+            }
+          },
+          {
+            "x": 592,
+            "y": 173,
+            "in": {
+              "x": 100,
+              "y": -22
+            },
+            "out": {
+              "x": -100,
+              "y": 22
+            }
+          },
+          {
+            "x": 38,
+            "y": 173,
+            "in": {
+              "x": 94,
+              "y": -22
+            },
+            "out": {
+              "x": -94,
+              "y": 22
+            }
+          },
+          {
+            "x": 69,
+            "y": 293,
+            "in": {
+              "x": -105,
+              "y": -22
+            },
+            "out": {
+              "x": 105,
+              "y": 22
+            }
+          },
+          {
+            "x": 623,
+            "y": 293,
+            "in": {
+              "x": -98,
+              "y": -22
+            },
+            "out": {
+              "x": 98,
+              "y": 22
+            }
+          },
+          {
+            "x": 614,
+            "y": 413,
+            "in": {
+              "x": 101,
+              "y": -22
+            },
+            "out": {
+              "x": -101,
+              "y": 22
+            }
+          },
+          {
+            "x": 60,
+            "y": 413,
+            "in": {
+              "x": 101,
+              "y": -22
+            },
+            "out": {
+              "x": -101,
+              "y": 22
+            }
+          },
+          {
+            "x": 54,
+            "y": 533,
+            "in": {
+              "x": -99,
+              "y": -22
+            },
+            "out": {
+              "x": 99,
+              "y": 22
+            }
+          },
+          {
+            "x": 608,
+            "y": 533,
+            "in": {
+              "x": -99,
+              "y": -22
+            },
+            "out": {
+              "x": 99,
+              "y": 22
+            }
+          },
+          {
+            "x": 604,
+            "y": 653,
+            "in": {
+              "x": 100,
+              "y": -22
+            },
+            "out": {
+              "x": -100,
+              "y": 22
+            }
+          },
+          {
+            "x": 50,
+            "y": 653,
+            "in": {
+              "x": 100,
+              "y": 0
+            },
+            "out": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "spacing": 2,
+        "angleMix": 1,
+        "startOffset": 0
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "mode": "linear",
+        "persistState": false
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 3
+        }
+      ],
+      "style": {
+        "color": "#d8cdb8",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      }
+    },
+    {
+      "id": "laberinto-2",
+      "text": "cuenta los pasos que no diste y reparte la sal entre las bocas que duermen bajo la piedra",
+      "drawPath": {
+        "enabled": true,
+        "anchors": [
+          {
+            "x": 52,
+            "y": 83,
+            "in": {
+              "x": 0,
+              "y": 0
+            },
+            "out": {
+              "x": 100,
+              "y": 0
+            }
+          },
+          {
+            "x": 606,
+            "y": 83,
+            "in": {
+              "x": -98,
+              "y": -22
+            },
+            "out": {
+              "x": 98,
+              "y": 22
+            }
+          },
+          {
+            "x": 598,
+            "y": 203,
+            "in": {
+              "x": 101,
+              "y": -22
+            },
+            "out": {
+              "x": -101,
+              "y": 22
+            }
+          },
+          {
+            "x": 44,
+            "y": 203,
+            "in": {
+              "x": 98,
+              "y": -22
+            },
+            "out": {
+              "x": -98,
+              "y": 22
+            }
+          },
+          {
+            "x": 55,
+            "y": 323,
+            "in": {
+              "x": -102,
+              "y": -22
+            },
+            "out": {
+              "x": 102,
+              "y": 22
+            }
+          },
+          {
+            "x": 609,
+            "y": 323,
+            "in": {
+              "x": -101,
+              "y": -22
+            },
+            "out": {
+              "x": 101,
+              "y": 22
+            }
+          },
+          {
+            "x": 615,
+            "y": 443,
+            "in": {
+              "x": 99,
+              "y": -22
+            },
+            "out": {
+              "x": -99,
+              "y": 22
+            }
+          },
+          {
+            "x": 61,
+            "y": 443,
+            "in": {
+              "x": 103,
+              "y": -22
+            },
+            "out": {
+              "x": -103,
+              "y": 22
+            }
+          },
+          {
+            "x": 45,
+            "y": 563,
+            "in": {
+              "x": -97,
+              "y": -22
+            },
+            "out": {
+              "x": 97,
+              "y": 22
+            }
+          },
+          {
+            "x": 599,
+            "y": 563,
+            "in": {
+              "x": -99,
+              "y": -22
+            },
+            "out": {
+              "x": 99,
+              "y": 22
+            }
+          },
+          {
+            "x": 596,
+            "y": 683,
+            "in": {
+              "x": 100,
+              "y": -22
+            },
+            "out": {
+              "x": -100,
+              "y": 22
+            }
+          },
+          {
+            "x": 42,
+            "y": 683,
+            "in": {
+              "x": 100,
+              "y": 0
+            },
+            "out": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "spacing": 2,
+        "angleMix": 1,
+        "startOffset": 0
+      },
+      "transform": {
+        "x": 0,
+        "y": -813,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "mode": "linear",
+        "persistState": false
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 3
+        }
+      ],
+      "style": {
+        "color": "#d8cdb8",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      }
+    },
+    {
+      "id": "laberinto-3",
+      "text": "sigue mi voz y no sueltes el hilo la salida no está donde miras sino donde por fin te atreves a respirar",
+      "drawPath": {
+        "enabled": true,
+        "anchors": [
+          {
+            "x": 62,
+            "y": 113,
+            "in": {
+              "x": 0,
+              "y": 0
+            },
+            "out": {
+              "x": 100,
+              "y": 0
+            }
+          },
+          {
+            "x": 616,
+            "y": 113,
+            "in": {
+              "x": -98,
+              "y": -22
+            },
+            "out": {
+              "x": 98,
+              "y": 22
+            }
+          },
+          {
+            "x": 608,
+            "y": 233,
+            "in": {
+              "x": 101,
+              "y": -22
+            },
+            "out": {
+              "x": -101,
+              "y": 22
+            }
+          },
+          {
+            "x": 54,
+            "y": 233,
+            "in": {
+              "x": 102,
+              "y": -22
+            },
+            "out": {
+              "x": -102,
+              "y": 22
+            }
+          },
+          {
+            "x": 43,
+            "y": 353,
+            "in": {
+              "x": -98,
+              "y": -22
+            },
+            "out": {
+              "x": 98,
+              "y": 22
+            }
+          },
+          {
+            "x": 597,
+            "y": 353,
+            "in": {
+              "x": -101,
+              "y": -22
+            },
+            "out": {
+              "x": 101,
+              "y": 22
+            }
+          },
+          {
+            "x": 603,
+            "y": 473,
+            "in": {
+              "x": 99,
+              "y": -22
+            },
+            "out": {
+              "x": -99,
+              "y": 22
+            }
+          },
+          {
+            "x": 49,
+            "y": 473,
+            "in": {
+              "x": 100,
+              "y": -22
+            },
+            "out": {
+              "x": -100,
+              "y": 22
+            }
+          },
+          {
+            "x": 46,
+            "y": 593,
+            "in": {
+              "x": -99,
+              "y": -22
+            },
+            "out": {
+              "x": 99,
+              "y": 22
+            }
+          },
+          {
+            "x": 600,
+            "y": 593,
+            "in": {
+              "x": -101,
+              "y": -22
+            },
+            "out": {
+              "x": 101,
+              "y": 22
+            }
+          },
+          {
+            "x": 608,
+            "y": 713,
+            "in": {
+              "x": 98,
+              "y": -22
+            },
+            "out": {
+              "x": -98,
+              "y": 22
+            }
+          },
+          {
+            "x": 54,
+            "y": 713,
+            "in": {
+              "x": 100,
+              "y": 0
+            },
+            "out": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "spacing": 2,
+        "angleMix": 1,
+        "startOffset": 0
+      },
+      "transform": {
+        "x": 0,
+        "y": -883,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "mode": "linear",
+        "persistState": false
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 3
+        }
+      ],
+      "style": {
+        "color": "#d8cdb8",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      }
+    },
+    {
+      "id": "laberinto-4",
+      "text": "el toro mastica un mapa de venas y promete que la noche cabe entera dentro de un dedal",
+      "drawPath": {
+        "enabled": true,
+        "anchors": [
+          {
+            "x": 46,
+            "y": 143,
+            "in": {
+              "x": 0,
+              "y": 0
+            },
+            "out": {
+              "x": 100,
+              "y": 0
+            }
+          },
+          {
+            "x": 600,
+            "y": 143,
+            "in": {
+              "x": -104,
+              "y": -22
+            },
+            "out": {
+              "x": 104,
+              "y": 22
+            }
+          },
+          {
+            "x": 623,
+            "y": 263,
+            "in": {
+              "x": 96,
+              "y": -22
+            },
+            "out": {
+              "x": -96,
+              "y": 22
+            }
+          },
+          {
+            "x": 69,
+            "y": 263,
+            "in": {
+              "x": 104,
+              "y": -22
+            },
+            "out": {
+              "x": -104,
+              "y": 22
+            }
+          },
+          {
+            "x": 45,
+            "y": 383,
+            "in": {
+              "x": -95,
+              "y": -22
+            },
+            "out": {
+              "x": 95,
+              "y": 22
+            }
+          },
+          {
+            "x": 599,
+            "y": 383,
+            "in": {
+              "x": -103,
+              "y": -22
+            },
+            "out": {
+              "x": 104,
+              "y": 22
+            }
+          },
+          {
+            "x": 620,
+            "y": 503,
+            "in": {
+              "x": 96,
+              "y": -22
+            },
+            "out": {
+              "x": -96,
+              "y": 22
+            }
+          },
+          {
+            "x": 66,
+            "y": 503,
+            "in": {
+              "x": 104,
+              "y": -22
+            },
+            "out": {
+              "x": -104,
+              "y": 22
+            }
+          },
+          {
+            "x": 43,
+            "y": 623,
+            "in": {
+              "x": -96,
+              "y": -22
+            },
+            "out": {
+              "x": 96,
+              "y": 22
+            }
+          },
+          {
+            "x": 597,
+            "y": 623,
+            "in": {
+              "x": -99,
+              "y": -22
+            },
+            "out": {
+              "x": 99,
+              "y": 22
+            }
+          },
+          {
+            "x": 595,
+            "y": 743,
+            "in": {
+              "x": 100,
+              "y": -22
+            },
+            "out": {
+              "x": -100,
+              "y": 22
+            }
+          },
+          {
+            "x": 41,
+            "y": 743,
+            "in": {
+              "x": 100,
+              "y": 0
+            },
+            "out": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        ],
+        "spacing": 2,
+        "angleMix": 1,
+        "startOffset": 0
+      },
+      "transform": {
+        "x": 0,
+        "y": -953,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "peel": {
+        "fromBeginning": true,
+        "mode": "linear",
+        "persistState": false
+      },
+      "peelPoints": [
+        {
+          "line": 0,
+          "direction": "right",
+          "starterCount": 3
+        }
+      ],
+      "style": {
+        "color": "#d8cdb8",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond"
+      }
+    }
+  ],
+  "mobileBlocks": [],
+  "forceFields": []
+}

@@ -3491,9 +3491,12 @@
         "scale": 1,
         "width": 660
       },
-      "linkButton": {
+      "timedButton": {
         "text": "+",
-        "url": "https://gustavochico.com"
+        "action": "url",
+        "url": "https://gustavochico.com",
+        "spawnAt": "afterAll",
+        "delayMs": 1500
       },
       "triggers": [
         {

@@ -1179,6 +1179,70 @@ export function buildExampleScenes(defaultPieceConfig) {
       }
     },
 
+    // ── Layers / matrioska despellejada ──────────────────────────────────────────────
+    // A single round block of text that, peeled away, reveals another beneath it,
+    // and another, and another: piel → carne → memoria → explicación. All four blocks
+    // share layer.group 'cebolla' and stack on the same spot (depth 0 is the surface).
+    // The Layers behavior keeps only the active layer interactive and bleeds the next
+    // one through as the surface comes off. The 'memoria' layer has two peel points and
+    // [nopeel] words, so peeling it only opens parts of what lies underneath.
+    matrioskaPeel: {
+      label: 'Layers (matrioska)',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-matrioska',
+        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 96, blockGap: 56, bottomMargin: 160 },
+        physics: { ...structuredClone(defaultPieceConfig.physics), gravity: 0.06 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false },
+          layers: { enabled: true, bleedThrough: true, hideCompleted: true, revealOpacity: 1 }
+        },
+        blocks: [
+          {
+            id: 'capa-piel',
+            text: 'Esto es la piel: lo que enseñas, lo que se deja leer de un vistazo, la frase educada que recubre todo lo demás. Tira de ella en espiral y empezará a desprenderse.',
+            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
+            clipShape: { type: 'circle', svgOpacity: 0 },
+            layer: { group: 'cebolla', depth: 0 },
+            peel: { fromBeginning: true, initialUnlockCount: 5, mode: 'spiral' },
+            hint: { enabled: true, peelPointIndex: 0, appearMs: 2600, textMs: 7000, text: 'pela la piel' },
+            style: { color: '#c2a08a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'capa-carne',
+            text: 'Debajo está la carne: lo que de verdad sentías mientras decías lo otro, todavía caliente, todavía sin ordenar en palabras presentables.',
+            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
+            clipShape: { type: 'circle', svgOpacity: 0 },
+            layer: { group: 'cebolla', depth: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'spiral-center' },
+            style: { color: '#9c5450', colorMode: 'variation', variationStrength: 0.1, fontFamily: 'Georgia' }
+          },
+          {
+            id: 'capa-memoria',
+            text: 'Más adentro vive la [nopeel]memoria[/nopeel]: imágenes sueltas que sostienen la frase entera. Algunas se dejan quitar; [nopeel]otras se quedan clavadas[/nopeel] y solo dejan ver un trozo de lo que hay todavía más abajo.',
+            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
+            clipShape: { type: 'circle', svgOpacity: 0 },
+            layer: { group: 'cebolla', depth: 2, revealOpacity: 0.92 },
+            peelPoints: [
+              { fromRatio: 0, toRatio: 0.5, direction: 'right', starterCount: 2, mode: 'linear' },
+              { fromRatio: 0.5, toRatio: 1, direction: 'left', starterCount: 2, mode: 'linear' }
+            ],
+            style: { color: '#5d3a55', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'capa-explicacion',
+            text: 'Y al fondo, la explicación: la razón pequeña y sin adorno por la que todo lo anterior existía. No es más profunda ni más sabia; solo es la que estaba primero.',
+            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
+            clipShape: { type: 'circle', svgOpacity: 0 },
+            layer: { group: 'cebolla', depth: 3 },
+            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'spiral' },
+            style: { color: '#2f4858', colorMode: 'solid', fontFamily: 'Georgia' }
+          }
+        ]
+      }
+    },
+
     // ── Conditional narrative: branching story based on which block you peel first ─────
     // Two choice blocks (A and B) sit side by side. Hidden ending blocks (C and D)
     // are revealed by blockComplete triggers that check whether the rival block

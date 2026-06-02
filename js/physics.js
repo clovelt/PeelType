@@ -699,7 +699,6 @@ export function render(now) {
   state.updateFrameState();
   state.positionAttachments();
   state.syncPeelStrokeOrigins(false);
-  state.positionInlineLinkButtons();
   state.positionTimedButtons();
   state.positionClipShapeFrames();
   state.positionHint();
@@ -745,7 +744,6 @@ export function render(now) {
   state.updateBehaviorVisibility();
   state.positionAttachments();
   state.syncPeelStrokeOrigins(false);
-  state.positionInlineLinkButtons();
   state.positionTimedButtons();
   state.positionClipShapeFrames();
   renderEffects();

@@ -5,8 +5,13 @@
     "src": "./js/peel-after-reading.json"
   },
   {
-    "key": "me-cubre-un-caballo-negro",
-    "label": "me cubre un caballo negro",
-    "src": "./js/me-cubre-un-caballo-negro.json"
+    "key": "me-cubre-un-perro-negro",
+    "label": "me cubre un perro negro",
+    "src": "./js/me-cubre-un-perro-negro.json"
+  },
+  {
+    "key": "laberinto",
+    "label": "laberinto",
+    "src": "./js/laberinto.json"
   }
 ]

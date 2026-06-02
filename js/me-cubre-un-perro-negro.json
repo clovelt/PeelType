@@ -1,5 +1,5 @@
 {
-  "id": "me-cubre-un-caballo-negro",
+  "id": "me-cubre-un-perro-negro",
   "version": 32,
   "title": "tirar después de leer",
   "editor": {
@@ -59,7 +59,7 @@
   "blocks": [
     {
       "id": "block-mpvepls1",
-      "text": "me cubre un caballo negro",
+      "text": "me cubre un perro negro",
       "peel": {
         "fromBeginning": true,
         "persistState": false,

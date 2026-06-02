@@ -144,7 +144,6 @@ const defaultState = {
   continueSceneScrollRestore: null,
   positionAttachments: null,
   syncPeelStrokeOrigins: null,
-  positionInlineLinkButtons: null,
   positionTimedButtons: null,
   positionClipShapeFrames: null,
   positionHint: null,

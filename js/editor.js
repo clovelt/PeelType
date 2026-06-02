@@ -176,6 +176,16 @@ const bulkStarterMin = document.getElementById('bulkStarterMin');
 const bulkStarterMax = document.getElementById('bulkStarterMax');
 const bulkImportReplace = document.getElementById('bulkImportReplace');
 const bulkImportAppend = document.getElementById('bulkImportAppend');
+const labTrueText = document.getElementById('labTrueText');
+const labDecoyText = document.getElementById('labDecoyText');
+const labThreads = document.getElementById('labThreads');
+const labRows = document.getElementById('labRows');
+const labWidth = document.getElementById('labWidth');
+const labSpacing = document.getElementById('labSpacing');
+const labJitter = document.getElementById('labJitter');
+const labSeed = document.getElementById('labSeed');
+const labGenReplace = document.getElementById('labGenReplace');
+const labGenAppend = document.getElementById('labGenAppend');
 const blockSelect = document.getElementById('blockSelect');
 const blockText = document.getElementById('blockText');
 const bbColorBtn = document.getElementById('bbColorBtn');
@@ -291,6 +301,14 @@ const globalStepAdvanceDelay = document.getElementById('globalStepAdvanceDelay')
 const stepAdvanceDelay = document.getElementById('stepAdvanceDelay');
 const fadeRevealFields = document.getElementById('fadeRevealFields');
 const stepParagraphFields = document.getElementById('stepParagraphFields');
+const layersEnabledInput = document.getElementById('layersEnabledInput');
+const layersFields = document.getElementById('layersFields');
+const layersBleedInput = document.getElementById('layersBleedInput');
+const layersHideCompletedInput = document.getElementById('layersHideCompletedInput');
+const layersRevealOpacity = document.getElementById('layersRevealOpacity');
+const layerGroupInput = document.getElementById('layerGroupInput');
+const layerDepthInput = document.getElementById('layerDepthInput');
+const layerRevealOpacityBlock = document.getElementById('layerRevealOpacityBlock');
 const shapeToggle = document.getElementById('shapeToggle');
 const shapeOpacity = document.getElementById('shapeOpacity');
 const shapeTypeSelect = document.getElementById('shapeTypeSelect');
@@ -379,6 +397,8 @@ const timedBtnLabel    = document.getElementById('timedBtnLabel');
 const timedBtnAction   = document.getElementById('timedBtnAction');
 const timedBtnAddText  = document.getElementById('timedBtnAddText');
 const timedBtnAddTextRow = document.getElementById('timedBtnAddTextRow');
+const timedBtnUrl      = document.getElementById('timedBtnUrl');
+const timedBtnUrlRow   = document.getElementById('timedBtnUrlRow');
 const timedBtnSpawnAt  = document.getElementById('timedBtnSpawnAt');
 const blockHiddenToggle = document.getElementById('blockHiddenToggle');
 const timedBtnEnabled = document.getElementById('timedBtnEnabled');
@@ -439,7 +459,7 @@ function assignEditorTabs() {
     const title = section.querySelector('summary')?.textContent?.trim().toLowerCase() || '';
     if (title === 'peel') section.dataset.editorTab = 'content';
     if (title === 'color' || title === 'illustration' || title === 'shape constraint' || title === 'draw text path') section.dataset.editorTab = 'design';
-    if (title === 'dynamics' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
+    if (title === 'dynamics' || title === 'layers' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
   });
   fontSearch.closest('.editor-row')?.setAttribute('data-editor-tab', 'design');
 }
@@ -818,7 +838,7 @@ const localeSyncControlGroups = {
   ],
   clipShape: () => [shapeToggle, shapeTypeSelect, shapeCustomPathD, shapeOpacity, shapeScale, shapeRotation, shapeClipOverflow],
   drawPath: () => [drawTextEnabled, drawTextSpacing, drawTextAngleMix, drawTextToolButtons[0], drawTextToolButtons[1], drawTextClearBtn],
-  timedButton: () => [timedBtnEnabled, timedBtnDelay, timedBtnLabel, timedBtnAction, timedBtnAddText, timedBtnSpawnAt, timedBtnEnable, timedBtnDisable],
+  timedButton: () => [timedBtnEnabled, timedBtnDelay, timedBtnLabel, timedBtnAction, timedBtnAddText, timedBtnUrl, timedBtnSpawnAt, timedBtnEnable, timedBtnDisable],
   triggers: () => [eventTriggerList, eventTriggerAdd],
   hidden: () => [blockHiddenToggle]
 };
@@ -993,6 +1013,7 @@ function updateEffectFieldVisibility() {
   fadeRevealFields.classList.toggle('open', fadeRevealInput.checked);
   stepParagraphFields.classList.toggle('open', stepParagraphsInput.checked);
   stepParagraphsInput.closest('.effect-item').style.display = 'grid';
+  if (layersFields) layersFields.classList.toggle('open', layersEnabledInput.checked);
 }
 
 function updateHintFieldVisibility() {
@@ -1002,6 +1023,7 @@ function updateHintFieldVisibility() {
 function updateTimedButtonFieldVisibility() {
   timedBtnFields.classList.toggle('open', timedBtnEnabled.checked);
   timedBtnAddTextRow.style.display = (timedBtnEnabled.checked && timedBtnAction.value === 'addText') ? 'grid' : 'none';
+  timedBtnUrlRow.style.display = (timedBtnEnabled.checked && timedBtnAction.value === 'url') ? 'grid' : 'none';
 }
 
 timedBtnAction.addEventListener('change', () => {
@@ -1019,6 +1041,7 @@ timedBtnEnable.addEventListener('click', () => {
     text: timedBtnLabel.value || '→',
     action: timedBtnAction.value || 'none',
     addText: timedBtnAddText.value || '',
+    url: timedBtnUrl.value.trim(),
     spawnAt: timedBtnSpawnAt.value || 'afterNoPeel'
   };
   saveConfigAndReload(nextConfig);
@@ -1566,6 +1589,7 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   config.behaviors.stepParagraphs ||= {};
   config.behaviors.stepParagraphs.perBlockAdvanceDelayMs ||= {};
   config.behaviors.stepParagraphs.perBlockVisibleCount ||= {};
+  config.behaviors.layers ||= {};
   const blocks = getEditableBlocks(config);
   const block = blocks[selectedBlockIdx];
   config.style.backgroundColor = backgroundColor.value || config.style.backgroundColor || '#f5f0e8';
@@ -1585,6 +1609,10 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   config.behaviors.stepParagraphs.visibleCount = Number(visibleParagraphs.value) || 2;
   config.behaviors.stepParagraphs.compactFlow = compactFlowInput.checked;
   config.behaviors.stepParagraphs.advanceDelayMs = secondsInputToMs(globalStepAdvanceDelay.value);
+  config.behaviors.layers.enabled = layersEnabledInput.checked;
+  config.behaviors.layers.bleedThrough = layersBleedInput.checked;
+  config.behaviors.layers.hideCompleted = layersHideCompletedInput.checked;
+  config.behaviors.layers.revealOpacity = Math.max(0, Math.min(1, Number(layersRevealOpacity.value) || 1));
   config.forceFields = getForceFieldsFromEditor();
   const selectedId = block?.id || String(selectedBlockIdx);
   const overrideValue = Number(blockVisibleOverride.value);
@@ -1642,12 +1670,23 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
     else delete block.triggers;
     if (blockHiddenToggle.checked) block.hidden = true;
     else delete block.hidden;
+    const layerGroupVal = layerGroupInput.value.trim();
+    if (layerGroupVal) {
+      block.layer = { group: layerGroupVal, depth: Math.max(0, Number(layerDepthInput.value) || 0) };
+      const ro = Number(layerRevealOpacityBlock.value);
+      if (layerRevealOpacityBlock.value !== '' && Number.isFinite(ro)) {
+        block.layer.revealOpacity = Math.max(0, Math.min(1, ro));
+      }
+    } else {
+      delete block.layer;
+    }
     if (timedBtnEnabled.checked) {
       block.timedButton = {
         delayMs: Number(timedBtnDelay.value) || 7000,
         text: timedBtnLabel.value || '→',
         action: timedBtnAction.value || 'none',
         addText: timedBtnAddText.value || '',
+        url: timedBtnUrl.value.trim(),
         spawnAt: timedBtnSpawnAt.value || 'afterNoPeel'
       };
     } else {
@@ -1830,6 +1869,39 @@ function importFullText(replaceExisting) {
   } else {
     blocks.push(...importedBlocks);
     selectedBlockIdx = blocks.length - importedBlocks.length; state.selectedBlockIdx = selectedBlockIdx;
+  }
+  saveConfigAndReload(nextConfig);
+}
+
+function generateLabyrinth(replaceExisting) {
+  const trueText = labTrueText.value.trim();
+  if (!trueText) { labTrueText.focus(); return; }
+  const nextConfig = buildConfigFromVisualControls();
+  const blocks = getEditableBlocks(nextConfig);
+  const decoyTexts = labDecoyText.value.split('\n').map(line => line.trim()).filter(Boolean);
+  const threads = buildLabyrinthThreads({
+    trueText,
+    decoyTexts,
+    threads: Number(labThreads.value) || 4,
+    rows: Number(labRows.value) || 6,
+    width: Number(labWidth.value) || 640,
+    fontPx: state.baseFontPx,
+    lineHeight: state.LINE_HEIGHT,
+    blockGap: nextConfig.layout?.blockGap ?? state.BLOCK_GAP,
+    spacing: Number(labSpacing.value) || 0,
+    jitter: Number(labJitter.value) || 0,
+    seed: Number(labSeed.value) || 1,
+    idPrefix: `lab-${Date.now().toString(36)}`,
+    color: blockColor.value || '#4a4a4a',
+    fontFamily: fontSearch.value.trim() || (state.FONT.replace(state.baseFontSize, '').trim() || 'Georgia')
+  });
+  if (!threads.length) return;
+  if (replaceExisting) {
+    blocks.splice(0, blocks.length, ...threads);
+    selectedBlockIdx = 0; state.selectedBlockIdx = selectedBlockIdx;
+  } else {
+    blocks.push(...threads);
+    selectedBlockIdx = blocks.length - threads.length; state.selectedBlockIdx = selectedBlockIdx;
   }
   saveConfigAndReload(nextConfig);
 }
@@ -2837,6 +2909,13 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   compactFlowInput.checked = Boolean(config.behaviors?.stepParagraphs?.compactFlow);
   visibleParagraphs.value = config.behaviors?.stepParagraphs?.visibleCount ?? 2;
   globalStepAdvanceDelay.value = msToSecondsInput(config.behaviors?.stepParagraphs?.advanceDelayMs ?? 0);
+  layersEnabledInput.checked = Boolean(config.behaviors?.layers?.enabled);
+  layersBleedInput.checked = config.behaviors?.layers?.bleedThrough !== false;
+  layersHideCompletedInput.checked = config.behaviors?.layers?.hideCompleted !== false;
+  layersRevealOpacity.value = config.behaviors?.layers?.revealOpacity ?? 1;
+  layerGroupInput.value = selectedBlock.layer?.group ?? '';
+  layerDepthInput.value = selectedBlock.layer?.depth ?? '';
+  layerRevealOpacityBlock.value = selectedBlock.layer?.revealOpacity ?? '';
   setForceFieldsInEditor(config.forceFields || []);
   const selectedVisibleKey = selectedBlock.id || String(selectedBlockIdx);
   blockVisibleOverride.value = config.behaviors?.stepParagraphs?.perBlockVisibleCount?.[selectedVisibleKey] ?? '';
@@ -2897,6 +2976,7 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   timedBtnLabel.value   = tBtn.text    ?? '→';
   timedBtnAction.value  = tBtn.action  ?? 'none';
   timedBtnAddText.value = tBtn.addText ?? '';
+  timedBtnUrl.value     = tBtn.url     ?? '';
   timedBtnSpawnAt.value = tBtn.spawnAt ?? 'afterNoPeel';
   updateTimedButtonFieldVisibility();
   updateSelectedBlockVisuals(config);
@@ -3903,6 +3983,8 @@ editorOptionResetApp?.addEventListener('click', async () => {
 addParagraphGizmo.addEventListener('click', addBlockAtEnd);
 bulkImportReplace.addEventListener('click', () => importFullText(true));
 bulkImportAppend.addEventListener('click', () => importFullText(false));
+labGenReplace.addEventListener('click', () => generateLabyrinth(true));
+labGenAppend.addEventListener('click', () => generateLabyrinth(false));
 moveHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'move'));
 scaleHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'scale'));
 resizeHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'resize'));
@@ -4172,6 +4254,13 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
   timedBtnEnabled,
   fadeRevealInput,
   stepParagraphsInput,
+  layersEnabledInput,
+  layersBleedInput,
+  layersHideCompletedInput,
+  layersRevealOpacity,
+  layerGroupInput,
+  layerDepthInput,
+  layerRevealOpacityBlock,
   compactFlowInput,
   globalStepAdvanceDelay,
   stepAdvanceDelay,
@@ -4235,6 +4324,7 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
   timedBtnLabel,
   timedBtnAction,
   timedBtnAddText,
+  timedBtnUrl,
   timedBtnSpawnAt,
   gradientAngle,
   gradientRadiusX,

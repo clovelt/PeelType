@@ -283,9 +283,21 @@ export function layoutPositions(maxWidth) {
   const offsetY = Math.max(state.TOP_MARGIN, centeredOffset);
 
   let y = offsetY;
+  // When the Layers behavior is on, blocks sharing a layer.group stack on top of
+  // one another (matrioska) instead of flowing down the page.
+  const layersOn = Boolean(state.pieceConfig.behaviors?.layers?.enabled);
+  const groupStartY = new Map();
   const layouts = state.textBlocks.map((block, blockIdx) => {
-    const layout = getBlockLayout(block, blockIdx, maxWidth, y);
-    y += heights[blockIdx] + state.BLOCK_GAP;
+    const groupKey = layersOn && block.layer?.group ? String(block.layer.group) : null;
+    let startY = y;
+    let advance = true;
+    if (groupKey) {
+      if (groupStartY.has(groupKey)) { startY = groupStartY.get(groupKey); advance = false; }
+      else groupStartY.set(groupKey, y);
+    }
+    const layout = getBlockLayout(block, blockIdx, maxWidth, startY);
+    if (advance) y += heights[blockIdx] + state.BLOCK_GAP;
+    else y = Math.max(y, startY + heights[blockIdx] + state.BLOCK_GAP);
     return layout;
   });
   const isCompact = state.pieceConfig.behaviors?.stepParagraphs?.enabled && state.pieceConfig.behaviors?.stepParagraphs?.compactFlow;

@@ -11,6 +11,7 @@ const { quoteFontFamily, fontFamilyToGoogleSlug, loadGoogleFont } = await import
 const { parseInlineMotionValue, cloneInlineStyle, parseBBCode, normalizeWord, buildWordRanges } = await import(`./bbcode.js?v=${_v}`);
 const { cubicAt, cubicDerivativeAt, getAnchorOut, getAnchorIn,
         sampleDrawPath, pointOnDrawSamples, anchorsFromDrawnPoints } = await import(`./draw-path.js?v=${_v}`);
+const { buildLabyrinthThreads, scrambleWords } = await import(`./labyrinth.js?v=${_v}`);
 const { armAudio: _armAudioCore, zzfx, applyAudioMutedState,
         playPeelSound, playGrabSound, playDropSound,
         playParagraphAppearSound, playPeelPointCompleteSound, playParagraphCompleteSound,
@@ -113,6 +114,12 @@ const defaultPieceConfig = {
       advanceDelayMs: 0,
       perBlockAdvanceDelayMs: {},
       perBlockVisibleCount: {}
+    },
+    layers: {
+      enabled: false,
+      bleedThrough: true,
+      hideCompleted: true,
+      revealOpacity: 1
     }
   },
   blocks: [
@@ -650,7 +657,6 @@ const textBlocks = activeBlocks.map((blockConfig, blockIdx) => {
     peel: blockConfig.peel || {},
     hint: blockConfig.hint || {},
     triggers: blockConfig.triggers || [],
-    linkButton: blockConfig.linkButton || null,
     timedButton: blockConfig.timedButton || null,
     clipShape: blockConfig.clipShape || null,
     drawPath: blockConfig.drawPath || null,
@@ -730,6 +736,12 @@ let completedSegments = segmentRanges.map(segs => segs.map(() => false));
 let completedBlocks = blockRanges.map(() => false);
 completedBlockTimes = blockRanges.map(() => 0); state.completedBlockTimes = completedBlockTimes;
 hiddenBlocks = new Set(textBlocks.reduce((acc, b, i) => { if (b.hidden) acc.push(i); return acc; }, [])); state.hiddenBlocks = hiddenBlocks;
+// ── Layers (matrioska despellejada) ───────────────────────────────────────────
+// Stacks of blocks sharing block.layer.group, ordered by block.layer.depth.
+// Only the shallowest incomplete layer is interactive; the one directly beneath
+// bleeds through as the active layer is peeled away (skin → flesh → memory …).
+let layerGroups = buildLayerGroups();
+hideDeepLayers();
 namedFlags = new Set(); state.namedFlags = namedFlags;
 let blockStartedFlags = blockRanges.map(() => false);
 let blockRenderOffsets = blockRanges.map(() => 0);
@@ -917,20 +929,6 @@ function mountBlock(blockIdx) {
   }
   lastBehaviorVisibilityKey = ''; state.lastBehaviorVisibilityKey = '';
 }
-
-let inlineLinkButtons = textBlocks.map((block, blockIdx) => {
-  if (!block.linkButton?.url) return null;
-  const el = document.createElement('a');
-  el.className = 'inline-link-button';
-  el.href = block.linkButton.url;
-  el.target = '_blank';
-  el.rel = 'noopener noreferrer';
-  el.textContent = block.linkButton.text || '+';
-  el.addEventListener('pointerdown', (e) => e.stopPropagation());
-  el.addEventListener('click', (e) => e.stopPropagation());
-  container.appendChild(el);
-  return { blockIdx, el };
-});
 
 // Timed continue buttons — appear X ms after the block becomes active
 let timedButtons = textBlocks.map((block, blockIdx) => {
@@ -1421,23 +1419,6 @@ function getLastNoPeelLetterIdx(blockIdx) {
   return bestIdx !== -1 ? bestIdx : getReadingLastLetterIdx(blockIdx);
 }
 
-function positionInlineLinkButtons() {
-  for (const item of inlineLinkButtons) {
-    if (!item) continue;
-    const { blockIdx, el } = item;
-    const blockAllowed = Boolean(activeBlockFlags[blockIdx] || isBlockVisible(blockIdx) || everActiveBlockFlags[blockIdx]);
-    const idx = getReadingLastLetterIdx(blockIdx);
-    const letter = letters[idx];
-    if (!blockAllowed || !letter || letter.deleted) {
-      el.style.display = 'none';
-      continue;
-    }
-    el.style.display = 'block';
-    el.style.color = letter.inlineStyle?.color || letter.style.color || pieceConfig.style.color;
-    el.style.transform = `translate(${letter.x + letter.w + 7}px, ${getRenderedY(idx) + 1}px)`;
-  }
-}
-
 function positionTimedButtons() {
   for (const item of timedButtons) {
     if (!item) continue;
@@ -1613,6 +1594,105 @@ function getInitialPeelActivationWindow() {
   const limit = Math.max(1, Number(activeInitialPeelBlockLimit) || 4);
   const start = getFirstIncompleteBlock();
   return { start, end: Math.min(blockRanges.length, start + limit) };
+}
+
+// ── Layers (matrioska despellejada) ───────────────────────────────────────────
+function buildLayerGroups() {
+  const groups = new Map();
+  for (let i = 0; i < textBlocks.length; i++) {
+    const layer = textBlocks[i]?.layer;
+    if (!layer || !layer.group) continue;
+    const key = String(layer.group);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ blockIdx: i, depth: Number(layer.depth) || 0 });
+  }
+  for (const list of groups.values()) list.sort((a, b) => a.depth - b.depth);
+  return groups;
+}
+
+function layersEnabled() {
+  return Boolean(activeBehaviors?.layers?.enabled) && layerGroups && layerGroups.size > 0;
+}
+
+function hideDeepLayers() {
+  if (!layersEnabled()) return;
+  for (const list of layerGroups.values()) {
+    for (let k = 0; k < list.length; k++) {
+      const { blockIdx, depth } = list[k];
+      if (k > 0) hiddenBlocks.add(blockIdx);
+      // Surface paints on top of the layers beneath it (kept below dragged letters).
+      const z = String(Math.max(1, 24 - depth * 2));
+      const range = blockRanges[blockIdx];
+      if (range) for (let i = range.start; i <= range.end; i++) { if (els[i]) els[i].style.zIndex = z; }
+    }
+  }
+}
+
+// Fraction of a block's peelable letters already unlocked or removed (1 == complete).
+function getBlockPeelProgress(blockIdx) {
+  const range = blockRanges[blockIdx];
+  if (!range) return 1;
+  const hasSelectivePeel = textBlocks[blockIdx]?.inlineStyles?.some(s => s?.explicitPeel);
+  let total = 0, gone = 0;
+  for (let i = range.start; i <= range.end; i++) {
+    const l = letters[i];
+    if (!l || l.inlineStyle?.noPeel) continue;
+    if (hasSelectivePeel && !l.inlineStyle?.explicitPeel) continue;
+    total++;
+    if (l.deleted || !l.locked) gone++;
+  }
+  return total ? gone / total : 1;
+}
+
+function getLayerRevealOpacity(blockIdx) {
+  const per = Number(textBlocks[blockIdx]?.layer?.revealOpacity);
+  if (Number.isFinite(per)) return Math.max(0, Math.min(1, per));
+  const g = Number(activeBehaviors?.layers?.revealOpacity);
+  return Number.isFinite(g) ? Math.max(0, Math.min(1, g)) : 1;
+}
+
+// Promote/demote layers: keep only the shallowest incomplete layer interactive,
+// the next one in preview (visible-but-locked), everything deeper hidden.
+function updateLayerActivation() {
+  if (!layersEnabled()) return;
+  const hideCompleted = activeBehaviors.layers.hideCompleted !== false;
+  for (const list of layerGroups.values()) {
+    let activeK = -1;
+    for (let k = 0; k < list.length; k++) {
+      if (!completedBlocks[list[k].blockIdx]) { activeK = k; break; }
+    }
+    for (let k = 0; k < list.length; k++) {
+      const blockIdx = list[k].blockIdx;
+      if (activeK >= 0 && k === activeK) hiddenBlocks.delete(blockIdx);
+      else if (activeK >= 0 && k > activeK) hiddenBlocks.add(blockIdx);
+      else if (hideCompleted) hiddenBlocks.add(blockIdx);
+      else hiddenBlocks.delete(blockIdx);
+    }
+  }
+}
+
+// Per-block layer role for the current frame: 'active' | 'preview' | 'gone' | 'deep'.
+// Preview blocks carry the opacity at which the next layer bleeds through.
+function computeLayerInfo() {
+  if (!layersEnabled()) return null;
+  const info = new Map();
+  const bleed = activeBehaviors.layers.bleedThrough !== false;
+  for (const list of layerGroups.values()) {
+    let activeK = -1;
+    for (let k = 0; k < list.length; k++) {
+      if (!completedBlocks[list[k].blockIdx]) { activeK = k; break; }
+    }
+    if (activeK < 0) continue;
+    const progress = getBlockPeelProgress(list[activeK].blockIdx);
+    for (let k = 0; k < list.length; k++) {
+      const blockIdx = list[k].blockIdx;
+      if (k < activeK) info.set(blockIdx, { role: 'gone', opacity: 0 });
+      else if (k === activeK) info.set(blockIdx, { role: 'active', opacity: 1 });
+      else if (k === activeK + 1) info.set(blockIdx, { role: 'preview', opacity: bleed ? progress * getLayerRevealOpacity(blockIdx) : 0 });
+      else info.set(blockIdx, { role: 'deep', opacity: 0 });
+    }
+  }
+  return info;
 }
 
 function unlockActivePeelStarters() {
@@ -3673,6 +3753,7 @@ function updateFrameState() {
     }
   });
   everActiveBlockFlags = blockRanges.map((_, blockIdx) => Boolean(everActiveBlockFlags[blockIdx] || activeBlockFlags[blockIdx]));
+  updateLayerActivation();
   unlockActivePeelStarters();
   wakeWindForceStarters({ FORCE_FIELDS, segmentRanges, activeBlockFlags, textBlocks, getSegmentStarterStart, letters, bakeLetterRenderY });
   ensureCurrentPeelStarters();
@@ -3898,9 +3979,19 @@ function updateBehaviorVisibility() {
   const currentBlockIdx = getFirstIncompleteBlock();
   const behaviorStart = Math.min(blockStart, currentBlockIdx);
   const behaviorEnd = Math.max(blockEnd, currentBlockIdx + 1);
+  const layerInfo = computeLayerInfo();
   for (let blockIdx = behaviorStart; blockIdx < behaviorEnd; blockIdx++) {
     const range = blockRanges[blockIdx];
     if (!range) continue;
+    const layer = layerInfo?.get(blockIdx);
+    if (layer?.role === 'preview' && !isEditor) {
+      // Layer beneath the active one: visible but not yet interactive.
+      for (let i = range.start; i <= range.end; i++) {
+        els[i].style.opacity = String(getLetterDisplayOpacity(letters[i], layer.opacity));
+        els[i].style.pointerEvents = 'none';
+      }
+      continue;
+    }
     if (hiddenBlocks.has(blockIdx) && !isEditor) {
       for (let i = range.start; i <= range.end; i++) {
         els[i].style.opacity = '0';
@@ -4033,7 +4124,6 @@ state.updateFrameState = updateFrameState;
 state.continueSceneScrollRestore = continueSceneScrollRestore;
 state.positionAttachments = positionAttachments;
 state.syncPeelStrokeOrigins = syncPeelStrokeOrigins;
-state.positionInlineLinkButtons = positionInlineLinkButtons;
 state.positionTimedButtons = positionTimedButtons;
 state.positionClipShapeFrames = positionClipShapeFrames;
 state.positionHint = positionHint;
@@ -4634,7 +4724,7 @@ async function performSoftReload() {
       transform: { x: Number(bc.transform?.x ?? 0), y: Number(bc.transform?.y ?? 0), scale: Number(bc.transform?.scale ?? 1), width: Number(bc.transform?.width ?? getMaxWidth()), height: Number(bc.transform?.height ?? 0) },
       graphemes: parsed.graphemes, inlineStyles: parsed.inlineStyles, wordRanges: buildWordRanges(parsed.plainText, parsed.graphemes),
       attachment: bc.attachment || null, peel: bc.peel || {}, hint: bc.hint || {}, triggers: bc.triggers || [],
-      linkButton: bc.linkButton || null, timedButton: bc.timedButton || null, clipShape: bc.clipShape || null, drawPath: bc.drawPath || null,
+      timedButton: bc.timedButton || null, clipShape: bc.clipShape || null, drawPath: bc.drawPath || null,
       hidden: Boolean(bc.hidden),
       widths: parsed.graphemes.map(g => measureCtx.measureText(g).width)
     };
@@ -4687,6 +4777,8 @@ async function performSoftReload() {
   completedBlocks = blockRanges.map(() => false); state.completedBlocks = completedBlocks;
   completedBlockTimes = blockRanges.map(() => 0); state.completedBlockTimes = completedBlockTimes;
   hiddenBlocks = new Set(textBlocks.reduce((acc, b, i) => { if (b.hidden) acc.push(i); return acc; }, [])); state.hiddenBlocks = hiddenBlocks;
+  layerGroups = buildLayerGroups();
+  hideDeepLayers();
   namedFlags = new Set(); state.namedFlags = namedFlags;
   blockStartedFlags = blockRanges.map(() => false); state.blockStartedFlags = blockStartedFlags;
   blockRenderOffsets = blockRanges.map(() => 0);
@@ -4695,15 +4787,6 @@ async function performSoftReload() {
   // 4. Reset display components
   container.append(blockOverlay, moveHandle, scaleHandle, resizeHandle, overflowGizmo, addParagraphGizmo, hint, peelHint);
   if (!mobileRuntime) createBlockGizmos();
-
-  inlineLinkButtons = textBlocks.map((block, blockIdx) => {
-    if (!block.linkButton?.url) return null;
-    const el = document.createElement('a'); el.className = 'inline-link-button';
-    el.href = block.linkButton.url; el.target = '_blank'; el.rel = 'noopener noreferrer';
-    el.textContent = block.linkButton.text || '+';
-    el.addEventListener('pointerdown', (e) => e.stopPropagation());
-    container.appendChild(el); return { blockIdx, el };
-  });
 
   timedButtons = textBlocks.map((block, blockIdx) => {
     if (!block.timedButton) return null;

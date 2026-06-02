@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <title>peel after reading</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
   <canvas id="effectsCanvas"></canvas>
@@ -364,9 +364,51 @@
                 <label for="timedBtnAddText">Add text</label>
                 <input id="timedBtnAddText" type="text" placeholder="fin." value="fin.">
               </div>
+              <div class="editor-row inline" id="timedBtnUrlRow">
+                <label for="timedBtnUrl">URL</label>
+                <input id="timedBtnUrl" type="url" placeholder="https://example.com">
+              </div>
             </div>
             <button type="button" id="timedBtnEnable" style="display:none">Enable on selected block</button>
             <button type="button" id="timedBtnDisable" class="danger-button" style="display:none">Remove from selected block</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section">
+        <summary>Layers</summary>
+        <div class="editor-section-body">
+          <div class="effect-item">
+            <label data-help="Stacks of blocks sharing a layer group sit on top of each other. Peeling the surface reveals the layer beneath, like an onion or a matryoshka."><input id="layersEnabledInput" type="checkbox"> Layers (matrioska)</label>
+            <div id="layersFields" class="editor-grid-2 effect-fields">
+              <div class="editor-row inline">
+                <label data-help="The layer beneath fades in as you peel the active one, instead of only appearing once it is fully gone."><input id="layersBleedInput" type="checkbox"> Bleed through</label>
+              </div>
+              <div class="editor-row inline">
+                <label data-help="Once a layer is fully peeled it is hidden so the layer beneath stands alone."><input id="layersHideCompletedInput" type="checkbox"> Hide peeled</label>
+              </div>
+              <div class="editor-row inline">
+                <label for="layersRevealOpacity" data-help="Default opacity a revealed layer reaches.">Reveal opacity</label>
+                <input id="layersRevealOpacity" type="number" min="0" max="1" step="0.05">
+              </div>
+            </div>
+          </div>
+          <div class="effect-item">
+            <label data-help="Assign the selected block to a layer stack. Blocks with the same group stack together; depth 0 is the surface, higher numbers sit deeper.">This block's layer</label>
+            <div class="editor-grid-2 effect-fields open">
+              <div class="editor-row inline">
+                <label for="layerGroupInput" data-help="Layer stack name. Leave blank to keep this block in the normal flow.">Group</label>
+                <input id="layerGroupInput" type="text" placeholder="(none)">
+              </div>
+              <div class="editor-row inline">
+                <label for="layerDepthInput" data-help="0 = surface, peeled first. Higher numbers are revealed deeper down.">Depth</label>
+                <input id="layerDepthInput" type="number" min="0" max="20" step="1" placeholder="0">
+              </div>
+              <div class="editor-row inline">
+                <label for="layerRevealOpacityBlock" data-help="Opacity this layer reaches when revealed. Overrides the global value.">Reveal opacity</label>
+                <input id="layerRevealOpacityBlock" type="number" min="0" max="1" step="0.05" placeholder="global">
+              </div>
+            </div>
           </div>
         </div>
       </details>
@@ -746,15 +788,49 @@
           </div>
         </div>
       </details>
-      <details class="editor-section" id="historySection">
-        <summary data-help="Auto-snapshots at the interval set in Options.">History snapshots</summary>
-        <div class="editor-section-body">
-          <div id="editorHistoryList" class="editor-history-list"></div>
-        </div>
-      </details>
       <details id="bulkImportDetails" class="editor-section">
-        <summary>Bulk import</summary>
+        <summary>Procedural generation &amp; bulk import</summary>
         <div class="editor-section-body">
+          <div class="editor-subhead" data-help="Lay text out as a maze of interwoven threads. One thread (Ariadne's) reads as the guiding message; the rest carry strange, scrambled fragments. Pull the right thread to unwind it.">Labyrinth — thread of Ariadne</div>
+          <div class="editor-row">
+            <label for="labTrueText" data-help="The guiding message carried by the correct thread.">True thread</label>
+            <textarea id="labTrueText" spellcheck="false" placeholder="the words that guide you out of the maze"></textarea>
+          </div>
+          <div class="editor-row">
+            <label for="labDecoyText" data-help="Optional strange texts for the other threads, one per line. Leave empty to auto-scramble the true thread into nonsense.">Strange threads</label>
+            <textarea id="labDecoyText" spellcheck="false" placeholder="one strange thread per line&#10;(empty = auto-scramble)"></textarea>
+          </div>
+          <div class="editor-grid-2">
+            <div class="editor-row inline">
+              <label for="labThreads" data-help="Total interwoven threads, including the correct one.">Threads</label>
+              <input id="labThreads" type="number" min="1" max="8" step="1" value="4">
+            </div>
+            <div class="editor-row inline">
+              <label for="labRows" data-help="Minimum corridors (rows) each thread weaves through.">Rows</label>
+              <input id="labRows" type="number" min="2" max="40" step="1" value="6">
+            </div>
+            <div class="editor-row inline">
+              <label for="labWidth" data-help="Width of the labyrinth in pixels.">Width</label>
+              <input id="labWidth" type="number" min="240" max="1200" step="10" value="640">
+            </div>
+            <div class="editor-row inline">
+              <label for="labSpacing" data-help="Extra spacing between letters along the thread.">Spacing</label>
+              <input id="labSpacing" type="number" min="0" max="40" step="1" value="2">
+            </div>
+            <div class="editor-row inline">
+              <label for="labJitter" data-help="Horizontal randomness for a looser, more tangled weave (0 = clean).">Jitter</label>
+              <input id="labJitter" type="number" min="0" max="1" step="0.05" value="0">
+            </div>
+            <div class="editor-row inline">
+              <label for="labSeed" data-help="Seed for reproducible generation. Change it to reshuffle the strange threads.">Seed</label>
+              <input id="labSeed" type="number" min="1" max="999999" step="1" value="1">
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button id="labGenReplace" type="button" data-help="Replace all current blocks with a freshly generated labyrinth.">Generate Replace</button>
+            <button id="labGenAppend" type="button" data-help="Append a generated labyrinth after the current blocks.">Generate Append</button>
+          </div>
+          <div class="editor-subhead" data-help="Turn pasted text into one paragraph block per double-line-break.">Bulk import</div>
           <div class="editor-row">
             <label for="bulkTextInput" data-help="Paste long text here. Double line breaks create separate paragraphs.">Import full text</label>
             <textarea id="bulkTextInput" spellcheck="false" placeholder="Paragraph one&#10;&#10;Paragraph two"></textarea>
@@ -793,6 +869,12 @@
             <button id="bulkImportReplace" type="button" data-help="Delete all current blocks and replace with the text above.">Import Replace</button>
             <button id="bulkImportAppend" type="button" data-help="Add the paragraphs above to the end of the current piece.">Import Append</button>
           </div>
+        </div>
+      </details>
+      <details class="editor-section" id="historySection">
+        <summary data-help="Auto-snapshots at the interval set in Options.">History snapshots</summary>
+        <div class="editor-section-body">
+          <div id="editorHistoryList" class="editor-history-list"></div>
         </div>
       </details>
     </div>
@@ -866,6 +948,6 @@
     });
   })();
   </script>
-  <script type="module" src="./js/main.js?v=142"></script>
+  <script type="module" src="./js/main.js?v=143"></script>
 </body>
 </html>

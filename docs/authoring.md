@@ -9,7 +9,7 @@ PeelType scenes are JSON configurations that describe text blocks, layout, peel 
 3. Open the editor.
 4. Choose an existing scene as a base or create a new one.
 5. Edit text, styles, behavior, events, and assets.
-6. Export JSON from the editor.
+6. Press **Save (↓)** to write the scene to disk (local server), or export the JSON manually.
 
 Use `Freeze` while making layout changes, then unfreeze to test the interaction.
 
@@ -34,7 +34,9 @@ Tags can be combined with peel modes to make the interaction carry the meaning o
 
 ## Scene Files
 
-For a durable scene:
+With the local Node server running (`npm start`), saving is automatic. Press the **Save (↓)** button next to the language selector and the active scene is written to its own file in `js/` (named after the scene id, e.g. `js/my-story.json`). The first save of a new scene prompts for its scene-selector label (prefilled with the poem's first line) and registers it in `js/poems.json` for you; the toast confirms the filename and marks it `(new)`. Re-saves overwrite the file and leave the label alone. Then just add assets under `illustrations/`.
+
+Without the local server (static hosting or `file://`), save manually instead:
 
 1. Export JSON from the editor.
 2. Save it in `js/`, for example `js/my-story.json`.

@@ -1,0 +1,428 @@
+{
+  "id": "me-cubre-un-caballo-negro",
+  "version": 32,
+  "title": "tirar después de leer",
+  "editor": {
+    "enabled": true
+  },
+  "style": {
+    "font": "20px \"EB Garamond\"",
+    "lineHeight": 30,
+    "color": "#4a4a4a",
+    "backgroundColor": "#f5f0e8"
+  },
+  "layout": {
+    "type": "paragraph",
+    "blockGap": 40,
+    "margin": 20,
+    "topMargin": 72,
+    "bottomMargin": 96
+  },
+  "peel": {
+    "fromBeginning": true,
+    "zigzag": true,
+    "mode": "zigzag",
+    "initialUnlockCount": 1,
+    "unlockThreshold": 1
+  },
+  "physics": {
+    "constraintDistance": 1.2,
+    "iterations": 12,
+    "damping": 0.97,
+    "gravity": 0.15,
+    "gravityOn": true
+  },
+  "optimization": {
+    "dynamicLetterLimitDesktop": 370,
+    "dynamicLetterLimitMobile": 110,
+    "dynamicLetterLimitNarrow": 140,
+    "initialPeelActiveBlocks": 4
+  },
+  "behaviors": {
+    "fadeReveal": {
+      "enabled": false,
+      "visibleLetters": 24,
+      "fadeSteps": 8
+    },
+    "stepParagraphs": {
+      "enabled": true,
+      "visibleCount": 1,
+      "compactFlow": true,
+      "advanceDelayMs": 0,
+      "perBlockAdvanceDelayMs": {
+        "block-mpvwo1g6": 2200,
+        "block-mpvwo99y": 8000
+      },
+      "perBlockVisibleCount": {}
+    }
+  },
+  "blocks": [
+    {
+      "id": "block-mpvepls1",
+      "text": "me cubre un caballo negro",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "singleHandle": false,
+        "allWords": false,
+        "reflowAnchors": false,
+        "reflowMotion": "pathfind",
+        "shrinkGaps": false,
+        "popGrid": false,
+        "cascade": false,
+        "manualOneByOne": false,
+        "mode": "zigzag"
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.57,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "color": "#4a4a4a",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        },
+        "opacity": 1,
+        "variationStrength": 0.15
+      },
+      "triggers": [
+        {
+          "on": "blockComplete",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#000000",
+              "duration": 900
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "block-mpvwnt6f",
+      "text": "y aprieto puñados de moras para que un zumo [shake]turbio[/shake] llene de sangre el algodón",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "singleHandle": false,
+        "allWords": false,
+        "reflowAnchors": false,
+        "reflowMotion": "pathfind",
+        "shrinkGaps": true,
+        "popGrid": false,
+        "cascade": false,
+        "manualOneByOne": false,
+        "mode": "zigzag"
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 226,
+        "height": 0
+      },
+      "style": {
+        "color": "#feffff",
+        "colorMode": "sequential",
+        "fontFamily": "EB Garamond",
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#fcfffc",
+              "alpha": 1,
+              "position": 74
+            },
+            {
+              "color": "#fd4c45",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        },
+        "opacity": 1,
+        "variationStrength": 0.15
+      },
+      "triggers": [
+        {
+          "on": "blockComplete",
+          "once": true,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#242426",
+              "duration": 900
+            }
+          ],
+          "word": "aprieto"
+        },
+        {
+          "on": "blockComplete",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "redDrops",
+              "count": 12,
+              "duration": 900,
+              "color": "#feffff"
+            }
+          ]
+        },
+        {
+          "on": "wordComplete",
+          "once": true,
+          "word": "puñados",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "spark",
+              "count": 12,
+              "duration": 900,
+              "color": "#feffff"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "block-mpvwo1g6",
+      "text": "que me [float]desnuda las piernas[/float]\nel ángel siempre anuncia\nla suciedad pura del verbo\ny [float]exclama suavemente[/float]\n[i][censor]hunde la mejilla en el limo\ncelebra la mano en la nuca\ngrita todo el cielo sobre la tierra[/censor][/i]",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "singleHandle": false,
+        "allWords": false,
+        "reflowAnchors": false,
+        "reflowMotion": "pathfind",
+        "shrinkGaps": true,
+        "popGrid": false,
+        "cascade": false,
+        "manualOneByOne": false,
+        "mode": "linear"
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "color": "#feffff",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "gradient": {
+          "type": "linear",
+          "angle": 90,
+          "centerX": 50,
+          "centerY": 50,
+          "stops": [
+            {
+              "color": "#1f6f52",
+              "alpha": 1,
+              "position": 0
+            },
+            {
+              "color": "#9f7a32",
+              "alpha": 1,
+              "position": 100
+            }
+          ]
+        },
+        "opacity": 1,
+        "variationStrength": 0.15
+      }
+    },
+    {
+      "id": "block-mpvwo99y",
+      "text": "solo los lirios tronchados inician el lenguaje la familia nuestro deber es perpetuar esta violencia",
+      "peel": {
+        "fromBeginning": true,
+        "persistState": false,
+        "singleHandle": false,
+        "allWords": false,
+        "reflowAnchors": false,
+        "reflowMotion": "pathfind",
+        "shrinkGaps": true,
+        "popGrid": false,
+        "cascade": false,
+        "manualOneByOne": false,
+        "mode": "zigzag"
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 234,
+        "height": 0
+      },
+      "style": {
+        "color": "#feffff",
+        "colorMode": "radial",
+        "fontFamily": "EB Garamond",
+        "gradient": {
+          "type": "radial",
+          "angle": 0,
+          "centerX": 48,
+          "centerY": 100,
+          "stops": [
+            {
+              "color": "#ef3c2d",
+              "alpha": 1,
+              "position": 10
+            },
+            {
+              "color": "#f5fef6",
+              "alpha": 1,
+              "position": 57
+            }
+          ]
+        },
+        "opacity": 1,
+        "variationStrength": 0.15
+      },
+      "triggers": [
+        {
+          "on": "beforeLetterUnlock",
+          "once": true,
+          "word": "perpetuar",
+          "target": "readingLast",
+          "holdMs": 1600,
+          "actions": [
+            {
+              "type": "particles",
+              "preset": "violentGeyser",
+              "count": 60,
+              "duration": 1700,
+              "color": "#feffff"
+            }
+          ]
+        },
+        {
+          "on": "blockAppear",
+          "once": true,
+          "word": "",
+          "target": "",
+          "holdMs": 0,
+          "actions": [
+            {
+              "type": "bgColor",
+              "color": "#1d2628",
+              "duration": 900
+            }
+          ]
+        }
+      ],
+      "letterMotion": [
+        {
+          "type": "orbit",
+          "cx": 380,
+          "cy": 220,
+          "radius": 270,
+          "strength": 0.06,
+          "spin": 0.9,
+          "band": 0.48
+        },
+        {
+          "type": "buoyancy",
+          "strength": 0.018,
+          "lift": 7,
+          "wave": 4,
+          "drift": 2,
+          "frequency": 0.16
+        }
+      ]
+    },
+    {
+      "id": "block-mpvy93rk",
+      "text": "[nopeel] [/nopeel]Laura Rodríguez Díaz",
+      "peel": {
+        "fromBeginning": false,
+        "persistState": false,
+        "singleHandle": false,
+        "allWords": false,
+        "reflowAnchors": false,
+        "reflowMotion": "pathfind",
+        "shrinkGaps": false,
+        "popGrid": false,
+        "cascade": false,
+        "manualOneByOne": false,
+        "mode": "linear"
+      },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scale": 1,
+        "width": 660,
+        "height": 0
+      },
+      "style": {
+        "color": "#feffff",
+        "colorMode": "solid",
+        "fontFamily": "EB Garamond",
+        "gradient": {
+          "type": "linear",
+          "angle": 0,
+          "centerX": 48,
+          "centerY": 100,
+          "stops": [
+            {
+              "color": "#ef3c2d",
+              "alpha": 1,
+              "position": 10
+            },
+            {
+              "color": "#f5fef6",
+              "alpha": 1,
+              "position": 57
+            }
+          ]
+        },
+        "opacity": 1,
+        "variationStrength": 0.15
+      },
+      "timedButton": {
+        "delayMs": 4,
+        "text": "→",
+        "action": "addText",
+        "addText": "Del poemario 'anuncio', todavía en construcción.",
+        "spawnAt": "afterNoPeel"
+      }
+    }
+  ],
+  "mobileBlocks": [],
+  "forceFields": []
+}

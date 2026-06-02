@@ -111,20 +111,31 @@ const server = http.createServer(async (req, res) => {
       for await (const chunk of req) chunks.push(chunk);
       let body;
       try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { body = null; }
-      if (!body?.id) { sendJson(res, 400, { error: 'Invalid config' }); return; }
-      // Resolve filename from poems.json manifest
-      let destPath = null;
+      if (!body?.id || !Array.isArray(body.blocks)) { sendJson(res, 400, { error: 'Invalid config' }); return; }
+      // `label` is a manifest-only field (the scene-selector name); keep it out of the scene file.
+      const requestedLabel = typeof body.label === 'string' ? body.label.trim() : '';
+      delete body.label;
+      // Resolve filename from poems.json manifest; register new scenes on the fly.
+      const manifestPath = path.join(root, 'js', 'poems.json');
+      let manifest = [];
       try {
-        const manifest = JSON.parse(await fs.readFile(path.join(root, 'js', 'poems.json'), 'utf8'));
-        const entry = manifest.find(e => {
-          const key = e.key || '';
-          return body.id === `tirita-poema` && key === 'tirita';
-        });
-        if (entry?.src) destPath = safeJoin(root, entry.src.replace(/^\.\//, ''));
+        const parsed = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+        if (Array.isArray(parsed)) manifest = parsed;
       } catch {}
-      if (!destPath) { sendJson(res, 400, { error: 'Unknown poem id' }); return; }
+      // Legacy: the bundled poem keeps id 'tirita-poema' under manifest key 'tirita'.
+      let entry = manifest.find(e => (body.id === 'tirita-poema' && e.key === 'tirita') || e.key === body.id);
+      let createdEntry = false;
+      if (!entry) {
+        const safeId = String(body.id).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'poem';
+        entry = { key: body.id, label: requestedLabel || body.title || body.id, src: `./js/${safeId}.json` };
+        manifest.push(entry);
+        createdEntry = true;
+      }
+      const destPath = entry.src ? safeJoin(root, entry.src.replace(/^\.\//, '')) : null;
+      if (!destPath || path.extname(destPath).toLowerCase() !== '.json') { sendJson(res, 400, { error: 'Unsafe destination' }); return; }
       await fs.writeFile(destPath, JSON.stringify(body, null, 2), 'utf8');
-      sendJson(res, 200, { ok: true, path: destPath });
+      if (createdEntry) await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+      sendJson(res, 200, { ok: true, path: path.relative(root, destPath), created: createdEntry });
       return;
     }
 

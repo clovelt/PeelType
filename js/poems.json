@@ -3,5 +3,10 @@
     "key": "tirita",
     "label": "Peel after reading",
     "src": "./js/peel-after-reading.json"
+  },
+  {
+    "key": "me-cubre-un-caballo-negro",
+    "label": "me cubre un caballo negro",
+    "src": "./js/me-cubre-un-caballo-negro.json"
   }
 ]

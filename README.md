@@ -122,7 +122,7 @@ It also enables a few editor authoring endpoints:
 
 - `GET /api/illustrations` lists local illustration assets for the editor picker.
 - `POST /api/illustrations` saves dropped image/SVG assets into `illustrations/`.
-- `POST /api/save-poem` saves the built-in story JSON while editing locally.
+- `POST /api/save-poem` saves the active scene's JSON while editing locally, and auto-registers brand-new scenes in `js/poems.json`.
 - `POST /api/save-locale` saves locale files while editing locally.
 
 Static hosting works for playback and for editing in browser storage, but saving files back into the project requires the local Node server.
@@ -145,6 +145,7 @@ Useful authoring controls:
 - **Behavior**: configure peel modes, physics, force fields, events, step progression, persistence, and conditional narrative.
 - **Freeze**: pause physics while editing.
 - **JSON**: inspect or export the current scene data.
+- **Save (↓)**: when running the local Node server, write the active scene straight to its `js/*.json` file (and register it in `js/poems.json` if it is new). On static hosting this is unavailable — use the JSON export instead.
 
 The panel view exposes the lower-level controls for scenes, text blocks, events, force fields, local assets, and exported JSON.
 
@@ -162,16 +163,21 @@ The browser stores editor state in `localStorage`, so experiments can survive a 
 
 ## Ship Your Own Scene
 
-The simplest workflow is:
+When you run the local Node server (`npm start`), saving is automatic:
 
 1. Start the local server with `npm start`.
 2. Open `http://localhost:4242/tirita.html`.
 3. Create or modify a scene in the editor.
-4. Export the scene JSON from the editor.
-5. Save it as a new file in `js/`, for example `js/my-story.json`.
-6. Register it in `js/poems.json` so the app can load it.
-7. Add any SVG, PNG, JPG, or GIF assets under `illustrations/`.
-8. Test locally, then deploy the folder.
+4. Press the **Save (↓)** button next to the language selector.
+5. The active scene is written to its own file in `js/` (named after the scene id, e.g. `js/my-story.json`). The first time you save a new scene it asks for the scene-selector label (prefilled with the poem's first line) and registers it in `js/poems.json` automatically — the toast confirms the filename and marks it `(new)`. Later saves overwrite the file and leave the label untouched.
+6. Add any SVG, PNG, JPG, or GIF assets under `illustrations/`.
+7. Test locally, then deploy the folder.
+
+Without the local server (e.g. static hosting or `file://`), the save button is unavailable. Use the manual fallback instead:
+
+1. Export the scene JSON from the editor.
+2. Save it as a new file in `js/`, for example `js/my-story.json`.
+3. Register it in `js/poems.json` so the app can load it.
 
 You can use PeelType to publish your own non-commercial interactive story, poem, essay, typographic toy, or visual-novel experiment. Please keep attribution to the original framework and link back to this repository.
 

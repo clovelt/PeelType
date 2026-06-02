@@ -2946,7 +2946,7 @@ toggleEditor = function toggleEditor(forceOpen = null) {
 }
 
 function downloadConfig(config) {
-  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -3651,6 +3651,14 @@ document.getElementById('mainLocaleSelectPopup')?.addEventListener('change', (e)
   window.location.reload();
 });
 
+// Suggest a scene-selector label from the poem's first line (BBCode tags stripped, collapsed, capped).
+function deriveSceneLabel(config) {
+  const first = (config.blocks || []).find(b => (b.text || '').trim());
+  const raw = first?.text || config.title || config.id || 'scene';
+  const clean = raw.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  return clean || config.title || config.id || 'scene';
+}
+
 async function saveLocaleToFile() {
   const lang = storedLocale;
   const localeData = LOCALES[lang];
@@ -3669,13 +3677,24 @@ async function saveLocaleToFile() {
       else saved.push(`locales/${lang}.js ✗`);
     } catch { saved.push(`locales/${lang}.js ✗`); }
   } else {
-    // Main locale: save full poem config to the JSON file
+    // Main locale: save full poem config to its own JSON file (new scenes get registered server-side)
+    // Brand-new scenes aren't in the manifest yet — ask for the dropdown label, suggesting the first line.
+    let label;
+    const knownKeys = Object.keys(scenePresets);
+    const isRegistered = config.id === 'tirita-poema' ? knownKeys.includes('tirita') : knownKeys.includes(config.id);
+    if (!isRegistered) {
+      label = await showPrompt('Name for the scene selector (label):', deriveSceneLabel(config));
+      if (label == null || label.trim() === '') { showToast('Save cancelled'); return; }
+      label = label.trim();
+    }
     try {
       const r = await fetch('/api/save-poem', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config) });
-      if (r.ok) saved.push('peel-after-reading.json');
-      else saved.push('peel-after-reading.json ✗');
-    } catch { saved.push('peel-after-reading.json ✗'); }
+        body: JSON.stringify(label ? { ...config, label } : config) });
+      const data = await r.json().catch(() => ({}));
+      const fname = (data.path || `js/${config.id || 'tirita'}.json`).split('/').pop();
+      if (r.ok) saved.push(data.created ? `${fname} (new)` : fname);
+      else saved.push(`${fname} ✗${data.error ? ` — ${data.error}` : ''}`);
+    } catch { saved.push(`${config.id || 'poem'}.json ✗ (is the local server running?)`); }
   }
   showToast(saved.length ? `Saved: ${saved.join(', ')}` : 'Nothing to save');
 }
@@ -3713,7 +3732,11 @@ async function addNewLanguage() {
     const isMain = storedLocale === getMainLocale();
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button'; saveBtn.id = 'saveLocaleBtn'; saveBtn.className = 'locale-action-btn';
-    saveBtn.title = isMain ? 'Save poem config to peel-after-reading.json' : `Save translations to locales/${storedLocale}.js`;
+    const currentSceneId = getMutableConfigFromEditor()?.id;
+    const currentSceneFile = currentSceneId === 'tirita-poema'
+      ? 'peel-after-reading.json'
+      : `${currentSceneId || 'tirita'}.json`;
+    saveBtn.title = isMain ? `Save poem config to js/${currentSceneFile} (local server)` : `Save translations to locales/${storedLocale}.js`;
     saveBtn.dataset.help = saveBtn.title;
     saveBtn.textContent = '↓';
     saveBtn.addEventListener('click', saveLocaleToFile);

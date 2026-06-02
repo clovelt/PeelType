@@ -223,6 +223,24 @@ if (pieceConfig?.id === 'tirita-poema' && Array.isArray(pieceConfig.blocks)) {
 const isTouchMobile = window.innerWidth < 760 || (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 900);
 if (isTouchMobile) document.body.classList.add('mobile-runtime');
 const mobileRuntime = isTouchMobile;
+
+// --- Hide-UI toggle (top-left button + ?hideUI query string) ---
+(() => {
+  const uiToggle = document.getElementById('uiToggle');
+  const params = new URLSearchParams(window.location.search);
+  const truthy = (v) => v === '' || v === '1' || v === 'true' || v === 'yes';
+  const setHidden = (hidden) => {
+    document.body.classList.toggle('ui-hidden', hidden);
+    if (!uiToggle) return;
+    uiToggle.setAttribute('aria-pressed', String(hidden));
+    uiToggle.title = hidden ? 'Show interface' : 'Hide interface';
+    uiToggle.setAttribute('aria-label', uiToggle.title);
+  };
+  setHidden(params.has('hideUI') && truthy(params.get('hideUI')));
+  uiToggle?.addEventListener('click', () => {
+    setHidden(!document.body.classList.contains('ui-hidden'));
+  });
+})();
 const DEFAULT_PALETTE = ['#4a4a4a', '#1f6f52', '#784830', '#c1a35f', '#f5f0e8', '#e8ddd0', '#cfc2ac', '#b74040', '#1a1a1a', '#ffffff'];
 const DEFAULT_GRADIENT_PRESETS = [
   { name: 'Warm pulse', stops: [{ color: '#b74040', alpha: 1, position: 0 }, { color: '#c1a35f', alpha: 1, position: 100 }] },

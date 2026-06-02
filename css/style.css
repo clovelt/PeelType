@@ -446,6 +446,55 @@ body.editor-open .overflow-gizmo.active { display: block; }
   z-index: 31;
   border-radius: 50%;
 }
+#uiToggle {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  z-index: 40;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(74, 74, 74, 0.28);
+  background: rgba(245, 240, 232, 0.94);
+  color: #4a4a4a;
+  font: 13px Georgia, serif;
+  line-height: 1;
+  cursor: pointer;
+}
+#uiToggle:hover { background: rgba(245, 240, 232, 1); }
+body.mobile-runtime #uiToggle {
+  top: auto;
+  bottom: 14px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+#uiToggle[aria-pressed="true"] { opacity: 0.35; }
+#uiToggle[aria-pressed="true"]:hover { opacity: 1; }
+
+/* Hide all interface chrome, leaving only the canvas and the restore toggle */
+body.ui-hidden #sceneSelectCustom,
+body.ui-hidden #sceneResetBtn,
+body.ui-hidden #sceneClearOnceBtn,
+body.ui-hidden #sceneNewBtn,
+body.ui-hidden #languageSelect,
+body.ui-hidden #editorToggle,
+body.ui-hidden #reloadButton,
+body.ui-hidden #headerApply,
+body.ui-hidden #muteButton,
+body.ui-hidden #skipButton,
+body.ui-hidden #editorQuickAdd,
+body.ui-hidden #editorPanel,
+body.ui-hidden #editorUtilityPanel,
+body.ui-hidden #debugPanel,
+body.ui-hidden #mobileFps {
+  display: none !important;
+}
+
 #editorToggle {
   position: fixed;
   right: 16px;
@@ -517,17 +566,17 @@ body.mobile-runtime #headerApply {
   font: 11px Georgia, serif;
   cursor: pointer;
 }
-#sceneResetBtn { left: calc(16px + min(240px, calc(100vw - 96px)) + 8px); }
-#sceneClearOnceBtn { left: calc(16px + min(240px, calc(100vw - 96px)) + 64px); }
-#sceneNewBtn { left: calc(16px + min(240px, calc(100vw - 96px)) + 142px); }
+#sceneResetBtn { left: calc(52px + min(240px, calc(100vw - 132px)) + 8px); }
+#sceneClearOnceBtn { left: calc(52px + min(240px, calc(100vw - 132px)) + 64px); }
+#sceneNewBtn { left: calc(52px + min(240px, calc(100vw - 132px)) + 142px); }
 
 /* ── Custom scene selector ─────────────────────────────────────── */
 #sceneSelectCustom {
   position: fixed;
-  left: 16px;
+  left: 52px;
   top: 16px;
   z-index: 34;
-  width: min(240px, calc(100vw - 96px));
+  width: min(240px, calc(100vw - 132px));
 }
 #sceneSelectTrigger {
   display: flex;

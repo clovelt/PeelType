@@ -44,6 +44,16 @@ window.addEventListener('pointerup', (e) => {
   cursorForcePointers.delete(e.pointerId);
   if (endDrawTextPointer(e)) return;
   if (endLineartAuthorPointer(e)) return;
+  if (tieNodeDrags?.has(e.pointerId)) {
+    tieNodeDrags.delete(e.pointerId);
+    container.style.cursor = '';
+    return;
+  }
+  if (tangledLineDrags?.has(e.pointerId)) {
+    tangledLineDrags.delete(e.pointerId);
+    container.style.cursor = '';
+    return;
+  }
   const strokeDrag = peelStrokeDrags.get(e.pointerId);
   if (strokeDrag) {
     peelStrokeDrags.delete(e.pointerId);
@@ -69,15 +79,6 @@ window.addEventListener('pointerup', (e) => {
   if (!d) return;
   clampDraggedSegmentToViewport(d.idx);
   els[d.idx].classList.remove('dragging');
-  // Palindrome worm: on release, flip/relocate the whole word to the next row.
-  // (This is the real drop handler for pointer drags — endActiveLetterDrag only
-  // fires for the legacy mouse path, so the commit must live here too.)
-  const palindromeMotion = getPalindromeMotionForLetter(d.idx);
-  if (palindromeMotion) {
-    const rowSpacing = getPalindromeRowSpacing(letters[d.idx], palindromeMotion);
-    const advance = (letters[d.idx].y - d.grabY) >= rowSpacing * 0.5;
-    releasePalindromeWordFromDrag(d.idx, palindromeMotion, advance);
-  }
   drags.delete(e.pointerId);
   markDragStateDirty();
   // Kill velocity on constraint-neighbors so they don't jump when the drag anchor releases
@@ -186,6 +187,21 @@ const labJitter = document.getElementById('labJitter');
 const labSeed = document.getElementById('labSeed');
 const labGenReplace = document.getElementById('labGenReplace');
 const labGenAppend = document.getElementById('labGenAppend');
+const mazeShape = document.getElementById('mazeShape');
+const mazeAlgo = document.getElementById('mazeAlgo');
+const mazeCols = document.getElementById('mazeCols');
+const mazeRows = document.getElementById('mazeRows');
+const mazeRings = document.getElementById('mazeRings');
+const mazeColsRow = document.getElementById('mazeColsRow');
+const mazeRowsRow = document.getElementById('mazeRowsRow');
+const mazeRingsRow = document.getElementById('mazeRingsRow');
+const mazeCell = document.getElementById('mazeCell');
+const mazeWidth = document.getElementById('mazeWidth');
+const mazeSeed = document.getElementById('mazeSeed');
+const mazeText = document.getElementById('mazeText');
+const mazeSolutionText = document.getElementById('mazeSolutionText');
+const mazeGenReplace = document.getElementById('mazeGenReplace');
+const mazeGenAppend = document.getElementById('mazeGenAppend');
 const blockSelect = document.getElementById('blockSelect');
 const blockText = document.getElementById('blockText');
 const bbColorBtn = document.getElementById('bbColorBtn');
@@ -209,12 +225,24 @@ const starterLettersInput = document.getElementById('starterLettersInput');
 const peelPointsList = document.getElementById('peelPointsList');
 const peelPointAddLeft = document.getElementById('peelPointAddLeft');
 const peelPointAddRight = document.getElementById('peelPointAddRight');
-const drawTextEnabled = document.getElementById('drawTextEnabled');
-const drawTextFields = document.getElementById('drawTextFields');
+const drawTextEnabled = document.getElementById('drawTextEnabled'); // kept for compat; null in new UI
+const drawTextFields = document.getElementById('drawTextFields');   // null in new UI
+const textPathEnabled = document.getElementById('textPathEnabled');
+const textPathMode = document.getElementById('textPathMode');
+const drawPathPanel = document.getElementById('drawPathPanel');
+const ringPathPanel = document.getElementById('ringPathPanel');
 const drawTextSpacing = document.getElementById('drawTextSpacing');
 const drawTextAngleMix = document.getElementById('drawTextAngleMix');
 const drawTextToolStatus = document.getElementById('drawTextToolStatus');
 const drawTextToolButtons = [...document.querySelectorAll('[data-draw-text-tool]')];
+const ringPathEnabled = null; // merged into textPathEnabled+textPathMode
+const ringPathFields = null;  // replaced by ringPathPanel
+const ringPathRadius = document.getElementById('ringPathRadius');
+const ringPathCenterY = document.getElementById('ringPathCenterY');
+const ringPathStartAngle = document.getElementById('ringPathStartAngle');
+const ringPathAngleMix = document.getElementById('ringPathAngleMix');
+const ringPathSpacing = document.getElementById('ringPathSpacing');
+const ringPathReverse = document.getElementById('ringPathReverse');
 const drawTextClearBtn = document.getElementById('drawTextClearBtn');
 const drawTextExampleWave = document.getElementById('drawTextExampleWave');
 const drawTextExampleSpiral = document.getElementById('drawTextExampleSpiral');
@@ -251,13 +279,6 @@ const motionLineLockInput = document.getElementById('motionLineLockInput');
 const motionLineLockFields = document.getElementById('motionLineLockFields');
 const motionLineLockStrength = document.getElementById('motionLineLockStrength');
 const motionLineLockDamping = document.getElementById('motionLineLockDamping');
-const motionPalindromeInput = document.getElementById('motionPalindromeInput');
-const motionPalindromeFields = document.getElementById('motionPalindromeFields');
-const motionPalindromeLineGap = document.getElementById('motionPalindromeLineGap');
-const motionPalindromeStrength = document.getElementById('motionPalindromeStrength');
-const motionPalindromeDamping = document.getElementById('motionPalindromeDamping');
-const motionPalindromeManual = document.getElementById('motionPalindromeManual');
-const motionPalindromeLoop = document.getElementById('motionPalindromeLoop');
 function getPeelSeqMode() {
   return peelSeqSelector?.querySelector('button.active')?.dataset?.peelMode ?? 'none';
 }
@@ -283,8 +304,33 @@ function updateLetterMotionFieldVisibility() {
   setMotionActive(motionOrbitInput, motionOrbitFields);
   setMotionActive(motionBuoyancyInput, motionBuoyancyFields);
   setMotionActive(motionLineLockInput, motionLineLockFields);
-  setMotionActive(motionPalindromeInput, motionPalindromeFields);
+  // Drain card
+  const drainCard = drainFields?.closest?.('.letter-motion-item');
+  if (drainCard) drainCard.classList.toggle('active', !!drainEnabledInput?.checked);
+  if (drainDropsFields) drainDropsFields.style.display = (drainEnabledInput?.checked && drainDropsInput?.checked) ? '' : 'none';
+  if (drainBugsFields) drainBugsFields.style.display = (drainEnabledInput?.checked && drainBugsInput?.checked) ? '' : 'none';
 }
+
+function updateTextPathFieldVisibility() {
+  const on = !!textPathEnabled?.checked;
+  const mode = textPathMode?.value || 'custom';
+  textPathEnabled?.closest?.('.letter-motion-item')?.classList.toggle('active', on);
+  if (drawPathPanel) drawPathPanel.style.display = (on && mode === 'custom') ? '' : 'none';
+  if (ringPathPanel) ringPathPanel.style.display = (on && mode === 'ring') ? '' : 'none';
+  if (!on) setDrawTextTool?.('off');
+}
+const drainEnabledInput = document.getElementById('drainEnabledInput');
+const drainFields = document.getElementById('drainFields');
+const drainX = document.getElementById('drainX');
+const drainY = document.getElementById('drainY');
+const drainDropsInput = document.getElementById('drainDropsInput');
+const drainDropsFields = document.getElementById('drainDropsFields');
+const drainDropRate = document.getElementById('drainDropRate');
+const drainDropColor = document.getElementById('drainDropColor');
+const drainBugsInput = document.getElementById('drainBugsInput');
+const drainBugsFields = document.getElementById('drainBugsFields');
+const drainBugRate = document.getElementById('drainBugRate');
+const drainBugColor = document.getElementById('drainBugColor');
 const dragHintInput = document.getElementById('dragHintInput');
 const dragHintFields = document.getElementById('dragHintFields');
 const dragHintPeelPoint = document.getElementById('dragHintPeelPoint');
@@ -301,14 +347,15 @@ const globalStepAdvanceDelay = document.getElementById('globalStepAdvanceDelay')
 const stepAdvanceDelay = document.getElementById('stepAdvanceDelay');
 const fadeRevealFields = document.getElementById('fadeRevealFields');
 const stepParagraphFields = document.getElementById('stepParagraphFields');
-const layersEnabledInput = document.getElementById('layersEnabledInput');
-const layersFields = document.getElementById('layersFields');
-const layersBleedInput = document.getElementById('layersBleedInput');
-const layersHideCompletedInput = document.getElementById('layersHideCompletedInput');
-const layersRevealOpacity = document.getElementById('layersRevealOpacity');
-const layerGroupInput = document.getElementById('layerGroupInput');
-const layerDepthInput = document.getElementById('layerDepthInput');
-const layerRevealOpacityBlock = document.getElementById('layerRevealOpacityBlock');
+const cablePullInput = document.getElementById('cablePullInput');
+const cablePullFields = document.getElementById('cablePullFields');
+const cablePullMode = document.getElementById('cablePullMode');
+const cablePullEase = document.getElementById('cablePullEase');
+const cablePullLead = document.getElementById('cablePullLead');
+const cablePullMaxPan = document.getElementById('cablePullMaxPan');
+const cablePullLockY = document.getElementById('cablePullLockY');
+const cablePullLockOnComplete = document.getElementById('cablePullLockOnComplete');
+const cablePullBlockIds = document.getElementById('cablePullBlockIds');
 const shapeToggle = document.getElementById('shapeToggle');
 const shapeOpacity = document.getElementById('shapeOpacity');
 const shapeTypeSelect = document.getElementById('shapeTypeSelect');
@@ -401,6 +448,11 @@ const timedBtnUrl      = document.getElementById('timedBtnUrl');
 const timedBtnUrlRow   = document.getElementById('timedBtnUrlRow');
 const timedBtnSpawnAt  = document.getElementById('timedBtnSpawnAt');
 const blockHiddenToggle = document.getElementById('blockHiddenToggle');
+const groupNextInput = document.getElementById('groupNextInput');
+const groupOpacityInput = document.getElementById('groupOpacityInput');
+const groupGhostLayersInput = document.getElementById('groupGhostLayersInput');
+const groupPeelRevealInput = document.getElementById('groupPeelRevealInput');
+const eraseCompletedInput = document.getElementById('eraseCompletedInput');
 const timedBtnEnabled = document.getElementById('timedBtnEnabled');
 const timedBtnFields = document.getElementById('timedBtnFields');
 const timedBtnEnable   = document.getElementById('timedBtnEnable');
@@ -411,6 +463,14 @@ const forceFieldList = document.getElementById('forceFieldList');
 const forceFieldAddWind = document.getElementById('forceFieldAddWind');
 const forceFieldAddMagnet = document.getElementById('forceFieldAddMagnet');
 const forceFieldAddCursor = document.getElementById('forceFieldAddCursor');
+const tieList = document.getElementById('tieList');
+const tieAddKnot = document.getElementById('tieAddKnot');
+const tieAddCable = document.getElementById('tieAddCable');
+const tieAddBow = document.getElementById('tieAddBow');
+let currentTies = [];
+const tangledLinesList    = document.getElementById('tangledLinesList');
+const tangledLinesAddGroup = document.getElementById('tangledLinesAddGroup');
+let currentTangledLines = [];
 const editorTabs = document.getElementById('editorTabs');
 textReloadTimer = null;
 autoReloadHeader.checked = autoReloadPref;
@@ -448,6 +508,313 @@ function addForceFieldToEditor(field) {
   applyLiveEditorState();
 }
 
+const TIE_EDITOR_TYPES = ['tie', 'knot', 'cable', 'loop', 'bow'];
+const TIE_UNTIE_ACTIONS = ['none', 'revealBlock', 'hideBlock', 'sound', 'particles', 'setFlag', 'bgColor'];
+
+function tieConfigToEditor(raw = {}, idx = 0) {
+  const onUntie = Array.isArray(raw.onUntie) ? raw.onUntie[0] : raw.onUntie;
+  let action = 'none', target = '';
+  if (onUntie) {
+    if (onUntie.type) {
+      action = onUntie.type;
+      target = onUntie.blockId || onUntie.name || onUntie.preset || onUntie.color || '';
+    } else if (onUntie.action) {
+      action = onUntie.action;
+      target = onUntie.target || onUntie.blockId || onUntie.name || onUntie.preset || onUntie.color || '';
+    }
+  }
+  if (!TIE_UNTIE_ACTIONS.includes(action)) action = 'none';
+  return {
+    id: raw.id || `tie-${idx + 1}`,
+    type: TIE_EDITOR_TYPES.includes(raw.type) ? raw.type : 'knot',
+    fromBlock: raw.from?.block ?? raw.from?.blockId ?? '',
+    fromEndpoint: (raw.from?.endpoint || raw.from?.side) === 'start' ? 'start' : 'end',
+    toBlock: raw.to?.block ?? raw.to?.blockId ?? '',
+    toEndpoint: (raw.to?.endpoint || raw.to?.side) === 'end' ? 'end' : 'start',
+    stiffness: Number(raw.stiffness ?? 0.5),
+    untieDistance: Number(raw.untieDistance ?? 120),
+    color: raw.color || '#7a5a3a',
+    label: raw.label || '',
+    action,
+    target
+  };
+}
+
+function tieEditorToConfig(tie) {
+  const config = {
+    id: tie.id,
+    type: tie.type,
+    from: { block: tie.fromBlock, endpoint: tie.fromEndpoint },
+    to: { block: tie.toBlock, endpoint: tie.toEndpoint },
+    stiffness: Math.max(0.05, Math.min(1, Number(tie.stiffness) || 0.5)),
+    untieDistance: Math.max(12, Number(tie.untieDistance) || 120),
+    color: tie.color || '#7a5a3a'
+  };
+  if (tie.label) config.label = tie.label;
+  if (tie.action && tie.action !== 'none') config.onUntie = { action: tie.action, target: tie.target || '' };
+  return config;
+}
+
+function getTiesFromEditor() {
+  return currentTies.map(tieEditorToConfig);
+}
+
+function setTiesInEditor(ties) {
+  currentTies = Array.isArray(ties) ? ties.map((tie, idx) => tieConfigToEditor(tie, idx)) : [];
+  renderTieList();
+}
+
+function addTieToEditor(partial = {}) {
+  const blocks = getEditableBlocks(getMutableConfigFromEditor());
+  const fromBlock = partial.fromBlock ?? blocks[0]?.id ?? '';
+  const toBlock = partial.toBlock ?? blocks[1]?.id ?? blocks[0]?.id ?? '';
+  currentTies.push(tieConfigToEditor({
+    id: `tie-${Date.now().toString(36)}`,
+    type: 'knot',
+    from: { block: fromBlock, endpoint: 'end' },
+    to: { block: toBlock, endpoint: 'start' },
+    ...partial
+  }, currentTies.length));
+  renderTieList();
+  applyLiveEditorState();
+}
+
+function renderTieList() {
+  if (!tieList) return;
+  tieList.innerHTML = '';
+  const blockIds = (textBlocks || []).map(b => b?.id).filter(Boolean);
+  const datalistId = 'tieBlockOptions';
+  const datalistOptions = blockIds.map(id => `<option value="${id}"></option>`).join('');
+  currentTies.forEach((tie, tieIdx) => {
+    const row = document.createElement('div');
+    row.className = 'tie-item';
+    const typeOptions = TIE_EDITOR_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    const actionOptions = TIE_UNTIE_ACTIONS.map(a => `<option value="${a}">${a}</option>`).join('');
+    row.innerHTML = `
+      <div class="tie-top">
+        <input class="tie-id" type="text" value="${tie.id}" data-help="Tie id">
+        <select class="tie-type" data-help="Visual style of the link">${typeOptions}</select>
+        <button type="button" class="tie-remove danger-icon-button" data-help="Delete this tie">×</button>
+      </div>
+      <div class="editor-grid-2 tie-fields">
+        <div class="editor-row inline"><label data-help="Block whose endpoint is tied">From</label><input class="tie-from-block" type="text" list="${datalistId}" data-help="Block whose endpoint is tied"></div>
+        <div class="editor-row inline"><label data-help="Which end of the From block is bound">From end</label><select class="tie-from-end" data-help="Which end of the From block is bound"><option value="start">start</option><option value="end">end</option></select></div>
+        <div class="editor-row inline"><label data-help="Block whose endpoint is tied">To</label><input class="tie-to-block" type="text" list="${datalistId}" data-help="Block whose endpoint is tied"></div>
+        <div class="editor-row inline"><label data-help="Which end of the To block is bound">To end</label><select class="tie-to-end" data-help="Which end of the To block is bound"><option value="start">start</option><option value="end">end</option></select></div>
+        <div class="editor-row inline"><label data-help="How firmly the knot holds while tied (0–1)">Stiffness</label><input class="tie-stiffness" type="number" min="0.05" max="1" step="0.05" data-help="How firmly the knot holds while tied (0–1)"></div>
+        <div class="editor-row inline"><label data-help="Extra distance the strands must be pulled apart for the knot to come undone">Untie at</label><input class="tie-untie" type="number" min="12" max="600" step="2" data-help="Extra distance the strands must be pulled apart for the knot to come undone"></div>
+        <div class="editor-row inline"><label data-help="Cord and knot color">Color</label><input class="tie-color" type="color" data-help="Cord and knot color"></div>
+        <div class="editor-row inline"><label data-help="Optional caption drawn under the knot">Label</label><input class="tie-label" type="text" placeholder="" data-help="Optional caption drawn under the knot"></div>
+        <div class="editor-row inline"><label data-help="What happens the moment the knot comes undone">On untie</label><select class="tie-action" data-help="What happens the moment the knot comes undone">${actionOptions}</select></div>
+        <div class="editor-row inline tie-target-row"><label data-help="Target of the on-untie action: a block id, flag name, particle preset, sound name or color">Target</label><input class="tie-target" type="text" data-help="Target of the on-untie action: a block id, flag name, particle preset, sound name or color"></div>
+      </div>
+      <datalist id="${datalistId}">${datalistOptions}</datalist>
+    `;
+    const q = selector => row.querySelector(selector);
+    q('.tie-type').value = tie.type;
+    q('.tie-from-block').value = tie.fromBlock;
+    q('.tie-from-end').value = tie.fromEndpoint;
+    q('.tie-to-block').value = tie.toBlock;
+    q('.tie-to-end').value = tie.toEndpoint;
+    q('.tie-stiffness').value = tie.stiffness;
+    q('.tie-untie').value = tie.untieDistance;
+    q('.tie-color').value = tie.color;
+    q('.tie-label').value = tie.label;
+    q('.tie-action').value = tie.action;
+    q('.tie-target').value = tie.target;
+
+    const updateVisibility = () => {
+      q('.tie-target-row').style.display = q('.tie-action').value === 'none' ? 'none' : 'grid';
+    };
+    const updateTie = () => {
+      currentTies[tieIdx] = {
+        id: q('.tie-id').value || `tie-${tieIdx + 1}`,
+        type: q('.tie-type').value,
+        fromBlock: q('.tie-from-block').value.trim(),
+        fromEndpoint: q('.tie-from-end').value,
+        toBlock: q('.tie-to-block').value.trim(),
+        toEndpoint: q('.tie-to-end').value,
+        stiffness: Number(q('.tie-stiffness').value) || 0.5,
+        untieDistance: Number(q('.tie-untie').value) || 120,
+        color: q('.tie-color').value || '#7a5a3a',
+        label: q('.tie-label').value,
+        action: q('.tie-action').value,
+        target: q('.tie-target').value.trim()
+      };
+      applyLiveEditorState();
+    };
+    row.querySelectorAll('input, select').forEach(control => {
+      control.addEventListener('input', updateTie);
+      control.addEventListener('change', () => { updateVisibility(); updateTie(); });
+    });
+    q('.tie-remove').addEventListener('click', () => {
+      currentTies.splice(tieIdx, 1);
+      renderTieList();
+      applyLiveEditorState();
+    });
+    updateVisibility();
+    tieList.appendChild(row);
+  });
+}
+
+// ── Tangled-lines editor ──────────────────────────────────────────────────────
+const TL_TYPES = ['knot', 'loop', 'braid'];
+const TL_ACTIONS = ['none', 'revealBlock', 'hideBlock', 'sound', 'particles', 'setFlag', 'bgColor'];
+
+function getTangledLinesFromEditor() {
+  return currentTangledLines.map(g => {
+    const out = { id: g.id, strands: g.strands.map(s => ({ ...s })), crossings: g.crossings.map(c => ({ ...c })) };
+    if (g.action && g.action !== 'none') out.onUntangle = { action: g.action, target: g.target || '' };
+    return out;
+  });
+}
+
+function setTangledLinesInEditor(groups) {
+  currentTangledLines = (Array.isArray(groups) ? groups : []).map((g, gi) => ({
+    id:        g.id  || `tangle-${gi + 1}`,
+    strands:   (g.strands  || []).map((s, si) => ({
+      id:       s.id      || `s${si}`,
+      block:    s.block   || s.blockId || '',
+      endpoint: s.endpoint || 'end',
+      color:    s.color || '#7a5a3a',
+      width:    Number(s.width ?? 3) || 3
+    })),
+    crossings: (g.crossings || []).map((c, ci) => ({
+      a:     Number(c.a ?? 0),
+      b:     Number(c.b ?? 1),
+      aFrac: Number(c.aFrac ?? 0.65),
+      bFrac: Number(c.bFrac ?? 0.35),
+      type:  c.type || 'knot'
+    })),
+    action: (() => {
+      const on = Array.isArray(g.onUntangle) ? g.onUntangle[0] : g.onUntangle;
+      const a = on?.action || on?.type || 'none';
+      return TL_ACTIONS.includes(a) ? a : 'none';
+    })(),
+    target: (() => {
+      const on = Array.isArray(g.onUntangle) ? g.onUntangle[0] : g.onUntangle;
+      return on?.target || on?.blockId || on?.name || on?.preset || on?.color || '';
+    })()
+  }));
+  renderTangledLinesList();
+}
+
+function renderTangledLinesList() {
+  if (!tangledLinesList) return;
+  tangledLinesList.innerHTML = '';
+  const blockIds = (textBlocks || []).map(b => b?.id).filter(Boolean);
+  const datalistId = 'tlBlockOptions';
+  const datalistHtml = blockIds.map(id => `<option value="${id}"></option>`).join('');
+  const actionOptions = TL_ACTIONS.map(a => `<option value="${a}">${a}</option>`).join('');
+  const typeOptions   = TL_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  currentTangledLines.forEach((group, gi) => {
+    const div = document.createElement('div');
+    div.className = 'tie-item';
+
+    const strandRows = group.strands.map((s, si) => `
+      <div class="tl-strand-row editor-grid-2">
+        <div class="editor-row inline"><label data-help="Block id to anchor this strand's endpoint">Block ${si}</label><input class="tl-s-block" data-si="${si}" type="text" list="${datalistId}" value="${s.block}" data-help="Block id to anchor this strand's endpoint"></div>
+        <div class="editor-row inline"><label data-help="Which end of the block this strand attaches to">End</label><select class="tl-s-end" data-si="${si}" data-help="Which end of the block this strand attaches to"><option value="end">end</option><option value="start">start</option></select></div>
+        <div class="editor-row inline"><label data-help="Strand rope color">Color</label><input class="tl-s-color" data-si="${si}" type="color" value="${s.color}" data-help="Strand rope color"></div>
+        <div class="editor-row inline"><label data-help="Rope thickness in pixels">Width</label><input class="tl-s-w" data-si="${si}" type="number" min="1" max="12" step="0.5" value="${s.width}" data-help="Rope thickness in pixels"></div>
+      </div>`).join('');
+
+    const crossingRows = group.crossings.map((c, ci) => `
+      <div class="tl-crossing-row editor-grid-2">
+        <div class="editor-row inline"><label data-help="Index of the first strand at this crossing (0-based)">Strand A</label><input class="tl-c-a" data-ci="${ci}" type="number" min="0" max="9" step="1" value="${c.a}" data-help="Index of the first strand at this crossing (0-based)"></div>
+        <div class="editor-row inline"><label data-help="How far along strand A the crossing sits (0 = start, 1 = end)">A pos</label><input class="tl-c-af" data-ci="${ci}" type="number" min="0" max="1" step="0.05" value="${c.aFrac}" data-help="How far along strand A the crossing sits (0 = start, 1 = end)"></div>
+        <div class="editor-row inline"><label data-help="Index of the second strand at this crossing (0-based)">Strand B</label><input class="tl-c-b" data-ci="${ci}" type="number" min="0" max="9" step="1" value="${c.b}" data-help="Index of the second strand at this crossing (0-based)"></div>
+        <div class="editor-row inline"><label data-help="How far along strand B the crossing sits (0 = start, 1 = end)">B pos</label><input class="tl-c-bf" data-ci="${ci}" type="number" min="0" max="1" step="0.05" value="${c.bFrac}" data-help="How far along strand B the crossing sits (0 = start, 1 = end)"></div>
+        <div class="editor-row inline"><label data-help="Visual style of the crossing knot">Type</label><select class="tl-c-type" data-ci="${ci}" data-help="Visual style of the crossing knot">${typeOptions}</select></div>
+        <div class="editor-row inline"><button type="button" class="tl-c-remove danger-icon-button" data-ci="${ci}" data-help="Remove this crossing">×</button></div>
+      </div>`).join('');
+
+    div.innerHTML = `
+      <div class="tie-top">
+        <input class="tl-id" type="text" value="${group.id}" data-help="Tangle group id">
+        <button type="button" class="tl-remove danger-icon-button" data-help="Delete this tangle group">×</button>
+      </div>
+      <div class="tl-strands-label" style="font-size:11px;opacity:0.65;margin:2px 0">Strands</div>
+      ${strandRows}
+      <div class="editor-actions" style="margin-top:4px">
+        <button type="button" class="tl-strand-add" data-help="Add a strand to this group">+ Strand</button>
+      </div>
+      <div class="tl-crossings-label" style="font-size:11px;opacity:0.65;margin:4px 0 2px">Crossings</div>
+      ${crossingRows}
+      <div class="editor-actions">
+        <button type="button" class="tl-crossing-add" data-help="Add a crossing between two strands">+ Crossing</button>
+      </div>
+      <div class="editor-grid-2" style="margin-top:6px">
+        <div class="editor-row inline"><label data-help="What happens when the knot is slipped free">On untangle</label><select class="tl-action" data-help="What happens when the knot is slipped free">${actionOptions}</select></div>
+        <div class="editor-row inline tl-target-row"><label data-help="Target of the on-untangle action: a block id, flag name, sound name, or color">Target</label><input class="tl-target" type="text" value="${group.target}" data-help="Target of the on-untangle action: a block id, flag name, sound name, or color"></div>
+      </div>
+      <datalist id="${datalistId}">${datalistHtml}</datalist>`;
+
+    const q = sel => div.querySelector(sel);
+    const qAll = sel => div.querySelectorAll(sel);
+
+    // Restore select values
+    group.strands.forEach((s, si) => { div.querySelectorAll(`.tl-s-end[data-si="${si}"]`)[0].value = s.endpoint; });
+    group.crossings.forEach((c, ci) => { div.querySelectorAll(`.tl-c-type[data-ci="${ci}"]`)[0].value = c.type; });
+    q('.tl-action').value = group.action;
+    q('.tl-target-row').style.display = group.action === 'none' ? 'none' : 'grid';
+
+    const updateGroup = () => {
+      currentTangledLines[gi] = {
+        id: q('.tl-id').value || `tangle-${gi + 1}`,
+        strands: group.strands.map((_, si) => ({
+          id:       `s${si}`,
+          block:    div.querySelectorAll(`.tl-s-block[data-si="${si}"]`)[0]?.value?.trim() || '',
+          endpoint: div.querySelectorAll(`.tl-s-end[data-si="${si}"]`)[0]?.value   || 'end',
+          color:    div.querySelectorAll(`.tl-s-color[data-si="${si}"]`)[0]?.value || '#7a5a3a',
+          width:    Number(div.querySelectorAll(`.tl-s-w[data-si="${si}"]`)[0]?.value) || 3
+        })),
+        crossings: group.crossings.map((_, ci) => ({
+          a:     Number(div.querySelectorAll(`.tl-c-a[data-ci="${ci}"]`)[0]?.value    ?? 0),
+          b:     Number(div.querySelectorAll(`.tl-c-b[data-ci="${ci}"]`)[0]?.value    ?? 1),
+          aFrac: Number(div.querySelectorAll(`.tl-c-af[data-ci="${ci}"]`)[0]?.value   ?? 0.65),
+          bFrac: Number(div.querySelectorAll(`.tl-c-bf[data-ci="${ci}"]`)[0]?.value   ?? 0.35),
+          type:  div.querySelectorAll(`.tl-c-type[data-ci="${ci}"]`)[0]?.value        || 'knot'
+        })),
+        action: q('.tl-action').value,
+        target: q('.tl-target').value.trim()
+      };
+      applyLiveEditorState();
+    };
+
+    div.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', updateGroup);
+      el.addEventListener('change', () => {
+        q('.tl-target-row').style.display = q('.tl-action').value === 'none' ? 'none' : 'grid';
+        updateGroup();
+      });
+    });
+    q('.tl-remove').addEventListener('click', () => {
+      currentTangledLines.splice(gi, 1);
+      renderTangledLinesList();
+      applyLiveEditorState();
+    });
+    q('.tl-strand-add').addEventListener('click', () => {
+      group.strands.push({ id: `s${group.strands.length}`, block: '', endpoint: 'end', color: '#7a5a3a', width: 3 });
+      renderTangledLinesList();
+    });
+    q('.tl-crossing-add').addEventListener('click', () => {
+      group.crossings.push({ a: 0, b: 1, aFrac: 0.65, bFrac: 0.35, type: 'knot' });
+      renderTangledLinesList();
+    });
+    qAll('.tl-c-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.crossings.splice(Number(btn.dataset.ci), 1);
+        renderTangledLinesList();
+        applyLiveEditorState();
+      });
+    });
+
+    tangledLinesList.appendChild(div);
+  });
+}
+
 let activeEditorTab = localStorage.getItem('tirita.editorTab') || 'content';
 if (!['content', 'design', 'behavior'].includes(activeEditorTab)) activeEditorTab = 'content';
 function assignEditorTabs() {
@@ -458,8 +825,8 @@ function assignEditorTabs() {
   [...editorPanel.querySelectorAll('.editor-section')].forEach(section => {
     const title = section.querySelector('summary')?.textContent?.trim().toLowerCase() || '';
     if (title === 'peel') section.dataset.editorTab = 'content';
-    if (title === 'color' || title === 'illustration' || title === 'shape constraint' || title === 'draw text path') section.dataset.editorTab = 'design';
-    if (title === 'dynamics' || title === 'layers' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
+    if (title === 'color' || title === 'illustration' || title === 'modifiers') section.dataset.editorTab = 'design';
+    if (title === 'dynamics' || title === 'camera' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'ties & knots' || title === 'tangled lines' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
   });
   fontSearch.closest('.editor-row')?.setAttribute('data-editor-tab', 'design');
 }
@@ -778,20 +1145,13 @@ function wrapBlockSelection(openTag, closeTag = null) {
 
 function updateShapeFieldVisibility() {
   const shapeEnabled = shapeToggle.checked;
-  shapeFields.style.display = shapeEnabled ? 'grid' : 'none';
-  shapeOpacityRow.style.display = shapeEnabled ? 'grid' : 'none';
-  shapeScaleRow.style.display = shapeEnabled ? 'grid' : 'none';
-  shapeRotationRow.style.display = shapeEnabled ? 'grid' : 'none';
-  shapeClipOverflowRow.style.display = shapeEnabled ? 'flex' : 'none';
-  shapeTypeRow.style.display = shapeEnabled ? 'grid' : 'none';
-  shapeCustomPathDRow.style.display = (shapeEnabled && shapeTypeSelect.value === 'custom') ? 'grid' : 'none';
+  // Shape constraint is now a letter-motion-item card — toggle .active
+  shapeToggle?.closest?.('.letter-motion-item')?.classList.toggle('active', shapeEnabled);
+  if (shapeCustomPathDRow) shapeCustomPathDRow.style.display = (shapeEnabled && shapeTypeSelect.value === 'custom') ? '' : 'none';
 }
 
-function updateDrawTextFieldVisibility() {
-  if (!drawTextFields) return;
-  drawTextFields.style.display = drawTextEnabled?.checked ? 'grid' : 'none';
-  if (!drawTextEnabled?.checked) setDrawTextTool('off');
-}
+function updateDrawTextFieldVisibility() { updateTextPathFieldVisibility(); }
+function updateRingPathFieldVisibility() { updateTextPathFieldVisibility(); }
 shapeToggle.addEventListener('change', updateShapeFieldVisibility);
 shapeTypeSelect.addEventListener('change', updateShapeFieldVisibility);
 // Initial call to set correct visibility on load
@@ -826,7 +1186,6 @@ const localeSyncControlGroups = {
     motionOrbitInput, motionOrbitCx, motionOrbitCy, motionOrbitRadius, motionOrbitStrength, motionOrbitSpin, motionOrbitBand,
     motionBuoyancyInput, motionBuoyancyStrength, motionBuoyancyLift, motionBuoyancyWave, motionBuoyancyDrift, motionBuoyancyFrequency,
     motionLineLockInput, motionLineLockStrength, motionLineLockDamping,
-    motionPalindromeInput, motionPalindromeLineGap, motionPalindromeStrength, motionPalindromeDamping, motionPalindromeManual, motionPalindromeLoop
   ],
   peelPoints: () => [peelPointsList, peelPointAddLeft, peelPointAddRight],
   breakPoints: () => [breakPointsList, breakPointAdd, breakPointsHeaderRow],
@@ -838,6 +1197,7 @@ const localeSyncControlGroups = {
   ],
   clipShape: () => [shapeToggle, shapeTypeSelect, shapeCustomPathD, shapeOpacity, shapeScale, shapeRotation, shapeClipOverflow],
   drawPath: () => [drawTextEnabled, drawTextSpacing, drawTextAngleMix, drawTextToolButtons[0], drawTextToolButtons[1], drawTextClearBtn],
+  ringPath: () => [ringPathEnabled, ringPathRadius, ringPathCenterY, ringPathStartAngle, ringPathAngleMix, ringPathSpacing, ringPathReverse],
   timedButton: () => [timedBtnEnabled, timedBtnDelay, timedBtnLabel, timedBtnAction, timedBtnAddText, timedBtnUrl, timedBtnSpawnAt, timedBtnEnable, timedBtnDisable],
   triggers: () => [eventTriggerList, eventTriggerAdd],
   hidden: () => [blockHiddenToggle]
@@ -1013,8 +1373,11 @@ function updateEffectFieldVisibility() {
   fadeRevealFields.classList.toggle('open', fadeRevealInput.checked);
   stepParagraphFields.classList.toggle('open', stepParagraphsInput.checked);
   stepParagraphsInput.closest('.effect-item').style.display = 'grid';
-  if (layersFields) layersFields.classList.toggle('open', layersEnabledInput.checked);
+  if (cablePullFields) cablePullFields.classList.toggle('open', cablePullInput?.checked);
+  updateDrainFieldVisibility();
 }
+
+function updateDrainFieldVisibility() { updateLetterMotionFieldVisibility(); }
 
 function updateHintFieldVisibility() {
   dragHintFields.classList.toggle('open', dragHintInput.checked);
@@ -1403,7 +1766,7 @@ function renderEventTriggers() {
         <div class="editor-row inline"><label data-help="Only fire if this block is completed. Prefix ! to require NOT completed (e.g. !choice-b).">If done</label><input class="event-condition-block" type="text" placeholder="choice-b or !choice-b"></div>
         <div class="editor-row inline"><label data-help="Only fire if this flag is set. Prefix ! to require NOT set (e.g. !chose-left).">If flag</label><input class="event-flag-cond" type="text" placeholder="chose-left or !chose-left"></div>
         <div class="editor-row inline event-name-row"><label data-help="Sound, ambient, or physics object name">Name</label><input class="event-name" type="text" placeholder="spark"></div>
-        <div class="editor-row inline event-preset-row"><label data-help="Particle preset to emit">Preset</label><select class="event-preset"><option value="spark">spark</option><option value="smokePoof">smoke</option><option value="redDrops">red drops</option><option value="violentGeyser">geyser</option><option value="tears">tears</option></select></div>
+        <div class="editor-row inline event-preset-row"><label data-help="Particle preset to emit">Preset</label><select class="event-preset"><option value="spark">spark</option><option value="smokePoof">smoke</option><option value="redDrops">red drops</option><option value="violentGeyser">geyser</option><option value="tears">tears</option><option value="inkdrop">inkdrop</option><option value="sludgeDrop">sludge drop</option></select></div>
         <div class="editor-row inline event-color-row"><label data-help="Color used by this event action">Color</label><input class="event-color" type="color"></div>
         <div class="editor-row inline event-count-row"><label data-help="Number of particles to emit">Count</label><input class="event-count" type="number" min="1" max="400" step="1"></div>
         <div class="editor-row inline event-duration-row"><label data-help="Effect duration in milliseconds">Duration</label><input class="event-duration" type="number" min="0" max="10000" step="100"></div>
@@ -1535,7 +1898,7 @@ function numberControlValue(control, fallback) {
 
 function buildLetterMotionFromControls(previousBlock = {}) {
   const previous = getMotionItemsFromBlock(previousBlock);
-  const supportedTypes = ['orbit', 'buoyancy', 'line-lock', 'palindrome-flip'];
+  const supportedTypes = ['orbit', 'buoyancy', 'line-lock'];
   const unsupported = previous.filter(item => item && !supportedTypes.includes(item.type));
   const next = [...unsupported.map(item => structuredClone(item))];
   if (motionOrbitInput?.checked) {
@@ -1566,15 +1929,6 @@ function buildLetterMotionFromControls(previousBlock = {}) {
       damping: numberControlValue(motionLineLockDamping, 0.86)
     });
   }
-  if (motionPalindromeInput?.checked) {
-    next.push({
-      type: 'palindrome-flip',
-      lineGap: numberControlValue(motionPalindromeLineGap, 56),
-      strength: numberControlValue(motionPalindromeStrength, 0.18),
-      damping: numberControlValue(motionPalindromeDamping, 0.68),
-      loop: Boolean(motionPalindromeLoop?.checked)
-    });
-  }
   if (next.length === 0) return null;
   return next.length === 1 ? next[0] : next;
 }
@@ -1589,7 +1943,6 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   config.behaviors.stepParagraphs ||= {};
   config.behaviors.stepParagraphs.perBlockAdvanceDelayMs ||= {};
   config.behaviors.stepParagraphs.perBlockVisibleCount ||= {};
-  config.behaviors.layers ||= {};
   const blocks = getEditableBlocks(config);
   const block = blocks[selectedBlockIdx];
   config.style.backgroundColor = backgroundColor.value || config.style.backgroundColor || '#f5f0e8';
@@ -1609,11 +1962,23 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   config.behaviors.stepParagraphs.visibleCount = Number(visibleParagraphs.value) || 2;
   config.behaviors.stepParagraphs.compactFlow = compactFlowInput.checked;
   config.behaviors.stepParagraphs.advanceDelayMs = secondsInputToMs(globalStepAdvanceDelay.value);
-  config.behaviors.layers.enabled = layersEnabledInput.checked;
-  config.behaviors.layers.bleedThrough = layersBleedInput.checked;
-  config.behaviors.layers.hideCompleted = layersHideCompletedInput.checked;
-  config.behaviors.layers.revealOpacity = Math.max(0, Math.min(1, Number(layersRevealOpacity.value) || 1));
+  config.behaviors.cablePull ||= {};
+  config.behaviors.cablePull.enabled = cablePullInput?.checked ?? false;
+  config.behaviors.cablePull.mode = cablePullMode?.value || 'frontier';
+  config.behaviors.cablePull.ease = Math.min(1, Math.max(0.01, Number(cablePullEase?.value) || 0.12));
+  const cablePullLeadVal = Number(cablePullLead?.value);
+  config.behaviors.cablePull.leadMargin = (cablePullLead?.value !== '' && Number.isFinite(cablePullLeadVal)) ? cablePullLeadVal : 380;
+  config.behaviors.cablePull.maxPan = Number(cablePullMaxPan?.value) || 0;
+  config.behaviors.cablePull.lockVerticalScroll = cablePullLockY?.checked ?? true;
+  config.behaviors.cablePull.lockOnComplete = cablePullLockOnComplete?.checked ?? true;
+  config.behaviors.cablePull.followBlockIds = (cablePullBlockIds?.value || '').split(',').map(s => s.trim()).filter(Boolean);
   config.forceFields = getForceFieldsFromEditor();
+  const tiesFromEditor = getTiesFromEditor();
+  if (tiesFromEditor.length) config.ties = tiesFromEditor;
+  else delete config.ties;
+  const tlFromEditor = getTangledLinesFromEditor();
+  if (tlFromEditor.length) config.tangledLines = tlFromEditor;
+  else delete config.tangledLines;
   const selectedId = block?.id || String(selectedBlockIdx);
   const overrideValue = Number(blockVisibleOverride.value);
   if (Number.isFinite(overrideValue) && blockVisibleOverride.value !== '') {
@@ -1647,7 +2012,6 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
     block.peel.shrinkGaps = shrinkGapsInput?.checked ?? false;
     block.peel.popGrid = popGridInput?.checked ?? false;
     block.peel.cascade = block.peel.popGrid;
-    block.peel.manualOneByOne = Boolean(motionPalindromeInput?.checked && motionPalindromeManual?.checked);
     block.peel.mode = peelModeInput.value || config.peel.mode || 'zigzag';
     const nextLetterMotion = buildLetterMotionFromControls(block);
     if (nextLetterMotion) block.letterMotion = nextLetterMotion;
@@ -1670,16 +2034,26 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
     else delete block.triggers;
     if (blockHiddenToggle.checked) block.hidden = true;
     else delete block.hidden;
-    const layerGroupVal = layerGroupInput.value.trim();
-    if (layerGroupVal) {
-      block.layer = { group: layerGroupVal, depth: Math.max(0, Number(layerDepthInput.value) || 0) };
-      const ro = Number(layerRevealOpacityBlock.value);
-      if (layerRevealOpacityBlock.value !== '' && Number.isFinite(ro)) {
-        block.layer.revealOpacity = Math.max(0, Math.min(1, ro));
-      }
-    } else {
-      delete block.layer;
-    }
+    const _gn = Math.max(0, Number(groupNextInput?.value) || 0);
+    if (_gn > 0) block.groupNext = _gn; else delete block.groupNext;
+    // Ghost settings always saved to anchor block so they're group-level
+    const _gi = state.getBlockGroupInfo?.(selectedBlockIdx);
+    const _anchorBlock = _gi ? (blocks[_gi.anchorIdx] ||= { id: `block-${_gi.anchorIdx + 1}`, text: '' }) : block;
+    const _goStr = groupOpacityInput?.value?.trim();
+    if (_goStr !== '' && _goStr != null) {
+      const _goVal = parseFloat(_goStr);
+      if (Number.isFinite(_goVal)) _anchorBlock.groupOpacity = Math.max(0, Math.min(1, _goVal));
+      else delete _anchorBlock.groupOpacity;
+    } else { delete _anchorBlock.groupOpacity; }
+    const _glStr = groupGhostLayersInput?.value?.trim();
+    const _gl = parseInt(_glStr);
+    if (_glStr !== '' && _glStr != null && Number.isFinite(_gl) && _gl > 0) _anchorBlock.groupGhostLayers = _gl;
+    else delete _anchorBlock.groupGhostLayers;
+    if (groupPeelRevealInput?.checked) _anchorBlock.groupPeelReveal = true;
+    else delete _anchorBlock.groupPeelReveal;
+    if (eraseCompletedInput?.checked) block.eraseCompleted = true;
+    else delete block.eraseCompleted;
+    delete block.layer;
     if (timedBtnEnabled.checked) {
       block.timedButton = {
         delayMs: Number(timedBtnDelay.value) || 7000,
@@ -1691,6 +2065,23 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
       };
     } else {
       delete block.timedButton;
+    }
+
+    // Drain ("desagüe")
+    if (drainEnabledInput?.checked) {
+      block.drain = {
+        enabled: true,
+        x: Number(drainX.value) || 0,
+        y: Number(drainY.value) || 0,
+        dropsEnabled: Boolean(drainDropsInput?.checked),
+        dropRate: Math.max(0, Number(drainDropRate.value) || 0),
+        dropColor: drainDropColor.value || '#2a2521',
+        bugsEnabled: Boolean(drainBugsInput?.checked),
+        bugRate: Math.max(0, Number(drainBugRate.value) || 0),
+        bugColor: drainBugColor.value || '#1c1814'
+      };
+    } else {
+      delete block.drain;
     }
 
     // Shape Constraint
@@ -1705,14 +2096,29 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
     }
     if (block.clipShape) block.clipShape.type = shapeTypeSelect.value;
     if (block.clipShape?.type === 'custom') block.clipShape.pathD = shapeCustomPathD.value;
-    if (drawTextEnabled.checked) {
+    const _textOn = textPathEnabled?.checked;
+    const _textMode = textPathMode?.value || 'custom';
+    if (_textOn && _textMode === 'custom') {
       block.drawPath ||= { enabled: true, anchors: [] };
       block.drawPath.enabled = true;
       block.drawPath.spacing = Number(drawTextSpacing.value) || 0;
       block.drawPath.angleMix = Math.max(0, Math.min(1, Number(drawTextAngleMix.value) || 0));
       block.drawPath.anchors ||= [];
+      delete block.ringPath;
+    } else if (_textOn && _textMode === 'ring') {
+      block.ringPath ||= {};
+      block.ringPath.enabled = true;
+      block.ringPath.radius = Math.max(10, Number(ringPathRadius.value) || 200);
+      block.ringPath.centerY = ringPathCenterY.value !== '' ? Math.max(0, Number(ringPathCenterY.value) || 200) : null;
+      block.ringPath.startAngle = Number(ringPathStartAngle.value) || -90;
+      block.ringPath.angleMix = Math.max(0, Math.min(1, Number(ringPathAngleMix.value) || 1));
+      block.ringPath.spacing = Number(ringPathSpacing.value) || 2;
+      block.ringPath.reverse = Boolean(ringPathReverse.checked);
+      if (block.ringPath.centerY === null) delete block.ringPath.centerY;
+      delete block.drawPath;
     } else {
       delete block.drawPath;
+      delete block.ringPath;
     }
     block.style ||= {};
     block.style.fontFamily = fontSearch.value.trim() || block.style.fontFamily || 'Georgia';
@@ -1904,6 +2310,53 @@ function generateLabyrinth(replaceExisting) {
     selectedBlockIdx = blocks.length - threads.length; state.selectedBlockIdx = selectedBlockIdx;
   }
   saveConfigAndReload(nextConfig);
+}
+
+function generateMaze(replaceExisting) {
+  const wallText = mazeText.value.trim() || 'lorem ipsum dolor sit amet consectetuer adipiscing elit';
+  const nextConfig = buildConfigFromVisualControls();
+  const blocks = getEditableBlocks(nextConfig);
+  const mazeBlocks = buildMazeBlocks({
+    shape: mazeShape.value,
+    algorithm: mazeAlgo.value,
+    cols: Number(mazeCols.value) || 8,
+    rows: Number(mazeRows.value) || 8,
+    rings: Number(mazeRings.value) || 6,
+    cell: Number(mazeCell.value) || 44,
+    width: Number(mazeWidth.value) || 600,
+    text: wallText,
+    solutionText: mazeSolutionText.value.trim(),
+    fontPx: state.baseFontPx,
+    lineHeight: state.LINE_HEIGHT,
+    blockGap: nextConfig.layout?.blockGap ?? state.BLOCK_GAP,
+    spacing: 1,
+    seed: Number(mazeSeed.value) || 1,
+    idPrefix: `maze-${Date.now().toString(36)}`,
+    color: blockColor.value || '#cdbb9a',
+    fontFamily: fontSearch.value.trim() || (state.FONT.replace(state.baseFontSize, '').trim() || 'Georgia')
+  });
+  if (!mazeBlocks.length) return;
+  if (replaceExisting) {
+    blocks.splice(0, blocks.length, ...mazeBlocks);
+    selectedBlockIdx = 0; state.selectedBlockIdx = selectedBlockIdx;
+  } else {
+    blocks.push(...mazeBlocks);
+    selectedBlockIdx = blocks.length - mazeBlocks.length; state.selectedBlockIdx = selectedBlockIdx;
+  }
+  saveConfigAndReload(nextConfig);
+}
+
+function updateMazeShapeFields() {
+  const shape = mazeShape.value;
+  const circular = shape === 'circular';
+  if (mazeColsRow) mazeColsRow.style.display = circular ? 'none' : '';
+  if (mazeRowsRow) mazeRowsRow.style.display = circular ? 'none' : '';
+  if (mazeRingsRow) mazeRingsRow.style.display = circular ? '' : 'none';
+  for (const opt of mazeAlgo.options) {
+    const rectOnly = opt.value === 'binary' || opt.value === 'sidewinder';
+    opt.disabled = rectOnly && shape !== 'rectangular';
+  }
+  if (shape !== 'rectangular' && (mazeAlgo.value === 'binary' || mazeAlgo.value === 'sidewinder')) mazeAlgo.value = 'backtracker';
 }
 
 function isBlockComplete(blockIdx) {
@@ -2402,7 +2855,8 @@ function getSegmentUnlockedCount(segment) {
 function updateBehaviorVisibility() {
   const isEditor = document.body.classList.contains('editor-open');
   const isCompact = activeBehaviors?.stepParagraphs?.enabled && activeBehaviors.stepParagraphs.compactFlow;
-  const visibilityKey = `${isEditor ? 'editor' : 'play'}:${lastVisibleBlockSignature}:${unlockClock}:${cachedVisibleBlockWindow.start}:${cachedVisibleBlockWindow.end}`;
+  const editorExtra = isEditor ? `:${selectedBlockIdx}:${state.groupModesRevision ?? 0}` : '';
+  const visibilityKey = `${isEditor ? 'editor' : 'play'}:${lastVisibleBlockSignature}:${unlockClock}:${cachedVisibleBlockWindow.start}:${cachedVisibleBlockWindow.end}${editorExtra}`;
   if (visibilityKey === state.lastBehaviorVisibilityKey) return;
   lastBehaviorVisibilityKey = visibilityKey; state.lastBehaviorVisibilityKey = visibilityKey;
   const fadeEnabled = Boolean(activeBehaviors?.fadeReveal?.enabled);
@@ -2413,9 +2867,106 @@ function updateBehaviorVisibility() {
   const currentBlockIdx = getFirstIncompleteBlock();
   const behaviorStart = Math.min(blockStart, currentBlockIdx);
   const behaviorEnd = Math.max(blockEnd, currentBlockIdx + 1);
+  // ── Group-next visibility ────────────────────────────────────────────────
+  // Per-group mode: 'normal' (editor default), 'all' (full opacity), 'preview' (play-mode sim)
+  // In play mode every group uses play-mode vis regardless.
+  const computeGroupVisMap = (gi) => {
+    const anchor = textBlocks[gi.anchorIdx] || {};
+    const baseOpacity = anchor.groupOpacity ?? 0.15;
+    const ghostLayers = Math.max(1, anchor.groupGhostLayers ?? 1);
+    const peelReveal = Boolean(anchor.groupPeelReveal);
+    const activeIdx = gi.indices.find(idx => !completedBlocks[idx]) ?? gi.indices[gi.indices.length - 1];
+    const activePos = gi.indices.indexOf(activeIdx);
+    let revealFactor = 1;
+    if (peelReveal) {
+      const ar = blockRanges[activeIdx];
+      if (ar) {
+        let locked = 0;
+        for (let i = ar.start; i <= ar.end; i++) { if (letters[i]?.locked) locked++; }
+        const total = ar.end - ar.start + 1;
+        revealFactor = 0.12 + 0.88 * (total > 0 ? 1 - locked / total : 1);
+      }
+    }
+    const vm = new Map();
+    gi.indices.forEach((idx, k) => {
+      const d = k - activePos;
+      if (d === 0) {
+        vm.set(idx, { role: 'active' });
+      } else if (d > 0 && d <= ghostLayers) {
+        const falloff = ghostLayers > 1 ? (ghostLayers + 1 - d) / ghostLayers : 1;
+        vm.set(idx, { role: 'ghost', opacity: baseOpacity * falloff * revealFactor });
+      } else if (d > ghostLayers) {
+        vm.set(idx, { role: 'hidden' });
+      } else if (d < 0 && textBlocks[idx]?.eraseCompleted) {
+        vm.set(idx, { role: 'hidden' });
+      }
+      // d < 0 && !eraseCompleted → not added to vm → falls through to normal rendering
+    });
+    return vm;
+  };
+  // Build per-group data: mode + optional visMap
+  const groupData = new Map(); // anchorIdx → { mode: 'all'|'preview'|'play', visMap? }
+  const processedGroups = new Set();
+  const selectedGroupAnchorIdx = isEditor ? (state.getBlockGroupInfo?.(selectedBlockIdx)?.anchorIdx ?? -1) : -1;
+  for (let bi = 0; bi < blockRanges.length; bi++) {
+    const gi = state.getBlockGroupInfo?.(bi);
+    if (!gi || gi.indices.length < 2 || processedGroups.has(gi.anchorIdx)) continue;
+    // groupParallel: side-by-side columns render normally, no layer ghosting
+    if (textBlocks[gi.anchorIdx]?.groupParallel) continue;
+    processedGroups.add(gi.anchorIdx);
+    // Non-selected groups in the editor default to play-mode visibility (preview-like)
+    const defaultMode = (!isEditor || gi.anchorIdx !== selectedGroupAnchorIdx) ? 'play' : 'normal';
+    const groupMode = state.groupModes?.get(gi.anchorIdx) ?? defaultMode;
+    if (groupMode === 'all') {
+      groupData.set(gi.anchorIdx, { mode: 'all' });
+    } else if (groupMode !== 'normal') {
+      groupData.set(gi.anchorIdx, { mode: groupMode, visMap: computeGroupVisMap(gi) });
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
   for (let blockIdx = behaviorStart; blockIdx < behaviorEnd; blockIdx++) {
     const range = blockRanges[blockIdx];
     if (!range) continue;
+    const gi_b = state.getBlockGroupInfo?.(blockIdx);
+    if (gi_b && gi_b.indices.length >= 2) {
+      const gd = groupData.get(gi_b.anchorIdx);
+      if (gd) {
+        if (gd.mode === 'all') {
+          if (blockIdx !== selectedBlockIdx) {
+            for (let i = range.start; i <= range.end; i++) {
+              els[i].style.opacity = '1'; els[i].style.pointerEvents = 'none';
+            }
+            continue;
+          }
+          // selected block: fall through to normal logic at full opacity
+        } else {
+          const entry = gd.visMap?.get(blockIdx);
+          if (entry?.role === 'hidden') {
+            for (let i = range.start; i <= range.end; i++) {
+              els[i].style.opacity = '0'; els[i].style.pointerEvents = 'none';
+            }
+            continue;
+          }
+          if (entry?.role === 'ghost') {
+            const opStr = String(Math.max(0, Math.min(1, entry.opacity ?? 0.15)));
+            for (let i = range.start; i <= range.end; i++) {
+              els[i].style.opacity = opStr; els[i].style.pointerEvents = 'none';
+            }
+            continue;
+          }
+          // 'active' or not in group → fall through
+        }
+      } else if (isEditor) {
+        // 'normal' editor mode: dim non-selected blocks that share a group with the selected block
+        const selGi = state.getBlockGroupInfo?.(selectedBlockIdx);
+        if (selGi && selGi.anchorIdx === gi_b.anchorIdx && blockIdx !== selectedBlockIdx) {
+          for (let i = range.start; i <= range.end; i++) {
+            els[i].style.opacity = '0.25'; els[i].style.pointerEvents = 'none';
+          }
+          continue;
+        }
+      }
+    }
     if (hiddenBlocks.has(blockIdx) && !isEditor) {
       for (let i = range.start; i <= range.end; i++) {
         els[i].style.opacity = '0';
@@ -2425,12 +2976,12 @@ function updateBehaviorVisibility() {
     }
     const blockAllowed = Boolean(activeBlockFlags[blockIdx] || isBlockVisible(blockIdx));
     const blockWasActive = Boolean(everActiveBlockFlags[blockIdx]);
+    const blockEraseCompleted = Boolean(textBlocks[blockIdx]?.eraseCompleted);
     for (let i = range.start; i <= range.end; i++) {
       const segment = findSegmentForIndex(blockIdx, i);
       const revealCount = fadeEnabled ? getSegmentUnlockedCount(segment) + visibleLetters : Infinity;
       const fromPeelTail = (segment?.end ?? range.end) - i;
-      const isLooseInCompact = isCompact && blockWasActive && isLooseLetterForLimit(i);
-      let opacity = (blockAllowed || (!isCompact && !letters[i].locked && blockWasActive) || isLooseInCompact || isEditor) ? 1 : 0;
+      let opacity = (blockAllowed || (!letters[i].locked && blockWasActive && !blockEraseCompleted) || isEditor) ? 1 : 0;
       if (blockAllowed && fadeEnabled && letters[i].locked) {
         if (isEditor) opacity = 1;
         else if (fromPeelTail < revealCount) {
@@ -2446,14 +2997,15 @@ function updateBehaviorVisibility() {
       els[i].style.opacity = String(finalOpacity);
       els[i].style.pointerEvents = (url || (finalOpacity > 0.01 && !letters[i].locked && (blockAllowed || blockWasActive))) ? 'auto' : 'none';
       if (url) els[i].style.cursor = 'pointer';
-      // Hide censor reveal elements for blocks that have scrolled out in compact flow
       const revealEl = censorRevealEls[i];
       if (revealEl && censorRevealedFlags[i]) {
-        revealEl.style.opacity = (!isCompact || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
+        revealEl.style.opacity = (!blockEraseCompleted || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
       }
     }
   }
 }
+// Override state reference so physics.js render loop uses this version
+state.updateBehaviorVisibility = updateBehaviorVisibility;
 
 saveConfigAndReload = function saveConfigAndReload(config) {
   localStorage.setItem('tirita.editorOpen', editorPanel.classList.contains('open') ? '1' : '0');
@@ -2720,6 +3272,8 @@ function applyLiveEditorState() {
       : nextConfig.optimization.dynamicLetterLimitDesktop);
   activeInitialPeelBlockLimit = Math.max(1, Number(nextConfig.optimization.initialPeelActiveBlocks ?? 4) || 4);
   FORCE_FIELDS = normalizeForceFields(nextConfig.forceFields, SIM_STEP_SCALE); state.FORCE_FIELDS = FORCE_FIELDS;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   const nextBlockGap = Number(nextConfig.layout?.blockGap ?? BLOCK_GAP) || 0;
   if (nextBlockGap !== BLOCK_GAP) {
     BLOCK_GAP = nextBlockGap; state.BLOCK_GAP = BLOCK_GAP;
@@ -2814,9 +3368,16 @@ function applyLiveEditorState() {
   return { nextConfig };
 }
 
-refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFromEditor()) {
+refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFromEditor(), { allowNonAnchor = false } = {}) {
   const blocks = getEditableBlocks(config);
   selectedBlockIdx = Math.min(selectedBlockIdx, Math.max(0, blocks.length - 1)); state.selectedBlockIdx = selectedBlockIdx;
+  // Default to the anchor (handle "1") when landing on a non-anchor group member
+  if (!allowNonAnchor) {
+    const _gi = state.getBlockGroupInfo?.(selectedBlockIdx);
+    if (_gi && _gi.anchorIdx !== selectedBlockIdx) {
+      selectedBlockIdx = _gi.anchorIdx; state.selectedBlockIdx = _gi.anchorIdx;
+    }
+  }
   blockSelect.innerHTML = '';
   blocks.forEach((block, idx) => {
     const option = document.createElement('option');
@@ -2850,7 +3411,6 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   const orbitMotion = getMotionItem(selectedBlock, 'orbit');
   const buoyancyMotion = getMotionItem(selectedBlock, 'buoyancy');
   const lineLockMotion = getMotionItem(selectedBlock, 'line-lock');
-  const palindromeMotion = getMotionItem(selectedBlock, 'palindrome-flip');
   if (motionOrbitInput) motionOrbitInput.checked = Boolean(orbitMotion);
   if (motionOrbitCx) motionOrbitCx.value = orbitMotion?.cx ?? orbitMotion?.x ?? 380;
   if (motionOrbitCy) motionOrbitCy.value = orbitMotion?.cy ?? orbitMotion?.y ?? 220;
@@ -2867,13 +3427,18 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   if (motionLineLockInput) motionLineLockInput.checked = Boolean(lineLockMotion);
   if (motionLineLockStrength) motionLineLockStrength.value = lineLockMotion?.strength ?? 0.55;
   if (motionLineLockDamping) motionLineLockDamping.value = lineLockMotion?.damping ?? 0.86;
-  if (motionPalindromeInput) motionPalindromeInput.checked = Boolean(palindromeMotion);
-  if (motionPalindromeLineGap) motionPalindromeLineGap.value = palindromeMotion?.lineGap ?? 56;
-  if (motionPalindromeStrength) motionPalindromeStrength.value = palindromeMotion?.strength ?? 0.18;
-  if (motionPalindromeDamping) motionPalindromeDamping.value = palindromeMotion?.damping ?? 0.68;
-  if (motionPalindromeManual) motionPalindromeManual.checked = Boolean(selectedBlock.peel?.manualOneByOne);
-  if (motionPalindromeLoop) motionPalindromeLoop.checked = Boolean(palindromeMotion?.loop);
   updateLetterMotionFieldVisibility();
+  const drainCfg = selectedBlock.drain || {};
+  if (drainEnabledInput) drainEnabledInput.checked = Boolean(drainCfg.enabled);
+  if (drainX) drainX.value = drainCfg.x ?? 360;
+  if (drainY) drainY.value = drainCfg.y ?? 150;
+  if (drainDropsInput) drainDropsInput.checked = drainCfg.dropsEnabled ?? true;
+  if (drainDropRate) drainDropRate.value = drainCfg.dropRate ?? 0.7;
+  if (drainDropColor) drainDropColor.value = drainCfg.dropColor || '#2a2521';
+  if (drainBugsInput) drainBugsInput.checked = drainCfg.bugsEnabled ?? true;
+  if (drainBugRate) drainBugRate.value = drainCfg.bugRate ?? 0.08;
+  if (drainBugColor) drainBugColor.value = drainCfg.bugColor || '#1c1814';
+  updateDrainFieldVisibility();
   dragHintInput.checked = Boolean(selectedBlock.hint?.enabled);
   dragHintPeelPoint.value = selectedBlock.hint?.peelPointIndex ?? 0;
   dragHintAppearMs.value = selectedBlock.hint?.appearMs ?? 2600;
@@ -2909,14 +3474,17 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   compactFlowInput.checked = Boolean(config.behaviors?.stepParagraphs?.compactFlow);
   visibleParagraphs.value = config.behaviors?.stepParagraphs?.visibleCount ?? 2;
   globalStepAdvanceDelay.value = msToSecondsInput(config.behaviors?.stepParagraphs?.advanceDelayMs ?? 0);
-  layersEnabledInput.checked = Boolean(config.behaviors?.layers?.enabled);
-  layersBleedInput.checked = config.behaviors?.layers?.bleedThrough !== false;
-  layersHideCompletedInput.checked = config.behaviors?.layers?.hideCompleted !== false;
-  layersRevealOpacity.value = config.behaviors?.layers?.revealOpacity ?? 1;
-  layerGroupInput.value = selectedBlock.layer?.group ?? '';
-  layerDepthInput.value = selectedBlock.layer?.depth ?? '';
-  layerRevealOpacityBlock.value = selectedBlock.layer?.revealOpacity ?? '';
+  if (cablePullInput) cablePullInput.checked = Boolean(config.behaviors?.cablePull?.enabled);
+  if (cablePullMode) cablePullMode.value = config.behaviors?.cablePull?.mode || 'frontier';
+  if (cablePullEase) cablePullEase.value = config.behaviors?.cablePull?.ease ?? 0.12;
+  if (cablePullLead) cablePullLead.value = config.behaviors?.cablePull?.leadMargin ?? 380;
+  if (cablePullMaxPan) cablePullMaxPan.value = config.behaviors?.cablePull?.maxPan ?? 0;
+  if (cablePullLockY) cablePullLockY.checked = config.behaviors?.cablePull?.lockVerticalScroll !== false;
+  if (cablePullLockOnComplete) cablePullLockOnComplete.checked = config.behaviors?.cablePull?.lockOnComplete !== false;
+  if (cablePullBlockIds) cablePullBlockIds.value = (config.behaviors?.cablePull?.followBlockIds || []).join(', ');
   setForceFieldsInEditor(config.forceFields || []);
+  setTiesInEditor(config.ties || []);
+  setTangledLinesInEditor(config.tangledLines || []);
   const selectedVisibleKey = selectedBlock.id || String(selectedBlockIdx);
   blockVisibleOverride.value = config.behaviors?.stepParagraphs?.perBlockVisibleCount?.[selectedVisibleKey] ?? '';
   const blockDelay = config.behaviors?.stepParagraphs?.perBlockAdvanceDelayMs?.[selectedVisibleKey];
@@ -2930,10 +3498,20 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   shapeScale.value = selectedBlock.clipShape?.scale ?? 1;
   shapeRotation.value = selectedBlock.clipShape?.rotation ?? 0;
   shapeClipOverflow.checked = Boolean(selectedBlock.clipShape?.clipOverflow);
-  drawTextEnabled.checked = Boolean(selectedBlock.drawPath?.enabled);
+  // Unified text path card
+  const _hasDrawPath = Boolean(selectedBlock.drawPath?.enabled);
+  const _hasRingPath = Boolean(selectedBlock.ringPath?.enabled);
+  if (textPathEnabled) textPathEnabled.checked = _hasDrawPath || _hasRingPath;
+  if (textPathMode) textPathMode.value = _hasRingPath ? 'ring' : 'custom';
   drawTextSpacing.value = selectedBlock.drawPath?.spacing ?? 2;
   drawTextAngleMix.value = selectedBlock.drawPath?.angleMix ?? 1;
-  updateDrawTextFieldVisibility();
+  if (ringPathRadius) ringPathRadius.value = selectedBlock.ringPath?.radius ?? 200;
+  if (ringPathCenterY) ringPathCenterY.value = selectedBlock.ringPath?.centerY ?? '';
+  if (ringPathStartAngle) ringPathStartAngle.value = selectedBlock.ringPath?.startAngle ?? -90;
+  if (ringPathAngleMix) ringPathAngleMix.value = selectedBlock.ringPath?.angleMix ?? 1;
+  if (ringPathSpacing) ringPathSpacing.value = selectedBlock.ringPath?.spacing ?? 2;
+  if (ringPathReverse) ringPathReverse.checked = Boolean(selectedBlock.ringPath?.reverse);
+  updateTextPathFieldVisibility();
 
   updateAttachFieldVisibility();
   updateShapeFieldVisibility();
@@ -2970,6 +3548,14 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   updateAttachFieldVisibility();
   updateLocaleSyncMarkers();
   blockHiddenToggle.checked = Boolean(selectedBlock.hidden);
+  if (groupNextInput) groupNextInput.value = selectedBlock.groupNext || '';
+  // Ghost settings come from the anchor block of the group
+  const _rgi = state.getBlockGroupInfo?.(selectedBlockIdx);
+  const _anchorBlock = _rgi ? (blocks[_rgi.anchorIdx] || {}) : selectedBlock;
+  if (groupOpacityInput) groupOpacityInput.value = _anchorBlock.groupOpacity ?? '';
+  if (groupGhostLayersInput) groupGhostLayersInput.value = _anchorBlock.groupGhostLayers ?? '';
+  if (groupPeelRevealInput) groupPeelRevealInput.checked = Boolean(_anchorBlock.groupPeelReveal);
+  if (eraseCompletedInput) eraseCompletedInput.checked = Boolean(selectedBlock.eraseCompleted);
   const tBtn = selectedBlock.timedButton || {};
   timedBtnEnabled.checked = Boolean(selectedBlock.timedButton);
   timedBtnDelay.value   = tBtn.delayMs ?? 7000;
@@ -2983,6 +3569,7 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   updateShapeFieldVisibility(); // Ensure shape fields are correctly displayed after refresh
   assignEditorTabs();
   setEditorTab(activeEditorTab);
+  lastBehaviorVisibilityKey = ''; state.lastBehaviorVisibilityKey = '';
 }
 
 toggleEditor = function toggleEditor(forceOpen = null) {
@@ -3377,6 +3964,8 @@ function moveSelectedBlockLive(dx, dy) {
   }
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   positionBlockGizmos();
 }
 
@@ -3405,6 +3994,8 @@ function scaleSelectedBlockLive(factor) {
   }
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   positionBlockGizmos();
 }
 
@@ -3424,8 +4015,11 @@ function relayoutLockedLetters() {
       letters[i].py = np.y;
     }
   }
+  state.applyDrainCollapse?.();
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   reflowStarted.clear(); startedPeelSegments.clear(); computeAllReflowPositions(); computeAnchorPeelNeighbors();
   for (const l of letters) delete l._peelTargetY;
   positionHint();
@@ -3985,6 +4579,10 @@ bulkImportReplace.addEventListener('click', () => importFullText(true));
 bulkImportAppend.addEventListener('click', () => importFullText(false));
 labGenReplace.addEventListener('click', () => generateLabyrinth(true));
 labGenAppend.addEventListener('click', () => generateLabyrinth(false));
+mazeGenReplace.addEventListener('click', () => generateMaze(true));
+mazeGenAppend.addEventListener('click', () => generateMaze(false));
+mazeShape.addEventListener('change', updateMazeShapeFields);
+updateMazeShapeFields();
 moveHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'move'));
 scaleHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'scale'));
 resizeHandle.addEventListener('pointerdown', (e) => startTransformDrag(e, 'resize'));
@@ -4051,6 +4649,8 @@ attachLooseOpen.addEventListener('click', () => openAssetPath(attachLooseSrc.val
 lineartToolButtons.forEach(button => {
   button.addEventListener('click', () => setLineartCanvasTool(button.dataset.lineartTool));
 });
+textPathEnabled?.addEventListener('change', updateTextPathFieldVisibility);
+textPathMode?.addEventListener('change', updateTextPathFieldVisibility);
 drawTextToolButtons.forEach(button => {
   button.addEventListener('click', () => setDrawTextTool(button.dataset.drawTextTool));
 });
@@ -4203,6 +4803,25 @@ forceFieldAddCursor?.addEventListener('click', () => addForceFieldToEditor({
   lockedStrength: 0.6,
   feather: 170
 }));
+tieAddKnot?.addEventListener('click', () => addTieToEditor({ type: 'knot', color: '#7a5a3a', stiffness: 0.5, untieDistance: 120 }));
+tieAddCable?.addEventListener('click', () => addTieToEditor({ type: 'cable', color: '#4a5a6a', stiffness: 0.62, untieDistance: 160 }));
+tieAddBow?.addEventListener('click', () => addTieToEditor({ type: 'bow', color: '#8a4a5a', stiffness: 0.4, untieDistance: 90 }));
+tangledLinesAddGroup?.addEventListener('click', () => {
+  const blocks = getEditableBlocks(getMutableConfigFromEditor());
+  const bA = blocks[0]?.id || '';
+  const bB = blocks[1]?.id || blocks[0]?.id || '';
+  currentTangledLines.push({
+    id: `tangle-${Date.now().toString(36)}`,
+    strands: [
+      { id: 's0', block: bA, endpoint: 'end',   nodeCount: 10, restLength: 22, color: '#7a5a3a', width: 3 },
+      { id: 's1', block: bB, endpoint: 'start', nodeCount: 10, restLength: 22, color: '#4a6a5a', width: 3 }
+    ],
+    crossings: [{ a: 0, b: 1, aFrac: 0.65, bFrac: 0.35, type: 'knot' }],
+    action: 'none', target: ''
+  });
+  renderTangledLinesList();
+  applyLiveEditorState();
+});
 editorTabs.querySelectorAll('button').forEach(button => {
   button.addEventListener('click', () => setEditorTab(button.dataset.tab));
 });
@@ -4239,28 +4858,27 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
   motionLineLockInput,
   motionLineLockStrength,
   motionLineLockDamping,
-  motionPalindromeInput,
-  motionPalindromeLineGap,
-  motionPalindromeStrength,
-  motionPalindromeDamping,
-  motionPalindromeManual,
-  motionPalindromeLoop,
   dragHintInput,
   dragHintPeelPoint,
   dragHintAppearMs,
   dragHintTextMs,
   dragHintText,
   blockHiddenToggle,
+  groupNextInput,
+  groupOpacityInput,
+  groupGhostLayersInput,
+  groupPeelRevealInput,
   timedBtnEnabled,
   fadeRevealInput,
   stepParagraphsInput,
-  layersEnabledInput,
-  layersBleedInput,
-  layersHideCompletedInput,
-  layersRevealOpacity,
-  layerGroupInput,
-  layerDepthInput,
-  layerRevealOpacityBlock,
+  cablePullInput,
+  cablePullMode,
+  cablePullEase,
+  cablePullLead,
+  cablePullMaxPan,
+  cablePullLockY,
+  cablePullLockOnComplete,
+  cablePullBlockIds,
   compactFlowInput,
   globalStepAdvanceDelay,
   stepAdvanceDelay,
@@ -4284,9 +4902,25 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
   shapeScale,
   shapeRotation,
   shapeClipOverflow,
-  drawTextEnabled,
+  drainEnabledInput,
+  drainX,
+  drainY,
+  drainDropsInput,
+  drainDropRate,
+  drainDropColor,
+  drainBugsInput,
+  drainBugRate,
+  drainBugColor,
+  textPathEnabled,
+  textPathMode,
   drawTextSpacing,
   drawTextAngleMix,
+  ringPathRadius,
+  ringPathCenterY,
+  ringPathStartAngle,
+  ringPathAngleMix,
+  ringPathSpacing,
+  ringPathReverse,
   mobileDynamicLimit,
   initialPeelActiveBlocks,
   historySnapshotMinutes,
@@ -4352,6 +4986,7 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
     updateTimedButtonFieldVisibility();
     updateAttachFieldVisibility();
     updateDrawTextFieldVisibility();
+    updateRingPathFieldVisibility();
     updateLetterMotionFieldVisibility();
     applyLiveEditorState();
   };
@@ -4370,7 +5005,7 @@ peelSeqSelector?.querySelectorAll('button').forEach(btn => {
   popGridInput, motionOrbitInput, motionOrbitCx, motionOrbitCy, motionOrbitRadius, motionOrbitStrength, motionOrbitSpin, motionOrbitBand,
   motionBuoyancyInput, motionBuoyancyStrength, motionBuoyancyLift, motionBuoyancyWave, motionBuoyancyDrift, motionBuoyancyFrequency,
   motionLineLockInput, motionLineLockStrength, motionLineLockDamping,
-  motionPalindromeInput, motionPalindromeLineGap, motionPalindromeStrength, motionPalindromeDamping, motionPalindromeManual, motionPalindromeLoop,
+  drainEnabledInput, drainX, drainY,
   dragHintPeelPoint, shapeToggle, shapeTypeSelect, shapeScale, shapeRotation, shapeClipOverflow, fontSearch,
   drawTextEnabled, drawTextSpacing, drawTextAngleMix,
   attachTypeSelect, attachSrc, attachLooseSrc, attachScale, attachScaleValue, attachOpacity, attachOpacityValue, attachWidth, attachHeight, attachGap, attachOffsetY, roughPresetSelect, roughLineQuantity, roughLineQuantityValue, roughLinePrecision, roughLinePrecisionValue, roughInitialPeeled, roughInitialPeeledValue, roughStrokeWidth, roughStrokeWidthValue

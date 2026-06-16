@@ -32,7 +32,7 @@ export async function loadPoemsFromManifest(defaultPieceConfig, version) {
   let manifest;
   try {
     const res = await fetch('./js/poems.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.ok}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     manifest = await res.json();
     if (!Array.isArray(manifest)) throw new Error('Invalid manifest');
   } catch (err) {
@@ -405,13 +405,19 @@ export function migrateStoredConfig(parsed, baseConfig, defaultOptimization = {}
     if ([30, 90, 170].includes(Number(optimization.dynamicLetterLimitMobile))) optimization.dynamicLetterLimitMobile = baseOptimization.dynamicLetterLimitMobile;
     if ([30, 90, 170].includes(Number(optimization.dynamicLetterLimitNarrow))) optimization.dynamicLetterLimitNarrow = baseOptimization.dynamicLetterLimitNarrow;
     next.mobileBlocks = [];
-    const baseBlocksById = new Map((baseConfig.blocks || []).map(block => [block.id, block]));
-    for (const block of next.blocks || []) {
-      // Stop overwriting user-edited text with default locale text on every migration
-    }
+    // Deliberately NOT re-seeding block text from baseConfig here: it would
+    // overwrite user-edited text with default locale text on every migration.
   }
   if (next.id === 'tirita-cross-block-constraints') {
     next.crossBlockConstraints = structuredClone(baseConfig.crossBlockConstraints || []);
+  }
+  if (next.id === 'tirita-tangled-lines') {
+    // The example was redone (braided pre-peeled strips); stored configs from
+    // the old drawPath version carry incompatible layout/physics too.
+    next.blocks       = structuredClone(baseConfig.blocks       || []);
+    next.tangledLines = structuredClone(baseConfig.tangledLines || []);
+    if (baseConfig.layout)  next.layout  = structuredClone(baseConfig.layout);
+    if (baseConfig.physics) next.physics = structuredClone(baseConfig.physics);
   }
   next.optimization = optimization;
   return normalizeConfigIllustrationPaths(next);
@@ -455,7 +461,9 @@ export function loadPieceConfig(scenePresets, defaultPieceConfig, defaultOptimiz
           ...migrated.behaviors?.stepParagraphs,
           perBlockAdvanceDelayMs: { ...(migrated.behaviors?.stepParagraphs?.perBlockAdvanceDelayMs || {}) },
           perBlockVisibleCount: { ...(migrated.behaviors?.stepParagraphs?.perBlockVisibleCount || {}) }
-        }
+        },
+        layers: { ...baseConfig.behaviors?.layers, ...migrated.behaviors?.layers },
+        cablePull: { ...baseConfig.behaviors?.cablePull, ...migrated.behaviors?.cablePull }
       }
     };
     if (isTirita) seedAttachmentSyncFromConfig(merged, locale);

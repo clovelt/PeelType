@@ -5,13 +5,14 @@ const _v = new URL(import.meta.url).searchParams.get('v') ?? '1';
 const { TIRITA_LOCALE_ES } = await import(`./locales/es.js?v=${_v}`);
 const { TIRITA_LOCALE_EN } = await import(`./locales/en.js?v=${_v}`);
 const { buildBlocks, applyLocaleToBlocks } = await import(`./poem.js?v=${_v}`);
-const { buildExampleScenes } = await import(`./scenes.js?v=${_v}`);
+const { buildExampleScenes, buildCableScenes } = await import(`./scenes.js?v=${_v}`);
 const { pointsOnPath, hachureLines } = await import(`./vendor/geometry.js?v=${_v}`);
 const { quoteFontFamily, fontFamilyToGoogleSlug, loadGoogleFont } = await import(`./font.js?v=${_v}`);
 const { parseInlineMotionValue, cloneInlineStyle, parseBBCode, normalizeWord, buildWordRanges } = await import(`./bbcode.js?v=${_v}`);
 const { cubicAt, cubicDerivativeAt, getAnchorOut, getAnchorIn,
         sampleDrawPath, pointOnDrawSamples, anchorsFromDrawnPoints } = await import(`./draw-path.js?v=${_v}`);
 const { buildLabyrinthThreads, scrambleWords } = await import(`./labyrinth.js?v=${_v}`);
+const { buildMazeBlocks, MAZE_ALGORITHMS } = await import(`./maze.js?v=${_v}`);
 const { armAudio: _armAudioCore, zzfx, applyAudioMutedState,
         playPeelSound, playGrabSound, playDropSound,
         playParagraphAppearSound, playPeelPointCompleteSound, playParagraphCompleteSound,
@@ -57,6 +58,9 @@ const { setForceFieldEnabledById, runTriggerAction, resolveBlockConditionIndex,
         triggerConditionPasses, triggerConditionsPass, runTriggers,
         checkWordTriggers } = await import(`./events.js?v=${_v}`);
 const { applyLetterMotion, migrateGripOneStep, simulate, render } = await import(`./physics.js?v=${_v}`);
+const { computeTies, normalizeTie, TIE_TYPES,
+        simulateTieRopes, hitTestTieRope } = await import(`./ties.js?v=${_v}`);
+const { computeTangledLines, simulateTangledLines } = await import(`./tangled-lines.js?v=${_v}`);
 console.log("Tirita: Local offline modules imported successfully.");
 
 let spanishHyphenator = null;
@@ -115,11 +119,15 @@ const defaultPieceConfig = {
       perBlockAdvanceDelayMs: {},
       perBlockVisibleCount: {}
     },
-    layers: {
+    cablePull: {
       enabled: false,
-      bleedThrough: true,
-      hideCompleted: true,
-      revealOpacity: 1
+      mode: 'frontier',
+      followBlockIds: [],
+      ease: 0.12,
+      leadMargin: 380,
+      maxPan: 0,
+      lockVerticalScroll: true,
+      lockOnComplete: true
     }
   },
   blocks: [
@@ -217,6 +225,7 @@ if (!poemScenes.tirita) {
 
 const scenePresets = {
   ...buildExampleScenes(defaultPieceConfig),
+  ...buildCableScenes(defaultPieceConfig),
   ...poemScenes
 };
 
@@ -338,6 +347,12 @@ let lastBehaviorVisibilityKey = '';
 let compactFlowCurrentOffset = 0;
 let compactFlowTargetOffset = 0;
 let lastOverflowY = '';
+let cameraX = 0;
+let cameraTargetX = 0;
+let cameraAppliedX = NaN;     // last cameraX whose transform/width styles were applied
+let cameraAppliedVw = NaN;    // viewport width at last style application
+let cameraEditorWidth = NaN;  // last container width applied in editor pan mode
+let cameraScrollLocked = false;
 let completedBlockTimes = [];
 let mobilePrunedBlockCursor = 0;
 let frameViewport = {
@@ -657,9 +672,17 @@ const textBlocks = activeBlocks.map((blockConfig, blockIdx) => {
     peel: blockConfig.peel || {},
     hint: blockConfig.hint || {},
     triggers: blockConfig.triggers || [],
+    linkButton: blockConfig.linkButton || null,
     timedButton: blockConfig.timedButton || null,
     clipShape: blockConfig.clipShape || null,
     drawPath: blockConfig.drawPath || null,
+    ringPath: blockConfig.ringPath || null,
+    groupNext: Number(blockConfig.groupNext) || 0,
+    groupParallel: Boolean(blockConfig.groupParallel),
+    groupOpacity: (() => { const v = Number(blockConfig.groupOpacity); return Number.isFinite(v) ? v : undefined; })(),
+    groupGhostLayers: Math.max(1, Number(blockConfig.groupGhostLayers) || 1),
+    groupPeelReveal: Boolean(blockConfig.groupPeelReveal),
+    eraseCompleted: Boolean(blockConfig.eraseCompleted),
     hidden: Boolean(blockConfig.hidden),
     widths: graphemes.map(g => measureCtx.measureText(g).width)
   };
@@ -736,17 +759,46 @@ let completedSegments = segmentRanges.map(segs => segs.map(() => false));
 let completedBlocks = blockRanges.map(() => false);
 completedBlockTimes = blockRanges.map(() => 0); state.completedBlockTimes = completedBlockTimes;
 hiddenBlocks = new Set(textBlocks.reduce((acc, b, i) => { if (b.hidden) acc.push(i); return acc; }, [])); state.hiddenBlocks = hiddenBlocks;
-// ── Layers (matrioska despellejada) ───────────────────────────────────────────
-// Stacks of blocks sharing block.layer.group, ordered by block.layer.depth.
-// Only the shallowest incomplete layer is interactive; the one directly beneath
-// bleeds through as the active layer is peeled away (skin → flesh → memory …).
-let layerGroups = buildLayerGroups();
-hideDeepLayers();
 namedFlags = new Set(); state.namedFlags = namedFlags;
 let blockStartedFlags = blockRanges.map(() => false);
 let blockRenderOffsets = blockRanges.map(() => 0);
 let blockWasInVisibleWindow = blockRanges.map(() => false);
 
+// ── Drain ("desagüe") ──────────────────────────────────────────────────────
+// A drain block stacks every letter on a single point (the plughole) so the
+// text can be pulled out of it like a strand of hair. The locked letters pile
+// up at the hole as a visible tangle; as the chain is pulled, letters feed out
+// one by one. Rest lengths get a natural spacing (see computeRestLengths) so the
+// extracted strand reads as text instead of springing back to zero length.
+function getDrainConfig(blockIdx) {
+  const drain = getBlockConfig(blockIdx)?.drain;
+  return drain?.enabled ? drain : null;
+}
+function applyDrainCollapse() {
+  for (let blockIdx = 0; blockIdx < blockRanges.length; blockIdx++) {
+    const drain = getDrainConfig(blockIdx);
+    if (!drain) continue;
+    const range = blockRanges[blockIdx];
+    if (!range) continue;
+    const hx = Number(drain.x ?? 360);
+    const hy = Number(drain.y ?? 150);
+    for (let i = range.start; i <= range.end; i++) {
+      const l = letters[i];
+      if (!l) continue;
+      // Deterministic jitter so the pile stays stable across relayouts.
+      const seed = (i - range.start) * 2.3999632;
+      l.ox = hx + Math.cos(seed) * 7;
+      l.oy = hy + Math.sin(seed * 1.7) * 7;
+      if (l.locked) {
+        l.x = l.ox; l.y = l.oy;
+        l.px = l.ox; l.py = l.oy;
+      }
+    }
+  }
+}
+state.applyDrainCollapse = applyDrainCollapse;
+applyDrainCollapse();
+let bugs = []; state.bugs = bugs;
 
 let restLengths = computeRestLengths();
 state.restLengths = restLengths;
@@ -790,7 +842,6 @@ let gapLinkDecayTargets = null;
 gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
 const reflowPositions = new Map(); state.reflowPositions = reflowPositions;
 const reflowStarted = new Set(); state.reflowStarted = reflowStarted;
-const palindromeWormCycles = new Map(); state.palindromeWormCycles = palindromeWormCycles;
 const startedPeelSegments = new Map(); // blockIdx -> Set of segmentIdx (for reflowAnchors incremental targets)
 
 function computeReflowPositionsForBlock(blockIdx, excludeReadingIndices) {
@@ -844,6 +895,14 @@ const releasedCrossBlockArcs = new Set(); state.releasedCrossBlockArcs = release
 
 let crossBlockConstraints = computeCrossBlockConstraints();
 state.crossBlockConstraints = crossBlockConstraints;
+let ties = computeTies();
+state.ties = ties;
+let tangledLines = computeTangledLines();
+state.tangledLines = tangledLines;
+
+// Drag maps for rope nodes and tangled-line strand nodes
+const tieNodeDrags      = new Map(); state.tieNodeDrags      = tieNodeDrags;
+const tangledLineDrags  = new Map(); state.tangledLineDrags  = tangledLineDrags;
 
 function resetGradientTextFill(el) {
   el.style.backgroundImage = 'none';
@@ -863,6 +922,7 @@ function applyLetterStyle(el, letter, style) {
   el.classList.toggle('bb-censor', Boolean(letter.inlineStyle.censor));
   el.classList.toggle('bb-shake', Boolean(letter.inlineStyle.shake));
   el.classList.toggle('bb-float', Boolean(letter.inlineStyle.float));
+  el.classList.toggle('bb-url', Boolean(letter.inlineStyle?.url));
   el.style.fontFamily = quoteFontFamily(letter.inlineStyle?.fontFamily || letter.style.fontFamily);
   el.style.fontSize = letter.inlineStyle?.size
     ? `${Number(letter.inlineStyle.size)}px`
@@ -884,6 +944,7 @@ function applyLetterStyle(el, letter, style) {
   } else {
     el.style.color = letter.inlineStyle?.color || letter.style.color || pieceConfig.style.color;
   }
+  if (letter.inlineStyle?.url) el.style.color = letter.inlineStyle?.color || '#3b7abf';
 }
 
 // DOM elements – created eagerly but mounted lazily per block
@@ -929,6 +990,20 @@ function mountBlock(blockIdx) {
   }
   lastBehaviorVisibilityKey = ''; state.lastBehaviorVisibilityKey = '';
 }
+
+let inlineLinkButtons = textBlocks.map((block, blockIdx) => {
+  if (!block.linkButton?.url) return null;
+  const el = document.createElement('a');
+  el.className = 'inline-link-button';
+  el.href = block.linkButton.url;
+  el.target = '_blank';
+  el.rel = 'noopener noreferrer';
+  el.textContent = block.linkButton.text || '+';
+  el.addEventListener('pointerdown', (e) => e.stopPropagation());
+  el.addEventListener('click', (e) => e.stopPropagation());
+  container.appendChild(el);
+  return { blockIdx, el };
+});
 
 // Timed continue buttons — appear X ms after the block becomes active
 let timedButtons = textBlocks.map((block, blockIdx) => {
@@ -996,18 +1071,26 @@ function positionClipShapeFrames() {
     if (!item) continue;
     const { blockIdx, el, pathEl } = item;
     const origin = shapeOrigins.get(blockIdx);
-    if (!origin) { el.style.display = 'none'; continue; }
+    if (!origin) {
+      if (item.lastFrameKey !== 'hidden') { item.lastFrameKey = 'hidden'; el.style.display = 'none'; }
+      continue;
+    }
     const { screenX, screenY, W, H, pathD, scale } = origin;
+    const shapeScaleValue = Number(item.shape?.scale ?? origin.shape?.scale ?? 1) || 1;
+    const rotation = Number(item.shape?.rotation ?? origin.shape?.rotation ?? 0) || 0;
+    const strokeOpacity = String(item.shape?.svgOpacity ?? 0.22);
+    // Re-setting SVG attributes (especially path d) every frame is expensive — skip when unchanged.
+    const frameKey = `${screenX}:${screenY}:${W}:${H}:${scale}:${shapeScaleValue}:${rotation}:${strokeOpacity}:${pathD}`;
+    if (item.lastFrameKey === frameKey) continue;
+    item.lastFrameKey = frameKey;
     const pw = W * scale, ph = H * scale;
     el.style.display = 'block';
     el.style.transform = `translate(${screenX}px, ${screenY}px)`;
-    pathEl.style.strokeOpacity = String(item.shape?.svgOpacity ?? 0.22);
+    pathEl.style.strokeOpacity = strokeOpacity;
     el.setAttribute('width', pw);
     el.setAttribute('height', ph);
     el.setAttribute('viewBox', `0 0 ${W} ${H}`);
     pathEl.setAttribute('d', pathD);
-    const shapeScaleValue = Number(item.shape?.scale ?? origin.shape?.scale ?? 1) || 1;
-    const rotation = Number(item.shape?.rotation ?? origin.shape?.rotation ?? 0) || 0;
     pathEl.setAttribute('transform', `translate(${W / 2} ${H / 2}) rotate(${rotation}) scale(${shapeScaleValue}) translate(${-W / 2} ${-H / 2})`);
   }
 }
@@ -1419,6 +1502,28 @@ function getLastNoPeelLetterIdx(blockIdx) {
   return bestIdx !== -1 ? bestIdx : getReadingLastLetterIdx(blockIdx);
 }
 
+function positionInlineLinkButtons() {
+  for (const item of inlineLinkButtons) {
+    if (!item) continue;
+    const { blockIdx, el } = item;
+    const blockAllowed = Boolean(activeBlockFlags[blockIdx] || isBlockVisible(blockIdx) || everActiveBlockFlags[blockIdx]);
+    const idx = getReadingLastLetterIdx(blockIdx);
+    const letter = letters[idx];
+    if (!blockAllowed || !letter || letter.deleted) {
+      if (item.lastKey !== 'hidden') { item.lastKey = 'hidden'; el.style.display = 'none'; }
+      continue;
+    }
+    const color = letter.inlineStyle?.color || letter.style.color || pieceConfig.style.color;
+    const transform = `translate(${letter.x + letter.w + 7}px, ${getRenderedY(idx) + 1}px)`;
+    const key = color + transform;
+    if (item.lastKey === key) continue;
+    item.lastKey = key;
+    el.style.display = 'block';
+    el.style.color = color;
+    el.style.transform = transform;
+  }
+}
+
 function positionTimedButtons() {
   for (const item of timedButtons) {
     if (!item) continue;
@@ -1509,11 +1614,14 @@ function getDragHintTarget() {
 function unlockPeelStarter(segment) {
   const starterCount = Math.max(0, Number(segment.starterCount ?? pieceConfig.peel.initialUnlockCount ?? INITIAL_UNLOCK_COUNT));
   if (!starterCount) return;
-  for (let i = segment.end; i >= Math.max(segment.start, segment.end - starterCount + 1); i--) {
+  let placed = 0;
+  for (let i = segment.end; i >= segment.start && placed < starterCount; i--) {
+    if (letters[i]?.inlineStyle?.noPeel) continue; // skip nopeel letters — place starters on peelable letters only
     const wasLocked = letters[i].locked;
     unlockLetter(i, true, { bakeY: false });
     if (wasLocked) letters[i].starterIdle = true;
     els[i].classList.add('draggable');
+    placed++;
   }
 }
 
@@ -1597,107 +1705,10 @@ function getInitialPeelActivationWindow() {
 }
 
 // ── Layers (matrioska despellejada) ───────────────────────────────────────────
-function buildLayerGroups() {
-  const groups = new Map();
-  for (let i = 0; i < textBlocks.length; i++) {
-    const layer = textBlocks[i]?.layer;
-    if (!layer || !layer.group) continue;
-    const key = String(layer.group);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push({ blockIdx: i, depth: Number(layer.depth) || 0 });
-  }
-  for (const list of groups.values()) list.sort((a, b) => a.depth - b.depth);
-  return groups;
-}
-
-function layersEnabled() {
-  return Boolean(activeBehaviors?.layers?.enabled) && layerGroups && layerGroups.size > 0;
-}
-
-function hideDeepLayers() {
-  if (!layersEnabled()) return;
-  for (const list of layerGroups.values()) {
-    for (let k = 0; k < list.length; k++) {
-      const { blockIdx, depth } = list[k];
-      if (k > 0) hiddenBlocks.add(blockIdx);
-      // Surface paints on top of the layers beneath it (kept below dragged letters).
-      const z = String(Math.max(1, 24 - depth * 2));
-      const range = blockRanges[blockIdx];
-      if (range) for (let i = range.start; i <= range.end; i++) { if (els[i]) els[i].style.zIndex = z; }
-    }
-  }
-}
-
-// Fraction of a block's peelable letters already unlocked or removed (1 == complete).
-function getBlockPeelProgress(blockIdx) {
-  const range = blockRanges[blockIdx];
-  if (!range) return 1;
-  const hasSelectivePeel = textBlocks[blockIdx]?.inlineStyles?.some(s => s?.explicitPeel);
-  let total = 0, gone = 0;
-  for (let i = range.start; i <= range.end; i++) {
-    const l = letters[i];
-    if (!l || l.inlineStyle?.noPeel) continue;
-    if (hasSelectivePeel && !l.inlineStyle?.explicitPeel) continue;
-    total++;
-    if (l.deleted || !l.locked) gone++;
-  }
-  return total ? gone / total : 1;
-}
-
-function getLayerRevealOpacity(blockIdx) {
-  const per = Number(textBlocks[blockIdx]?.layer?.revealOpacity);
-  if (Number.isFinite(per)) return Math.max(0, Math.min(1, per));
-  const g = Number(activeBehaviors?.layers?.revealOpacity);
-  return Number.isFinite(g) ? Math.max(0, Math.min(1, g)) : 1;
-}
-
-// Promote/demote layers: keep only the shallowest incomplete layer interactive,
-// the next one in preview (visible-but-locked), everything deeper hidden.
-function updateLayerActivation() {
-  if (!layersEnabled()) return;
-  const hideCompleted = activeBehaviors.layers.hideCompleted !== false;
-  for (const list of layerGroups.values()) {
-    let activeK = -1;
-    for (let k = 0; k < list.length; k++) {
-      if (!completedBlocks[list[k].blockIdx]) { activeK = k; break; }
-    }
-    for (let k = 0; k < list.length; k++) {
-      const blockIdx = list[k].blockIdx;
-      if (activeK >= 0 && k === activeK) hiddenBlocks.delete(blockIdx);
-      else if (activeK >= 0 && k > activeK) hiddenBlocks.add(blockIdx);
-      else if (hideCompleted) hiddenBlocks.add(blockIdx);
-      else hiddenBlocks.delete(blockIdx);
-    }
-  }
-}
-
-// Per-block layer role for the current frame: 'active' | 'preview' | 'gone' | 'deep'.
-// Preview blocks carry the opacity at which the next layer bleeds through.
-function computeLayerInfo() {
-  if (!layersEnabled()) return null;
-  const info = new Map();
-  const bleed = activeBehaviors.layers.bleedThrough !== false;
-  for (const list of layerGroups.values()) {
-    let activeK = -1;
-    for (let k = 0; k < list.length; k++) {
-      if (!completedBlocks[list[k].blockIdx]) { activeK = k; break; }
-    }
-    if (activeK < 0) continue;
-    const progress = getBlockPeelProgress(list[activeK].blockIdx);
-    for (let k = 0; k < list.length; k++) {
-      const blockIdx = list[k].blockIdx;
-      if (k < activeK) info.set(blockIdx, { role: 'gone', opacity: 0 });
-      else if (k === activeK) info.set(blockIdx, { role: 'active', opacity: 1 });
-      else if (k === activeK + 1) info.set(blockIdx, { role: 'preview', opacity: bleed ? progress * getLayerRevealOpacity(blockIdx) : 0 });
-      else info.set(blockIdx, { role: 'deep', opacity: 0 });
-    }
-  }
-  return info;
-}
-
 function unlockActivePeelStarters() {
   for (let blockIdx = 0; blockIdx < segmentRanges.length; blockIdx++) {
     if (!activeBlockFlags[blockIdx] || hiddenBlocks.has(blockIdx)) continue;
+    if (!isGroupActiveBlock(blockIdx)) continue;
     const segs = segmentRanges[blockIdx];
     const isSingleHandle = textBlocks[blockIdx]?.peel?.singleHandle && segs.some(s => s.starterCount > 0);
     if (isSingleHandle) {
@@ -1824,6 +1835,9 @@ peelHint.innerHTML = `<span class="arrow"></span><span class="finger">☝️</sp
 container.appendChild(peelHint);
 let hintStartTime = performance.now();
 let lastHintBlockIdx = -1;
+let lastHintTransform = '';
+let lastHintMaxWidth = 0;
+const peelHintTextEl = peelHint.querySelector('.hint-text');
 const DEFAULT_HINT_APPEAR_MS = 2600;
 const DEFAULT_HINT_TEXT_MS = 8200;
 function positionHint() {
@@ -1841,20 +1855,27 @@ function positionHint() {
     lastHintBlockIdx = target.blockIdx;
     hintStartTime = performance.now();
   }
+  // Reuse the container width measured by refreshFrameViewport this frame —
+  // calling getMaxWidth() here would force an extra layout read per frame.
+  lastHintMaxWidth = (frameViewport.containerWidth || getMaxWidth() + MARGIN * 2) - MARGIN * 2;
   const now = performance.now();
   const hintConfig = textBlocks[target.blockIdx]?.hint || {};
   const hintLabel = hintConfig.text || hintText;
-  peelHint.querySelector('.hint-text').textContent = hintLabel;
+  if (peelHintTextEl.textContent !== hintLabel) peelHintTextEl.textContent = hintLabel;
   peelHint.classList.toggle('visible', now - hintStartTime > Number(hintConfig.appearMs ?? DEFAULT_HINT_APPEAR_MS));
   peelHint.classList.toggle('text-mode', now - hintStartTime > Number(hintConfig.textMs ?? DEFAULT_HINT_TEXT_MS));
   const endpointX = endpoint.x + endpoint.w / 2;
   const endpointY = getRenderedY(target.idx) + getLetterLineHeight(endpoint) * 0.5;
-  const placeRight = endpointX < getMaxWidth() - 150;
+  const placeRight = endpointX < lastHintMaxWidth - 150;
   const x = placeRight ? endpointX + 10 : endpointX - 118;
   const y = endpointY - 10;
   peelHint.classList.toggle('points-left', placeRight);
   peelHint.style.flexDirection = placeRight ? 'row' : 'row-reverse';
-  peelHint.style.transform = `translate(${x}px, ${y}px)`;
+  const transform = `translate(${x}px, ${y}px)`;
+  if (transform !== lastHintTransform) {
+    lastHintTransform = transform;
+    peelHint.style.transform = transform;
+  }
 }
 positionHint();
 //setTimeout(() => { hint.style.opacity = '1'; }, 500);
@@ -2216,43 +2237,53 @@ function positionAttachments() {
     const visible = Boolean(layout && (blockVisible || isEditor));
     const configuredOpacity = Math.max(0, Math.min(1, Number(textBlocks[attachment.blockIdx]?.attachment?.opacity ?? 1) || 0));
     setFadedDisplay(attachment.el, Boolean(layout), 'grid');
-    if (!layout) continue;
-    if (visible) {
+    // setFadedDisplay rewrites opacity when re-showing, so the style cache
+    // must be invalidated while hidden or the re-show write would be skipped.
+    if (!layout) { attachment.lastStyleKey = null; continue; }
+    if (visible && !attachment.lazyImgChecked) {
+      attachment.lazyImgChecked = true;
       const img = attachment.el.querySelector('img[data-src]');
       if (img && !img.getAttribute('src')) img.src = img.dataset.src;
     }
+    let transform;
+    let opacity;
     if (attachment.exitLocked && !isEditor) {
+      transform = `translate(${attachment.exitX}px, ${attachment.exitY}px)`;
+      opacity = '0';
+      attachment.wasVisible = false;
+    } else {
+      const renderX = layout.x;
+      const renderY = layout.y + getBlockRenderOffsetY(attachment.blockIdx);
+      if (visible) {
+        attachment.el.classList.remove('is-exiting');
+        attachment.exitLocked = false;
+        attachment.lastVisibleX = renderX;
+        attachment.lastVisibleY = renderY;
+        attachment.exitX = null;
+        attachment.exitY = null;
+        transform = `translate(${renderX}px, ${renderY}px)`;
+      } else {
+        if (attachment.wasVisible) {
+          attachment.el.classList.add('is-exiting');
+          attachment.exitX = attachment.lastVisibleX ?? renderX;
+          attachment.exitY = (attachment.lastVisibleY ?? renderY) + exitDriftY;
+        }
+        const exitX = attachment.exitX ?? attachment.lastVisibleX ?? renderX;
+        const exitY = attachment.exitY ?? ((attachment.lastVisibleY ?? renderY) + exitDriftY);
+        transform = `translate(${exitX}px, ${exitY}px)`;
+      }
+      opacity = visible ? String(configuredOpacity) : '0';
+      attachment.wasVisible = visible;
+    }
+    // Skip the DOM writes when nothing changed (this runs twice per frame).
+    const styleKey = `${layout.width}:${layout.height}:${transform}:${opacity}`;
+    if (attachment.lastStyleKey !== styleKey) {
+      attachment.lastStyleKey = styleKey;
       attachment.el.style.width = `${layout.width}px`;
       attachment.el.style.height = `${layout.height}px`;
-      attachment.el.style.transform = `translate(${attachment.exitX}px, ${attachment.exitY}px)`;
-      attachment.el.style.opacity = '0';
-      attachment.wasVisible = false;
-      continue;
+      attachment.el.style.transform = transform;
+      attachment.el.style.opacity = opacity;
     }
-    const renderX = layout.x;
-    const renderY = layout.y + getBlockRenderOffsetY(attachment.blockIdx);
-    attachment.el.style.width = `${layout.width}px`;
-    attachment.el.style.height = `${layout.height}px`;
-    if (visible) {
-      attachment.el.classList.remove('is-exiting');
-      attachment.exitLocked = false;
-      attachment.lastVisibleX = renderX;
-      attachment.lastVisibleY = renderY;
-      attachment.exitX = null;
-      attachment.exitY = null;
-      attachment.el.style.transform = `translate(${renderX}px, ${renderY}px)`;
-    } else {
-      if (attachment.wasVisible) {
-        attachment.el.classList.add('is-exiting');
-        attachment.exitX = attachment.lastVisibleX ?? renderX;
-        attachment.exitY = (attachment.lastVisibleY ?? renderY) + exitDriftY;
-      }
-      const exitX = attachment.exitX ?? attachment.lastVisibleX ?? renderX;
-      const exitY = attachment.exitY ?? ((attachment.lastVisibleY ?? renderY) + exitDriftY);
-      attachment.el.style.transform = `translate(${exitX}px, ${exitY}px)`;
-    }
-    attachment.el.style.opacity = visible ? String(configuredOpacity) : '0';
-    attachment.wasVisible = visible;
   }
 }
 
@@ -2946,8 +2977,11 @@ window.addEventListener('resize', () => {
       letters[i].oy = np.y;
     }
   }
+  applyDrainCollapse();
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   computeAllReflowPositions(); computeAnchorPeelNeighbors();
   positionHint();
   positionAttachments();
@@ -3128,6 +3162,7 @@ function deleteDynamicOverflow() {
   for (let idx = scanStart; idx <= scanEnd; idx++) {
     const letter = letters[idx];
     if (!isLooseLetterForLimit(idx, true)) continue;
+    if (!textBlocks[letter.blockIdx]?.eraseCompleted) continue;
     loose.push({ letter, idx });
   }
 
@@ -3232,7 +3267,46 @@ addParagraphGizmo.className = 'add-paragraph-gizmo';
 addParagraphGizmo.type = 'button';
 addParagraphGizmo.textContent = '+';
 addParagraphGizmo.title = 'Add paragraph below';
-container.append(blockOverlay, moveHandle, scaleHandle, resizeHandle, overflowGizmo, addParagraphGizmo);
+const groupHandlesEl = document.createElement('div');
+groupHandlesEl.className = 'group-handles';
+container.append(blockOverlay, moveHandle, scaleHandle, resizeHandle, overflowGizmo, addParagraphGizmo, groupHandlesEl);
+state.groupHandlesEl = groupHandlesEl;
+const groupModes = new Map(); // anchorIdx → 'all' | 'preview'
+state.groupModes = groupModes;
+let groupModesRevision = 0;
+state.groupModesRevision = 0;
+let lastGroupHandleKey = null;
+
+// Returns { anchorIdx, indices } for the group containing blockIdx, or null.
+function getBlockGroupInfo(blockIdx) {
+  // Check if blockIdx itself starts a group
+  if (textBlocks[blockIdx]?.groupNext > 0) {
+    const n = textBlocks[blockIdx].groupNext;
+    return { anchorIdx: blockIdx, indices: Array.from({ length: n + 1 }, (_, k) => blockIdx + k) };
+  }
+  // Scan backward to find an anchor block whose groupNext covers blockIdx
+  for (let i = Math.max(0, blockIdx - 20); i < blockIdx; i++) {
+    const n = textBlocks[i]?.groupNext;
+    if (n > 0 && i + n >= blockIdx) {
+      return { anchorIdx: i, indices: Array.from({ length: n + 1 }, (_, k) => i + k) };
+    }
+  }
+  return null;
+}
+state.getBlockGroupInfo = getBlockGroupInfo;
+
+function isGroupActiveBlock(blockIdx) {
+  const gi = getBlockGroupInfo(blockIdx);
+  if (!gi) return true;
+  // groupParallel: side-by-side columns — every member peels simultaneously
+  // (vs. the default matrioska behavior of one layer at a time).
+  if (textBlocks[gi.anchorIdx]?.groupParallel) return true;
+  for (const idx of gi.indices) {
+    if (!completedBlocks[idx]) return idx === blockIdx;
+  }
+  return gi.indices[gi.indices.length - 1] === blockIdx;
+}
+state.isGroupActiveBlock = isGroupActiveBlock;
 
 function getBlockVisibleCenter(blockIdx) {
   const range = blockRanges[blockIdx];
@@ -3310,11 +3384,26 @@ function updateSelectedBlockVisuals(config = pieceConfig) {
 }
 
 function positionBlockGizmos() {
-  if (!document.body.classList.contains('editor-open')) return;
+  if (!document.body.classList.contains('editor-open')) {
+    groupHandlesEl.style.display = '';
+    return;
+  }
   for (let i = 0; i < blockGizmos.length; i++) {
     const center = getBlockVisibleCenter(i);
     blockGizmos[i].style.left = `${center.x}px`;
     blockGizmos[i].style.top = `${center.y}px`;
+    // For groups: only show the anchor gizmo (to select the group), or the selected block's gizmo
+    const memberGroup = getBlockGroupInfo(i);
+    if (memberGroup) {
+      const selectedGroup = getBlockGroupInfo(selectedBlockIdx);
+      const inSelectedGroup = selectedGroup && memberGroup.anchorIdx === selectedGroup.anchorIdx;
+      // In the selected group: show only selected block's gizmo (number handles replace the rest)
+      // In other groups: show only the anchor so the group can be clicked to select
+      const showGizmo = inSelectedGroup ? i === selectedBlockIdx : i === memberGroup.anchorIdx;
+      blockGizmos[i].style.display = showGizmo ? '' : 'none';
+    } else {
+      blockGizmos[i].style.display = '';
+    }
   }
   if (!blockRanges[selectedBlockIdx]) return;
   const bounds = getRenderedBlockBounds(selectedBlockIdx);
@@ -3337,6 +3426,69 @@ function positionBlockGizmos() {
   const lastBounds = getRenderedBlockBounds(lastVisibleIdx);
   addParagraphGizmo.style.left = `${lastBounds.left + lastBounds.width / 2 - 12}px`;
   addParagraphGizmo.style.top = `${lastBounds.bottom + 18}px`;
+  // Group next handles — rebuild only when selection or group structure/mode changes
+  const gi = getBlockGroupInfo(selectedBlockIdx);
+  const anchorIdx = gi?.anchorIdx;
+  const currentMode = gi ? (groupModes.get(anchorIdx) ?? 'normal') : 'normal';
+  const handleKey = gi && gi.indices.length > 1
+    ? `${anchorIdx}:${gi.indices.join(',')}:${selectedBlockIdx}:${currentMode}`
+    : 'none';
+  if (handleKey !== lastGroupHandleKey) {
+    lastGroupHandleKey = handleKey;
+    groupHandlesEl.innerHTML = '';
+    if (gi && gi.indices.length > 1) {
+      gi.indices.forEach((idx, k) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'group-handle' + (idx === selectedBlockIdx && currentMode === 'normal' ? ' active' : '');
+        btn.textContent = String(k + 1);
+        btn.title = `Block ${k + 1} of group`;
+        btn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          groupModes.delete(anchorIdx); groupModesRevision++; state.groupModesRevision = groupModesRevision;
+          selectedBlockIdx = idx; state.selectedBlockIdx = idx;
+          refreshVisualEditor?.(undefined, { allowNonAnchor: true });
+        });
+        groupHandlesEl.appendChild(btn);
+      });
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = 'group-handle group-handle-all' + (currentMode === 'all' ? ' active' : '');
+      allBtn.textContent = 'all';
+      allBtn.title = 'Show all group blocks at full opacity';
+      allBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
+      allBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentMode === 'all') groupModes.delete(anchorIdx); else groupModes.set(anchorIdx, 'all');
+        groupModesRevision++; state.groupModesRevision = groupModesRevision;
+        lastGroupHandleKey = null; positionBlockGizmos();
+      });
+      groupHandlesEl.appendChild(allBtn);
+      const previewBtn = document.createElement('button');
+      previewBtn.type = 'button';
+      previewBtn.className = 'group-handle group-handle-preview' + (currentMode === 'preview' ? ' active' : '');
+      previewBtn.textContent = 'preview';
+      previewBtn.title = 'Preview play-mode visibility';
+      previewBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
+      previewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentMode === 'preview') groupModes.delete(anchorIdx); else groupModes.set(anchorIdx, 'preview');
+        groupModesRevision++; state.groupModesRevision = groupModesRevision;
+        lastGroupHandleKey = null; positionBlockGizmos();
+      });
+      groupHandlesEl.appendChild(previewBtn);
+      groupHandlesEl.style.display = 'flex';
+    } else {
+      groupHandlesEl.style.display = 'none';
+    }
+  }
+  // Always update position (centered above block, not overlapping the Move handle)
+  if (gi && gi.indices.length > 1) {
+    groupHandlesEl.style.left = `${bounds.left + bounds.width / 2}px`;
+    groupHandlesEl.style.top = `${bounds.top - 42}px`;
+    groupHandlesEl.style.transform = 'translateX(-50%)';
+  }
 }
 
 function createBlockGizmos() {
@@ -3478,8 +3630,11 @@ function relayoutLockedLetters() {
       letters[i].py = np.y;
     }
   }
+  applyDrainCollapse();
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   reflowStarted.clear(); startedPeelSegments.clear(); computeAllReflowPositions(); computeAnchorPeelNeighbors();
   for (const l of letters) delete l._peelTargetY;
   positionHint();
@@ -3581,6 +3736,7 @@ function refreshFrameViewport() {
   frameViewport = {
     containerLeft: containerRect.left,
     containerTop: containerRect.top,
+    containerWidth: containerRect.width,
     effectsLeft: effectsRect.left,
     effectsTop: effectsRect.top,
     width: viewportWidth,
@@ -3593,8 +3749,10 @@ function refreshFrameViewport() {
 
 function resizePileCanvas() {
   const nextDpr = Math.min(2, window.devicePixelRatio || 1);
-  pileCanvas.style.width = `${frameViewport.width}px`;
-  pileCanvas.style.height = `${frameViewport.height}px`;
+  const cssW = `${frameViewport.width}px`;
+  const cssH = `${frameViewport.height}px`;
+  if (pileCanvas.style.width !== cssW) pileCanvas.style.width = cssW;
+  if (pileCanvas.style.height !== cssH) pileCanvas.style.height = cssH;
   const width = Math.max(1, Math.ceil(frameViewport.width * nextDpr));
   const height = Math.max(1, Math.ceil(frameViewport.height * nextDpr));
   if (pileCanvas.width === width && pileCanvas.height === height && pileDpr === nextDpr) return;
@@ -3651,8 +3809,10 @@ function stampLetterToPile(idx) {
 
 function resizeEffectsCanvas() {
   const nextDpr = Math.min(2, window.devicePixelRatio || 1);
-  effectsCanvas.style.width = `${frameViewport.width}px`;
-  effectsCanvas.style.height = `${frameViewport.height}px`;
+  const cssW = `${frameViewport.width}px`;
+  const cssH = `${frameViewport.height}px`;
+  if (effectsCanvas.style.width !== cssW) effectsCanvas.style.width = cssW;
+  if (effectsCanvas.style.height !== cssH) effectsCanvas.style.height = cssH;
   const width = Math.max(1, Math.ceil(frameViewport.width * nextDpr));
   const height = Math.max(1, Math.ceil(frameViewport.height * nextDpr));
   if (effectsCanvas.width === width && effectsCanvas.height === height && effectsDpr === nextDpr) return;
@@ -3699,9 +3859,10 @@ function updateFrameState() {
   ensureVisiblePeelStrokes();
   if (mobileRuntime) pruneMobileInactiveBlocks();
 
-  // Toggle scrollbar based on compact mode and editor state
+  // Toggle scrollbar based on compact mode, cable-camera lock and editor state
   const isCompact = activeBehaviors?.stepParagraphs?.enabled && activeBehaviors.stepParagraphs.compactFlow;
-  const nextOverflowY = (isCompact && !isEditor) ? 'hidden' : 'auto';
+  const cameraLockY = Boolean(activeBehaviors?.cablePull?.enabled) && activeBehaviors.cablePull.lockVerticalScroll !== false;
+  const nextOverflowY = ((isCompact || cameraLockY) && !isEditor) ? 'hidden' : 'auto';
   if (nextOverflowY !== lastOverflowY) {
     lastOverflowY = nextOverflowY;
     document.body.style.overflowY = nextOverflowY;
@@ -3753,7 +3914,6 @@ function updateFrameState() {
     }
   });
   everActiveBlockFlags = blockRanges.map((_, blockIdx) => Boolean(everActiveBlockFlags[blockIdx] || activeBlockFlags[blockIdx]));
-  updateLayerActivation();
   unlockActivePeelStarters();
   wakeWindForceStarters({ FORCE_FIELDS, segmentRanges, activeBlockFlags, textBlocks, getSegmentStarterStart, letters, bakeLetterRenderY });
   ensureCurrentPeelStarters();
@@ -3858,7 +4018,6 @@ function isLetterFrozen(idx) {
 
 function isCollidableLetter(idx) {
   const letter = letters[idx];
-  if (getPalindromeMotionForLetter(idx)) return false;
   return Boolean(letter && !letter.deleted && !letter.locked && /\S/.test(letter.ch) && !isLetterFrozen(idx));
 }
 
@@ -3965,6 +4124,193 @@ function getSegmentUnlockedCount(segment) {
   return count;
 }
 
+function updateCamera() {
+  const cfg = activeBehaviors?.cablePull;
+  if (!cfg?.enabled) {
+    if (cameraX !== 0 || !Number.isNaN(cameraEditorWidth)) {
+      cameraX = 0;
+      cameraAppliedX = NaN;
+      cameraEditorWidth = NaN;
+      container.style.transform = '';
+      container.style.width = '';
+      document.body.style.overflowX = '';
+    }
+    cameraScrollLocked = false;
+    document.body.classList.remove('camera-pull-active');
+    return;
+  }
+
+  // Expand container to full viewport width so letters beyond 760px are interactable
+  document.body.classList.add('camera-pull-active');
+
+  // Resolve which block indices are cable blocks
+  let cableIndices = [];
+  if (cfg.followBlockIds?.length) {
+    cfg.followBlockIds.forEach(id => {
+      const idx = textBlocks.findIndex(b => b.id === id);
+      if (idx >= 0) cableIndices.push(idx);
+    });
+  }
+  if (!cableIndices.length) {
+    // cable: true property is on the raw block config, not on the textBlocks map
+    textBlocks.forEach((b, i) => { if (getBlockConfig(i).cable) cableIndices.push(i); });
+  }
+  if (!cableIndices.length) {
+    cableIndices = blockRanges.map((_, i) => i);
+  }
+
+  const ease = Math.min(1, Math.max(0.01, Number(cfg.ease) || 0.12));
+  const leadMarginRaw = Number(cfg.leadMargin);
+  const leadMargin = Number.isFinite(leadMarginRaw) ? leadMarginRaw : 380;
+  const viewportW = frameViewport.width;
+  // naturalContainerLeft: the container's left edge in viewport coords with no camera applied.
+  // The container is centered (margin:0 auto), so this equals containerLeft + cameraX.
+  // We need screen-space math so the formula works regardless of container centering.
+  const naturalContainerLeft = frameViewport.containerLeft + cameraX;
+
+  // maxPan: how far the camera can travel so the rightmost cable letter sits at
+  // (viewportW - leadMargin) on screen when cameraX = maxPan.
+  let maxPan = Number(cfg.maxPan) || 0;
+  if (!maxPan) {
+    let rightmost = 0;
+    for (const blockIdx of cableIndices) {
+      const range = blockRanges[blockIdx];
+      if (!range) continue;
+      for (let i = range.start; i <= range.end; i++) {
+        const l = letters[i];
+        if (l && !l.deleted) rightmost = Math.max(rightmost, l.ox + l.w);
+      }
+    }
+    // screen pos of rightmost (no camera) = rightmost + naturalContainerLeft
+    maxPan = Math.max(0, rightmost + naturalContainerLeft - (viewportW - leadMargin));
+  }
+
+  // Check if all cable letters are peeled (for lockOnComplete)
+  let allCablePeeled = cfg.lockOnComplete;
+  if (allCablePeeled) {
+    outer: for (const blockIdx of cableIndices) {
+      const range = blockRanges[blockIdx];
+      if (!range) { allCablePeeled = false; break; }
+      for (let i = range.start; i <= range.end; i++) {
+        const l = letters[i];
+        if (l && !l.deleted && l.locked) { allCablePeeled = false; break outer; }
+      }
+    }
+  }
+
+  if (!allCablePeeled) {
+    if (cfg.mode === 'progress') {
+      let total = 0, unlocked = 0;
+      for (const blockIdx of cableIndices) {
+        const range = blockRanges[blockIdx];
+        if (!range) continue;
+        for (let i = range.start; i <= range.end; i++) {
+          const l = letters[i];
+          if (!l || l.deleted) continue;
+          total++;
+          if (!l.locked) unlocked++;
+        }
+      }
+      const progress = total > 0 ? unlocked / total : 0;
+      cameraTargetX = progress * maxPan;
+    } else {
+      // Frontier (sequential): follow cables in followBlockIds order.
+      // Track only the first cable that still has locked letters. Once that cable
+      // is complete the next one becomes active. This prevents the camera from
+      // jumping ahead to a later cable's position at the start.
+      // Use l.ox (original layout position) not l.x (physics) so dragging loose
+      // letters doesn't move the camera — only unlocking new letters does.
+      let activeIdx = -1;
+      for (const blockIdx of cableIndices) {
+        const range = blockRanges[blockIdx];
+        if (!range) continue;
+        let hasLocked = false;
+        for (let i = range.start; i <= range.end; i++) {
+          const l = letters[i];
+          if (l && !l.deleted && l.locked) { hasLocked = true; break; }
+        }
+        if (hasLocked) { activeIdx = blockIdx; break; }
+      }
+      // Track the frontier of the active cable only.
+      // If the active cable has no unlocked letters yet (user hasn't started it),
+      // leave cameraTargetX unchanged so the camera holds its position.
+      const trackIdx = activeIdx >= 0 ? activeIdx : (cableIndices[cableIndices.length - 1] ?? -1);
+      if (trackIdx >= 0) {
+        const range = blockRanges[trackIdx];
+        if (range) {
+          let frontierX = null;
+          let bestClock = -1;
+          for (let i = range.start; i <= range.end; i++) {
+            const l = letters[i];
+            if (!l || l.deleted || l.locked) continue;
+            if ((l.unlockedAt ?? 0) > bestClock) {
+              bestClock = l.unlockedAt ?? 0;
+              frontierX = l.ox;
+            }
+          }
+          if (frontierX !== null) {
+            cameraTargetX = Math.max(0, frontierX + naturalContainerLeft - (viewportW - leadMargin));
+          }
+          // else: no unlocked letters on active cable yet — camera holds position
+        }
+      }
+    }
+  }
+  // if allCablePeeled && lockOnComplete: cameraTargetX stays at its last value (frozen)
+
+  cameraTargetX = Math.max(0, Math.min(maxPan, cameraTargetX));
+
+  const isEditorMode = document.body.classList.contains('editor-open');
+  if (isEditorMode) {
+    // In editor: expose full scene width via native horizontal scroll so the user
+    // can pan freely to reach off-screen elements. cameraX tracks window.scrollX
+    // so all letter visibility / hit-testing remains accurate.
+    const sceneWidth = Math.max(maxPan + viewportW, viewportW);
+    if (cameraEditorWidth !== sceneWidth) {
+      cameraEditorWidth = sceneWidth;
+      cameraAppliedX = NaN;
+      container.style.transform = '';
+      container.style.width = `${sceneWidth}px`;
+      document.body.style.overflowX = 'auto';
+    }
+    cameraX = window.scrollX;
+    cameraScrollLocked = false;
+  } else {
+    if (!Number.isNaN(cameraEditorWidth)) {
+      cameraEditorWidth = NaN;
+      cameraAppliedX = NaN;
+      document.body.style.overflowX = '';
+    }
+    cameraX += (cameraTargetX - cameraX) * ease;
+    if (Math.abs(cameraX - cameraTargetX) < 0.1) cameraX = cameraTargetX;
+    if (cameraX !== cameraAppliedX || viewportW !== cameraAppliedVw) {
+      cameraAppliedX = cameraX;
+      cameraAppliedVw = viewportW;
+      if (cameraX > 0.1) {
+        container.style.transform = `translateX(${-cameraX}px)`;
+        // Expand container width so its pointer-event area always covers the full viewport.
+        // Without this, translateX(-cameraX) shifts the container left, creating a dead zone
+        // on the right side of the screen where the container's hit area doesn't reach.
+        container.style.width = `${viewportW + cameraX}px`;
+      } else {
+        container.style.transform = '';
+        container.style.width = '';
+      }
+    }
+
+    // Lock vertical scroll while the cable camera is active. updateFrameState owns
+    // the overflowY style; here we only reset the scroll position once on engage.
+    if (cfg.lockVerticalScroll !== false) {
+      if (!cameraScrollLocked) {
+        cameraScrollLocked = true;
+        window.scrollTo(0, 0);
+      }
+    } else {
+      cameraScrollLocked = false;
+    }
+  }
+}
+
 function updateBehaviorVisibility() {
   const isEditor = document.body.classList.contains('editor-open');
   const isCompact = activeBehaviors?.stepParagraphs?.enabled && activeBehaviors.stepParagraphs.compactFlow;
@@ -3981,19 +4327,9 @@ function updateBehaviorVisibility() {
     ? Math.max(0, Math.min(blockStart, currentBlockIdx) - 1)
     : Math.min(blockStart, currentBlockIdx);
   const behaviorEnd = Math.max(blockEnd, currentBlockIdx + 1);
-  const layerInfo = computeLayerInfo();
   for (let blockIdx = behaviorStart; blockIdx < behaviorEnd; blockIdx++) {
     const range = blockRanges[blockIdx];
     if (!range) continue;
-    const layer = layerInfo?.get(blockIdx);
-    if (layer?.role === 'preview' && !isEditor) {
-      // Layer beneath the active one: visible but not yet interactive.
-      for (let i = range.start; i <= range.end; i++) {
-        els[i].style.opacity = String(getLetterDisplayOpacity(letters[i], layer.opacity));
-        els[i].style.pointerEvents = 'none';
-      }
-      continue;
-    }
     if (hiddenBlocks.has(blockIdx) && !isEditor) {
       for (let i = range.start; i <= range.end; i++) {
         els[i].style.opacity = '0';
@@ -4003,12 +4339,12 @@ function updateBehaviorVisibility() {
     }
     const blockAllowed = Boolean(activeBlockFlags[blockIdx] || isBlockVisible(blockIdx));
     const blockWasActive = Boolean(everActiveBlockFlags[blockIdx]);
+    const blockEraseCompleted = Boolean(textBlocks[blockIdx]?.eraseCompleted);
     for (let i = range.start; i <= range.end; i++) {
       const segment = findSegmentForIndex(blockIdx, i);
       const revealCount = fadeEnabled ? getSegmentUnlockedCount(segment) + visibleLetters : Infinity;
       const fromPeelTail = (segment?.end ?? range.end) - i;
-      const isLooseInCompact = isCompact && blockWasActive && isLooseLetterForLimit(i);
-      let opacity = (blockAllowed || (!isCompact && !letters[i].locked && blockWasActive) || isLooseInCompact || isEditor) ? 1 : 0;
+      let opacity = (blockAllowed || (!letters[i].locked && blockWasActive && !blockEraseCompleted) || isEditor) ? 1 : 0;
       if (blockAllowed && fadeEnabled && letters[i].locked) {
         if (isEditor) opacity = 1;
         else if (fromPeelTail < revealCount) {
@@ -4024,10 +4360,9 @@ function updateBehaviorVisibility() {
       els[i].style.opacity = String(finalOpacity);
       els[i].style.pointerEvents = (url || (finalOpacity > 0.01 && !letters[i].locked && (blockAllowed || blockWasActive))) ? 'auto' : 'none';
       if (url) els[i].style.cursor = 'pointer';
-      // Hide censor reveal elements for blocks that have scrolled out in compact flow
       const revealEl = censorRevealEls[i];
       if (revealEl && censorRevealedFlags[i]) {
-        revealEl.style.opacity = (!isCompact || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
+        revealEl.style.opacity = (!blockEraseCompleted || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
       }
     }
   }
@@ -4126,6 +4461,7 @@ state.updateFrameState = updateFrameState;
 state.continueSceneScrollRestore = continueSceneScrollRestore;
 state.positionAttachments = positionAttachments;
 state.syncPeelStrokeOrigins = syncPeelStrokeOrigins;
+state.positionInlineLinkButtons = positionInlineLinkButtons;
 state.positionTimedButtons = positionTimedButtons;
 state.positionClipShapeFrames = positionClipShapeFrames;
 state.positionHint = positionHint;
@@ -4133,6 +4469,7 @@ state.positionBlockGizmos = positionBlockGizmos;
 state.getLetterVisualOffset = getLetterVisualOffset;
 state.getBlockRenderOffsetY = getBlockRenderOffsetY;
 state.updateBehaviorVisibility = updateBehaviorVisibility;
+state.updateCamera = updateCamera;
 state.updateDebugStats = updateDebugStats;
 
 function hasCursorForceFields() {
@@ -4187,6 +4524,7 @@ function getLineLockY(idx) {
 
 function isInDraggedSegment(idx) {
   refreshDragState();
+  if (!draggedSegmentKeys.size) return false;
   const letter = letters[idx];
   if (!letter) return false;
   const segmentIdx = findSegmentIndexForIndex(letter.blockIdx, idx);
@@ -4237,66 +4575,6 @@ function isPickableLetterIdx(idx) {
   if (isDragged(idx)) return false;
   if (!isLetterInViewport(idx)) return false;
   if (Number(els[idx]?.style.opacity || 1) < 0.2) return false;
-  return true;
-}
-
-function getPalindromeMotionForLetter(idx) {
-  const letter = letters[idx];
-  if (!letter) return null;
-  const blockConfig = getBlockConfig(letter.blockIdx);
-  const motion = blockConfig.letterMotion || pieceConfig.letterMotion;
-  const motions = Array.isArray(motion) ? motion : (motion ? [motion] : []);
-  return motions.find(item => item?.type === 'palindrome-flip' && item.enabled !== false) || null;
-}
-
-// Worm row spacing: a full letter line height PLUS the configured gap, so each
-// flipped row sits clearly below the previous one (a small gap alone overlaps
-// at large scales, and a palindrome reads identically mirrored, hiding the move).
-function getPalindromeRowSpacing(letter, item) {
-  return getLetterLineHeight(letter) + Math.max(0, Number(item?.lineGap ?? 56));
-}
-
-// Deterministic target for a letter at a given worm cycle (0 = original row).
-// Odd cycles mirror the word horizontally (seen from the other side).
-function getPalindromeTarget(idx, item, cycle) {
-  const letter = letters[idx];
-  const blockPositions = positions[letter?.blockIdx]?.positions;
-  if (!letter || !blockPositions?.length) return null;
-  const c = Math.max(0, Math.floor(cycle));
-  const own = blockPositions[letter.readingIdx] || { x: letter.ox, y: letter.oy };
-  const mirrorIdx = Math.max(0, Math.min(blockPositions.length - 1, blockPositions.length - 1 - letter.readingIdx));
-  const mirrored = blockPositions[mirrorIdx] || own;
-  const baseX = c % 2 === 1 ? mirrored.x : own.x;
-  return { x: baseX, y: own.y + getPalindromeRowSpacing(letter, item) * c };
-}
-
-// Move the WHOLE palindrome word one worm-row (when advancing) or re-settle it on
-// its current row. Each letter is teleported to its new row immediately (so the
-// move is unmistakable) and carries an explicit palindromeCycle so the physics
-// flip force then holds it there instead of letting gravity drag it down.
-function releasePalindromeWordFromDrag(idx, item, advance) {
-  const letter = letters[idx];
-  if (!letter) return false;
-  const range = blockRanges[letter.blockIdx];
-  if (!range) return false;
-  const current = Math.max(0, Math.floor(palindromeWormCycles.get(letter.blockIdx) || 0));
-  // First pull lands on row 1; later pulls advance one row only when dragged down.
-  const nextCycle = advance ? current + 1 : Math.max(1, current);
-  for (let i = range.start; i <= range.end; i++) {
-    const l = letters[i];
-    if (!l || l.deleted || l.inlineStyle?.noPeel) continue;
-    if (l.locked) unlockLetter(i, true, { bakeY: false });
-    l.palindromeCycle = nextCycle;
-    l.starterIdle = false;
-    const target = getPalindromeTarget(i, item, nextCycle);
-    if (target) {
-      l.x = target.x; l.y = target.y;
-      l.px = target.x; l.py = target.y;
-      l.angle = 0;
-    }
-    els[i]?.classList.add('draggable');
-  }
-  palindromeWormCycles.set(letter.blockIdx, nextCycle);
   return true;
 }
 
@@ -4416,15 +4694,6 @@ function endActiveLetterDrag(pointerId) {
   if (!d) return false;
   clampDraggedSegmentToViewport(d.idx);
   els[d.idx]?.classList.remove('dragging');
-  const palindromeMotion = getPalindromeMotionForLetter(d.idx);
-  if (palindromeMotion) {
-    // Advance the worm a row only if the letter was dragged downward by at least
-    // half a row; otherwise the word just re-settles on its current row.
-    const rowSpacing = getPalindromeRowSpacing(letters[d.idx], palindromeMotion);
-    const downwardDrag = letters[d.idx].y - d.grabY;
-    const advance = downwardDrag >= rowSpacing * 0.5;
-    releasePalindromeWordFromDrag(d.idx, palindromeMotion, advance);
-  }
   drags.delete(pointerId);
   markDragStateDirty();
   for (const ni of [d.idx - 1, d.idx + 1]) {
@@ -4452,6 +4721,32 @@ container.addEventListener('pointerdown', (e) => {
   if (handleDrawTextPointerDown(e)) return;
   if (handleLineartAuthorPointerDown(e)) return;
   updateCursorForcePointer(e, true);
+  // ── Tie rope node hit-test ─────────────────────────────────────────────
+  {
+    const hitRadius   = e.pointerType === 'touch' ? 44 : 26;
+    const hitRadiusSq = hitRadius * hitRadius;
+    const cx = e.clientX - frameViewport.containerLeft;
+    const cy = e.clientY - frameViewport.containerTop;
+    const tieHit = hitTestTieRope(cx, cy, hitRadiusSq);
+    if (tieHit) {
+      const { tie, ni } = tieHit;
+      const n = tie.nodes[ni];
+      tieNodeDrags.set(e.pointerId, {
+        tieId: tie.id, ni,
+        offsetX: cx - n.x, offsetY: cy - n.y
+      });
+      // Wake the nearer endpoint letter so it can be pulled through the rope
+      const ac = state.getLetterConstraintCenter(tie.aIdx);
+      const bc = state.getLetterConstraintCenter(tie.bIdx);
+      const dA = Math.hypot(n.x - ac.x, n.y - ac.y);
+      const dB = Math.hypot(n.x - bc.x, n.y - bc.y);
+      wakeStarterIdleSegment(dA <= dB ? tie.aIdx : tie.bIdx);
+      container.style.cursor = 'grabbing';
+      try { container.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+      return;
+    }
+  }
   // ── Stroke hit-test: grab the nearest free node ───────────────────────
   {
     const hitRadius = e.pointerType === 'touch' ? 44 : 24;
@@ -4516,7 +4811,10 @@ window.addEventListener('pointermove', (e) => {
     const hitRadiusSq = hitRadius * hitRadius;
     const cx = e.clientX - frameViewport.containerLeft;
     const cy = e.clientY - frameViewport.containerTop;
-    let hit = false;
+    // Also show grab cursor over tie rope nodes
+    const tieHit       = hitTestTieRope(cx, cy, hitRadiusSq);
+    if (tieHit) { container.style.cursor = 'grab'; }
+    let hit = tieHit;
     for (const stroke of peelStrokes) {
       if (!stroke.initialized) continue;
       const layout = positions[stroke.blockIdx]?.attachment;
@@ -4534,6 +4832,21 @@ window.addEventListener('pointermove', (e) => {
     container.style.cursor = hit ? 'grab' : '';
   }
 
+  // ── Tie rope node drag ────────────────────────────────────────────────
+  const tieNodeDrag = tieNodeDrags.get(e.pointerId);
+  if (tieNodeDrag) {
+    const tie = (state.ties || []).find(t => t.id === tieNodeDrag.tieId);
+    if (tie?.nodes?.[tieNodeDrag.ni]) {
+      const n = tie.nodes[tieNodeDrag.ni];
+      const prevX = n.x, prevY = n.y;
+      n.x  = e.clientX - frameViewport.containerLeft - tieNodeDrag.offsetX;
+      n.y  = e.clientY - frameViewport.containerTop  - tieNodeDrag.offsetY;
+      n.px = n.x - (n.x - prevX) * 0.78;
+      n.py = n.y - (n.y - prevY) * 0.78;
+    }
+    e.preventDefault();
+    return;
+  }
   const strokeDrag = peelStrokeDrags.get(e.pointerId);
   if (strokeDrag) {
     const n = strokeDrag.stroke.nodes[strokeDrag.nodeIdx];
@@ -4693,19 +5006,22 @@ async function performSoftReload() {
   loosePartDrags.clear();
   peelStrokes.length = 0;
   peelStrokeDrags.clear();
+  tieNodeDrags.clear();
+  tangledLineDrags.clear();
   initializedStrokeBlocks.clear();
   pendingStrokeBlocks.clear();
   queuedStrokeBlocks.length = 0;
   strokeQueueScheduled = false;
   physicsProps.forEach(p => p.el?.remove());
   physicsProps.length = 0;
+  bugs.forEach(b => b.el?.remove());
+  bugs.length = 0;
   physicsPropDrags.clear();
   firedTriggerKeys.clear();
   shapeOrigins.clear();
   initializedCrossBlockArcs.clear();
   releasedCrossBlockArcs.clear();
   reflowStarted.clear();
-  palindromeWormCycles.clear();
   startedPeelSegments.clear();
   everActiveBlockFlags = [];
   cachedVisibleBlockWindow = { start: 0, end: 0 };
@@ -4726,7 +5042,13 @@ async function performSoftReload() {
       transform: { x: Number(bc.transform?.x ?? 0), y: Number(bc.transform?.y ?? 0), scale: Number(bc.transform?.scale ?? 1), width: Number(bc.transform?.width ?? getMaxWidth()), height: Number(bc.transform?.height ?? 0) },
       graphemes: parsed.graphemes, inlineStyles: parsed.inlineStyles, wordRanges: buildWordRanges(parsed.plainText, parsed.graphemes),
       attachment: bc.attachment || null, peel: bc.peel || {}, hint: bc.hint || {}, triggers: bc.triggers || [],
-      timedButton: bc.timedButton || null, clipShape: bc.clipShape || null, drawPath: bc.drawPath || null,
+      linkButton: bc.linkButton || null, timedButton: bc.timedButton || null, clipShape: bc.clipShape || null, drawPath: bc.drawPath || null,
+      ringPath: bc.ringPath || null,
+      groupNext: Number(bc.groupNext) || 0,
+      groupOpacity: (() => { const v = Number(bc.groupOpacity); return Number.isFinite(v) ? v : undefined; })(),
+      groupGhostLayers: Math.max(1, Number(bc.groupGhostLayers) || 1),
+      groupPeelReveal: Boolean(bc.groupPeelReveal),
+      eraseCompleted: Boolean(bc.eraseCompleted),
       hidden: Boolean(bc.hidden),
       widths: parsed.graphemes.map(g => measureCtx.measureText(g).width)
     };
@@ -4753,9 +5075,12 @@ async function performSoftReload() {
     }
     segmentRanges.push(segsForBlock); blockRanges.push({ start, end: letters.length - 1 });
   }
+  applyDrainCollapse();
   restLengths = computeRestLengths(); state.restLengths = restLengths; gapLinkDecayTargets = computeGapLinkDecayTargets(); state.gapLinkDecayTargets = gapLinkDecayTargets;
   breakThresholds = computeBreakThresholds(); state.breakThresholds = breakThresholds;
   crossBlockConstraints = computeCrossBlockConstraints(); state.crossBlockConstraints = crossBlockConstraints;
+  ties = computeTies(); state.ties = ties;
+  tangledLines = computeTangledLines(); state.tangledLines = tangledLines;
   reflowStarted.clear(); startedPeelSegments.clear(); computeAllReflowPositions(); computeAnchorPeelNeighbors();
   lastRenderedX = new Array(letters.length).fill(NaN); state.lastRenderedX = lastRenderedX;
   lastRenderedY = new Array(letters.length).fill(NaN); state.lastRenderedY = lastRenderedY;
@@ -4779,8 +5104,6 @@ async function performSoftReload() {
   completedBlocks = blockRanges.map(() => false); state.completedBlocks = completedBlocks;
   completedBlockTimes = blockRanges.map(() => 0); state.completedBlockTimes = completedBlockTimes;
   hiddenBlocks = new Set(textBlocks.reduce((acc, b, i) => { if (b.hidden) acc.push(i); return acc; }, [])); state.hiddenBlocks = hiddenBlocks;
-  layerGroups = buildLayerGroups();
-  hideDeepLayers();
   namedFlags = new Set(); state.namedFlags = namedFlags;
   blockStartedFlags = blockRanges.map(() => false); state.blockStartedFlags = blockStartedFlags;
   blockRenderOffsets = blockRanges.map(() => 0);
@@ -4789,6 +5112,16 @@ async function performSoftReload() {
   // 4. Reset display components
   container.append(blockOverlay, moveHandle, scaleHandle, resizeHandle, overflowGizmo, addParagraphGizmo, hint, peelHint);
   if (!mobileRuntime) createBlockGizmos();
+
+  inlineLinkButtons = textBlocks.map((block, blockIdx) => {
+    if (!block.linkButton?.url) return null;
+    const el = document.createElement('a'); el.className = 'inline-link-button';
+    el.href = block.linkButton.url; el.target = '_blank'; el.rel = 'noopener noreferrer';
+    el.textContent = block.linkButton.text || '+';
+    el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.addEventListener('click', (e) => e.stopPropagation());
+    container.appendChild(el); return { blockIdx, el };
+  });
 
   timedButtons = textBlocks.map((block, blockIdx) => {
     if (!block.timedButton) return null;

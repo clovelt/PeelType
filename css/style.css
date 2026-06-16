@@ -32,6 +32,10 @@ body { width: 100%; min-height: 100%; overflow-x: hidden; overflow-y: auto; back
   -webkit-user-select: none;
   touch-action: none;
 }
+body.camera-pull-active #container {
+  max-width: none;
+  padding: 0;
+}
 .letter {
   position: absolute;
   top: 0; left: 0;
@@ -79,6 +83,7 @@ body { width: 100%; min-height: 100%; overflow-x: hidden; overflow-y: auto; back
 .letter.bb-strong { font-weight: 700; }
 .letter.bb-em { font-style: italic; }
 .letter.bb-underline { text-decoration-line: underline; }
+.letter.bb-url { text-decoration-line: underline; text-underline-offset: 2px; }
 .letter.bb-strike { text-decoration-line: line-through; }
 .letter.bb-underline.bb-strike { text-decoration-line: underline line-through; }
 .letter.no-peel { cursor: default !important; }
@@ -1346,6 +1351,46 @@ input[type="number"]::-webkit-inner-spin-button {
   padding-top: 4px;
 }
 /* "Letter motion" label sits as a header above a full-width stack of cards. */
+/* Group-next handles — numbered buttons above selected block's bounding box */
+.group-handles {
+  position: absolute;
+  display: none;
+  flex-direction: row;
+  gap: 3px;
+  z-index: 48;
+  pointer-events: auto;
+}
+body.editor-open .group-handles { display: flex; }
+.group-handle {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: rgba(245, 240, 232, 0.92);
+  border: 1px solid rgba(31, 111, 82, 0.7);
+  cursor: pointer;
+  color: #1f6f52;
+  line-height: 22px;
+  text-align: center;
+}
+.group-handle.active {
+  background: #1f6f52;
+  color: #fff;
+  border-color: #1f6f52;
+  box-shadow: 0 0 0 3px rgba(31, 111, 82, 0.18);
+}
+.group-handle-all,
+.group-handle-preview {
+  width: auto;
+  padding: 0 5px;
+  margin-left: 2px;
+}
+.group-handle-all.active,
+.group-handle-preview.active {
+  background: #1f6f52;
+  color: #fff;
+  border-color: #1f6f52;
+}
 .letter-motion-row {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -1714,6 +1759,47 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 .force-field-fields > .editor-row:not(.inline) {
   grid-column: 1 / -1;
+}
+.tie-list {
+  display: grid;
+  gap: 6px;
+}
+.tie-item {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  border-radius: 5px;
+  background: rgba(255, 252, 246, 0.36);
+}
+.tie-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 22px;
+  gap: 4px;
+}
+.tie-top input,
+.tie-top select,
+.tie-top button {
+  min-width: 0;
+  height: 26px;
+  padding: 4px 5px !important;
+  border: 1px solid rgba(74, 74, 74, 0.22);
+  border-radius: 3px;
+  background: rgba(255, 252, 246, 0.88);
+  color: #333;
+  font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  outline: none;
+}
+.tie-top button {
+  display: grid;
+  place-items: center;
+  text-transform: uppercase;
+}
+.tie-fields {
+  gap: 4px;
+}
+.tie-fields .editor-row.inline {
+  grid-template-columns: 64px 1fr;
 }
 .color-section input[type="color"] {
   width: 30px;

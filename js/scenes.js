@@ -7,7 +7,51 @@ export function buildExampleScenes(defaultPieceConfig) {
   return {
     default: {
       label: 'Default: normal peels',
-      config: structuredClone(defaultPieceConfig)
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        layout: { ...structuredClone(defaultPieceConfig.layout), margin: 20 },
+        blocks: [
+          {
+            id: 'credits-title',
+            text: '[b]PeelType[/b] - an editor and framework for experimental interactive typography.',
+            transform: { x: 0, y: 0, scale: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 2 },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'credits-what',
+            text: 'It treats text like physical material: letters peel, fall, shake, tether, and respond to force fields. 25+ scenes showcase what\'s possible - use the editor to remix them or build your own.',
+            transform: { x: 0, y: 0, scale: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 3 },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'credits-origin',
+            text: 'It began as the engine for [i]Peel After Reading[/i], a personal interactive story about meeting someone deeply.',
+            transform: { x: 0, y: 0, scale: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 3 },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'credits-license',
+            text: 'Free for non-commercial use with attribution. Fork it, remix it, publish your own story, poem, essay, or typographic toy.',
+            transform: { x: 0, y: 0, scale: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 2 },
+            style: { color: '#6a6a6a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'credits-author',
+            text: 'Made by [url=https://gustavochico.com/]Gustavo Chico[/url]. More games at [url=https://clov.itch.io/]clov.itch.io[/url]. Source on [url=https://github.com/clovelt/PeelType]GitHub[/url].',
+            transform: { x: 0, y: 0, scale: 1 },
+            peel: { fromBeginning: true, initialUnlockCount: 2 },
+            style: { color: '#6a6a6a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          ...structuredClone(defaultPieceConfig.blocks).map(b => {
+            const { width, ...rest } = b.transform;
+            return { ...b, transform: rest };
+          })
+        ]
+      }
     },
 
     peelModes: {
@@ -729,6 +773,223 @@ export function buildExampleScenes(defaultPieceConfig) {
       }
     },
 
+    tiesKnots: {
+      label: 'Ties & knots',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-ties-knots',
+        layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 28, topMargin: 96, bottomMargin: 180 },
+        optimization: { ...structuredClone(defaultPieceConfig.optimization), initialPeelActiveBlocks: 6 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 2, compactFlow: false }
+        },
+        ties: [
+          {
+            id: 'nudo-central',
+            type: 'knot',
+            ropeNodes: 10,
+            from: { block: 'hilo-a', endpoint: 'end' },
+            to: { block: 'hilo-b', endpoint: 'start' },
+            stiffness: 0.5,
+            untieDistance: 130,
+            color: '#7a5a3a',
+            label: 'tira del cabo',
+            onUntie: { action: 'revealBlock', target: 'revelado' }
+          },
+          {
+            id: 'lazo-bajo',
+            type: 'bow',
+            ropeNodes: 8,
+            from: { block: 'hilo-b', endpoint: 'end' },
+            to: { block: 'hilo-c', endpoint: 'start' },
+            stiffness: 0.42,
+            untieDistance: 96,
+            color: '#8a4a5a',
+            onUntie: { action: 'particles', target: 'spark', color: '#c06a78' }
+          },
+          {
+            id: 'cable-diagonal',
+            type: 'cable',
+            ropeNodes: 12,
+            from: { block: 'hilo-c', endpoint: 'end' },
+            to: { block: 'hilo-d', endpoint: 'start' },
+            stiffness: 0.58,
+            untieDistance: 150,
+            color: '#4a5a6a',
+            width: 4,
+            onUntie: { action: 'sound', target: 'peel' }
+          }
+        ],
+        blocks: [
+          {
+            id: 'hilo-a',
+            text: 'Esta línea no se pela sino que se desata: el cabo suelto cuelga a la derecha, es una cuerda real que puedes agarrar en cualquier punto.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            peel: { fromBeginning: false, initialUnlockCount: 9 },
+            hint: { enabled: true, peelPointIndex: 0, text: 'tira del nudo' },
+            style: { color: '#3f4f46', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'hilo-b',
+            text: 'Esta otra está atada por los dos lados: un nudo arriba la sujeta a la primera, un lazo abajo la engancha a la tercera.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            peel: { fromBeginning: true, initialUnlockCount: 9 },
+            style: { color: '#46474f', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'hilo-c',
+            text: 'La tercera cuelga del lazo: un cable azul la engancha a la cuarta. Puedes tirar del cable mismo, no solo de las letras de sus extremos.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            peel: { fromBeginning: true, initialUnlockCount: 9 },
+            style: { color: '#6f3f45', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'hilo-d',
+            text: 'Y esta última espera que el cable ceda. Cuando lo haga, habrás recorrido cuatro líneas desatando en lugar de pelando.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            peel: { fromBeginning: true, initialUnlockCount: 6 },
+            style: { color: '#4a5060', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'revelado',
+            text: 'Lo que el nudo guardaba: no había que pelar nada, solo desatar lo que estaba atado.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            hidden: true,
+            peel: { fromBeginning: true, initialUnlockCount: 3 },
+            style: { color: '#2f6f56', colorMode: 'solid', fontFamily: 'Georgia' }
+          }
+        ]
+      }
+    },
+
+    tangledLines: {
+      label: 'Tangling: cables',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-tangled-lines',
+        physics: { ...(defaultPieceConfig.physics || {}), iterations: 12 },
+        // blockGap leaves room below each column row for the hanging tangles.
+        layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 230, topMargin: 64, bottomMargin: 300 },
+        optimization: { ...structuredClone(defaultPieceConfig.optimization), initialPeelActiveBlocks: 24 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 2, compactFlow: false }
+        },
+        // Each strand is the block's pre-peeled strip (initialUnlockCount letters
+        // dangling from the locked frontier). At spawn the strips are PLACED woven
+        // around each other following the crossings list and pre-settled, so they
+        // hang already tangled. Each crossing is a sliding contact: pulling a
+        // strand taut, or pulling the strands apart, makes the twist slide toward
+        // the free tips and slip off — outermost (highest frac) first.
+        tangledLines: [
+          // ── A: two strips, three twists ───────────────────────────────────
+          {
+            id: 'twist-2',
+            strands: [
+              { id: 's0', block: 'mad-a', endpoint: 'end', color: '#7a4a2a', width: 3 },
+              { id: 's1', block: 'mad-b', endpoint: 'end', color: '#2a5a4a', width: 3 }
+            ],
+            crossings: [
+              { a: 0, b: 1, aFrac: 0.52, bFrac: 0.52, type: 'knot' },
+              { a: 0, b: 1, aFrac: 0.68, bFrac: 0.68, type: 'knot' },
+              { a: 0, b: 1, aFrac: 0.84, bFrac: 0.84, type: 'knot' }
+            ],
+            onUntangle: { action: 'revealBlock', target: 'libre-2' }
+          },
+          // ── B: three strips braided, four crossings ───────────────────────
+          {
+            id: 'braid-3',
+            strands: [
+              { id: 's0', block: 'tri-a', endpoint: 'end', color: '#5a3a7a', width: 2.5 },
+              { id: 's1', block: 'tri-b', endpoint: 'end', color: '#3a5a6a', width: 2.5 },
+              { id: 's2', block: 'tri-c', endpoint: 'end', color: '#7a3a4a', width: 2.5 }
+            ],
+            crossings: [
+              { a: 0, b: 1, aFrac: 0.50, bFrac: 0.50, type: 'knot' },
+              { a: 1, b: 2, aFrac: 0.62, bFrac: 0.62, type: 'knot' },
+              { a: 0, b: 1, aFrac: 0.74, bFrac: 0.74, type: 'knot' },
+              { a: 1, b: 2, aFrac: 0.86, bFrac: 0.86, type: 'knot' }
+            ],
+            onUntangle: [
+              { action: 'particles', target: 'spark', color: '#d09060' },
+              { action: 'revealBlock', target: 'libre-3' }
+            ]
+          }
+        ],
+        blocks: [
+          {
+            id: 'intro',
+            text: 'Estas tiras nacieron ya enredadas entre sí. Agarra una punta y tira, o sepáralas: cada vuelta resbala hacia los cabos sueltos hasta soltarse, la más cercana a la punta primero.',
+            transform: { x: 0, y: 0, scale: 1, width: 640 },
+            peel: { fromBeginning: true, initialUnlockCount: 3 },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── A: two columns side by side (groupNext), strips braided below ──
+          {
+            id: 'mad-a',
+            text: 'La primera tira cae de esta columna y nace ya trenzada con su vecina de la derecha.',
+            transform: { x: 20, y: 0, scale: 1, width: 250 },
+            groupNext: 1,
+            groupParallel: true,
+            // High threshold + no strip assist: the strips resist unzipping so the
+            // root stays anchored while the player works the tangle.
+            peel: { fromBeginning: false, initialUnlockCount: 30, unlockThreshold: 60, longStripAssist: false },
+            hint: { enabled: true, peelPointIndex: 0, text: 'separa las tiras' },
+            style: { color: '#5a3a2a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'mad-b',
+            text: 'La segunda tira cuelga de aquí, enroscada tres vueltas con la primera.',
+            transform: { x: 370, y: 0, scale: 1, width: 250 },
+            // High threshold + no strip assist: the strips resist unzipping so the
+            // root stays anchored while the player works the tangle.
+            peel: { fromBeginning: false, initialUnlockCount: 28, unlockThreshold: 60, longStripAssist: false },
+            style: { color: '#2a4a3a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'libre-2', hidden: true,
+            text: 'Dos tiras libres: el enredo era solo vueltas.',
+            transform: { x: 0, y: 0, scale: 1, width: 500 },
+            peel: { fromBeginning: true, initialUnlockCount: 3 },
+            style: { color: '#2a6a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── B: three columns, strips braided below ─────────────────────────
+          {
+            id: 'tri-a',
+            text: 'La trenza de tres empieza en esta columna de la izquierda.',
+            transform: { x: 0, y: 0, scale: 1, width: 190 },
+            groupNext: 2,
+            groupParallel: true,
+            peel: { fromBeginning: false, initialUnlockCount: 28, unlockThreshold: 60, longStripAssist: false },
+            style: { color: '#4a2a5a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'tri-b',
+            text: 'El cabo del centro pasa por encima y por debajo de los otros dos.',
+            transform: { x: 235, y: 0, scale: 1, width: 190 },
+            peel: { fromBeginning: false, initialUnlockCount: 28, unlockThreshold: 60, longStripAssist: false },
+            style: { color: '#2a4a5a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'tri-c',
+            text: 'El tercero cierra la trenza; tira de él para empezar a deshacerla.',
+            transform: { x: 470, y: 0, scale: 1, width: 190 },
+            peel: { fromBeginning: false, initialUnlockCount: 28, unlockThreshold: 60, longStripAssist: false },
+            style: { color: '#6a3a45', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'libre-3', hidden: true,
+            text: 'La trenza se deshizo. Nada estaba anudado: todo era paciencia.',
+            transform: { x: 0, y: 0, scale: 1, width: 600 },
+            peel: { fromBeginning: true, initialUnlockCount: 5 },
+            style: { color: '#2a6a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          }
+        ]
+      }
+    },
     longScroll: {
       label: 'Long scroll',
       config: {
@@ -1113,6 +1374,48 @@ export function buildExampleScenes(defaultPieceConfig) {
       }
     },
 
+    palindromePeel: {
+      label: 'Palindrome peel',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-palindrome-peel',
+        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 96, blockGap: 130, bottomMargin: 220 },
+        peel: { ...structuredClone(defaultPieceConfig.peel), mode: 'linear', initialUnlockCount: 1 },
+        physics: { ...structuredClone(defaultPieceConfig.physics), gravity: 0.1 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false }
+        },
+        blocks: [
+          {
+            id: 'palindrome-word',
+            text: 'reconocer',
+            transform: { x: 0, y: 0, scale: 2.1, width: 660 },
+            peel: { fromBeginning: false, initialUnlockCount: 1, mode: 'linear' },
+            letterMotion: { type: 'mirror-line', strength: 0.06, damping: 0.85, offsetLines: 1 },
+            hint: { enabled: true, peelPointIndex: 0, text: 'tira de la última letra' },
+            style: { color: '#3c4a5d', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'palindrome-phrase',
+            text: 'anita lava la tina',
+            transform: { x: 0, y: 0, scale: 1.45, width: 660 },
+            peel: { fromBeginning: false, initialUnlockCount: 1, mode: 'linear' },
+            letterMotion: { type: 'mirror-line', strength: 0.06, damping: 0.85, offsetLines: 1 },
+            style: { color: '#6a4a52', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'mirror-control',
+            text: 'las demás palabras no sobreviven al espejo',
+            transform: { x: 0, y: 0, scale: 0.98, width: 660 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear' },
+            letterMotion: { type: 'mirror-line', strength: 0.06, damping: 0.85, offsetLines: 1 },
+            style: { color: '#7a7468', colorMode: 'solid', fontFamily: 'Georgia' }
+          }
+        ]
+      }
+    },
+
     selectivePeeling: {
       label: 'Selective peeling',
       config: {
@@ -1180,64 +1483,128 @@ export function buildExampleScenes(defaultPieceConfig) {
     },
 
     // ── Layers / matrioska despellejada ──────────────────────────────────────────────
-    // A single round block of text that, peeled away, reveals another beneath it,
-    // and another, and another: piel → carne → memoria → explicación. All four blocks
-    // share layer.group 'cebolla' and stack on the same spot (depth 0 is the surface).
-    // The Layers behavior keeps only the active layer interactive and bleeds the next
-    // one through as the surface comes off. The 'memoria' layer has two peel points and
-    // [nopeel] words, so peeling it only opens parts of what lies underneath.
+    //
+    // Group "anillo": 4 concentric RING PATH layers, each using ringPath layout so text
+    //   follows the circular path tangentially (exactly like the reference image).
+    //   All rings: centerX=null (auto = content center), centerY=220 (= outer radius).
+    //   This makes all rings concentric at the same center regardless of viewport width.
+    //   previewOpacity=0.22 → next ring is a ghost before you peel.
+    //
+    // Group "verso": 3 normal paragraph blocks stacked at the same position.
+    //   Demonstrates the layer system for plain text, no ring/shape needed.
+    //
+    // Group "forma": 2 blocks using shape constraint (no ring path) to show layers
+    //   work with regular clipShape blocks too.
     matrioskaPeel: {
       label: 'Layers (matrioska)',
       config: {
         ...structuredClone(defaultPieceConfig),
         id: 'tirita-matrioska',
-        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 96, blockGap: 56, bottomMargin: 160 },
-        physics: { ...structuredClone(defaultPieceConfig.physics), gravity: 0.06 },
+        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 80, blockGap: 72, bottomMargin: 160 },
+        physics: { ...structuredClone(defaultPieceConfig.physics), gravity: 0.05 },
         behaviors: {
           fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
-          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false },
-          layers: { enabled: true, bleedThrough: true, hideCompleted: true, revealOpacity: 1 }
+          stepParagraphs: { enabled: false, visibleCount: 2, compactFlow: false }
         },
         blocks: [
+          // ── anillo: 4 concentric ring-path blocks stacked via groupNext ─────────────
+          // groupNext: 3 on the first block → all 4 share the same Y position.
+          // Each ring is a different radius; all centered at the same point (centerY=220).
+          // Select individual rings in the editor with the numbered handles above the box.
           {
-            id: 'capa-piel',
-            text: 'Esto es la piel: lo que enseñas, lo que se deja leer de un vistazo, la frase educada que recubre todo lo demás. Tira de ella en espiral y empezará a desprenderse.',
-            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
-            clipShape: { type: 'circle', svgOpacity: 0 },
-            layer: { group: 'cebolla', depth: 0 },
-            peel: { fromBeginning: true, initialUnlockCount: 5, mode: 'spiral' },
-            hint: { enabled: true, peelPointIndex: 0, appearMs: 2600, textMs: 7000, text: 'pela la piel' },
-            style: { color: '#c2a08a', colorMode: 'solid', fontFamily: 'Georgia' }
+            id: 'anillo-piel',
+            text: 'La piel es lo primero y lo más generoso: cubre todo, se estira, aguanta el roce y vive los años. Es lo que enseñas sin haberlo decidido del todo.',
+            transform: { x: 0, y: 0, scale: 1, width: 660 },
+            ringPath: { enabled: true, radius: 220, centerY: 220, startAngle: -90, angleMix: 1, spacing: 1 },
+            groupNext: 3,
+            groupOpacity: 0.22,
+            groupPeelReveal: true,
+            peel: { fromBeginning: true, initialUnlockCount: 2, mode: 'spiral' },
+            hint: { enabled: true, peelPointIndex: 0, appearMs: 2400, textMs: 8000, text: 'pela el anillo' },
+            style: { color: '#c49060', colorMode: 'solid', fontFamily: 'Georgia' }
           },
           {
-            id: 'capa-carne',
-            text: 'Debajo está la carne: lo que de verdad sentías mientras decías lo otro, todavía caliente, todavía sin ordenar en palabras presentables.',
-            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
-            clipShape: { type: 'circle', svgOpacity: 0 },
-            layer: { group: 'cebolla', depth: 1 },
-            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'spiral-center' },
-            style: { color: '#9c5450', colorMode: 'variation', variationStrength: 0.1, fontFamily: 'Georgia' }
+            id: 'anillo-carne',
+            text: 'Debajo está la carne: lo que se mueve y calienta y sangra. Todo lo que dijiste con cortesía llegó primero aquí.',
+            transform: { x: 0, y: 0, scale: 1, width: 660 },
+            ringPath: { enabled: true, radius: 170, centerY: 220, startAngle: -90, angleMix: 1, spacing: 1 },
+            peel: { fromBeginning: false, initialUnlockCount: 2, mode: 'outward' },
+            style: {
+              colorMode: 'sequential', fontFamily: 'Georgia',
+              gradient: { type: 'linear', angle: 0, stops: [{ color: '#a84040', alpha: 1, position: 0 }, { color: '#6a2525', alpha: 1, position: 100 }] }
+            }
           },
           {
-            id: 'capa-memoria',
-            text: 'Más adentro vive la [nopeel]memoria[/nopeel]: imágenes sueltas que sostienen la frase entera. Algunas se dejan quitar; [nopeel]otras se quedan clavadas[/nopeel] y solo dejan ver un trozo de lo que hay todavía más abajo.',
-            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
-            clipShape: { type: 'circle', svgOpacity: 0 },
-            layer: { group: 'cebolla', depth: 2, revealOpacity: 0.92 },
+            id: 'anillo-memoria',
+            text: 'Aquí [nopeel]la memoria:[/nopeel] una imagen que aguanta todo. [nopeel]Algunas quedan,[/nopeel] degradadas.',
+            transform: { x: 0, y: 0, scale: 1, width: 660 },
+            ringPath: { enabled: true, radius: 120, centerY: 220, startAngle: -90, angleMix: 1, spacing: 1 },
             peelPoints: [
               { fromRatio: 0, toRatio: 0.5, direction: 'right', starterCount: 2, mode: 'linear' },
               { fromRatio: 0.5, toRatio: 1, direction: 'left', starterCount: 2, mode: 'linear' }
             ],
-            style: { color: '#5d3a55', colorMode: 'solid', fontFamily: 'Georgia' }
+            style: { color: '#4a3a7a', colorMode: 'variation', variationStrength: 0.14, fontFamily: 'Georgia' }
           },
           {
-            id: 'capa-explicacion',
-            text: 'Y al fondo, la explicación: la razón pequeña y sin adorno por la que todo lo anterior existía. No es más profunda ni más sabia; solo es la que estaba primero.',
-            transform: { x: 0, y: 0, scale: 1, width: 460, height: 460 },
-            clipShape: { type: 'circle', svgOpacity: 0 },
-            layer: { group: 'cebolla', depth: 3 },
-            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'spiral' },
-            style: { color: '#2f4858', colorMode: 'solid', fontFamily: 'Georgia' }
+            id: 'anillo-explicacion',
+            text: 'La razón simple. La que estaba primero.',
+            transform: { x: 0, y: 0, scale: 1, width: 660 },
+            ringPath: { enabled: true, radius: 70, centerY: 220, startAngle: -90, angleMix: 1, spacing: 2 },
+            peel: { fromBeginning: true, initialUnlockCount: 3, mode: 'inward' },
+            style: { color: '#1e3a52', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── verso: 3 plain paragraphs stacked at the same position via groupNext ──
+          {
+            id: 'verso-piel',
+            text: 'Lo que se puede decir: que fue un encuentro tranquilo, que intercambiamos las palabras correctas, que todo ocurrió dentro de lo esperado.',
+            transform: { x: 0, y: 0, scale: 1, width: 620 },
+            groupNext: 2,
+            groupOpacity: 0.18,
+            groupPeelReveal: true,
+            peel: { fromBeginning: true, initialUnlockCount: 3, mode: 'linear' },
+            style: { color: '#8a7055', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'verso-carne',
+            text: 'Lo que pasó de verdad: que había algo en tu forma de no mirarme que lo decía todo, y yo tampoco te miré, y en ese hueco sin miradas ocurrió todo lo importante.',
+            transform: { x: 0, y: 0, scale: 1, width: 620 },
+            peel: { fromBeginning: false, initialUnlockCount: 3, mode: 'outward' },
+            style: {
+              colorMode: 'sequential', fontFamily: 'Georgia',
+              gradient: { type: 'linear', angle: 30, stops: [{ color: '#3d6b7a', alpha: 1, position: 0 }, { color: '#2e4f5c', alpha: 1, position: 100 }] }
+            }
+          },
+          {
+            id: 'verso-core',
+            text: 'Lo que no cabe en palabras.',
+            transform: { x: 0, y: 0, scale: 1, width: 620 },
+            peel: { fromBeginning: true, initialUnlockCount: 2, mode: 'inward' },
+            style: { color: '#2a3d40', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── forma: 2 ellipse-constrained blocks stacked via groupNext ──────────────
+          {
+            id: 'forma-piel',
+            text: 'Las palabras que elegiste para describirlo después. Las que sonaban bien. Las que dejaban fuera lo que dolía. Las que organizaban la experiencia en algo que podías contar.',
+            transform: { x: 80, y: 0, scale: 1, width: 480, height: 200 },
+            clipShape: { type: 'ellipse', svgOpacity: 0 },
+            groupNext: 1,
+            groupOpacity: 0.2,
+            groupPeelReveal: true,
+            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'zigzag' },
+            style: { color: '#7a6248', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'forma-carne',
+            text: 'El temblor que no mencionaste. Lo que tu cuerpo recordaba mientras hablabas. Lo que se quedó sin decir porque no había forma de decirlo sin romperse.',
+            transform: { x: 80, y: 0, scale: 1, width: 480, height: 200 },
+            clipShape: { type: 'ellipse', svgOpacity: 0 },
+            peel: { fromBeginning: false, initialUnlockCount: 3, mode: 'outward' },
+            style: {
+              colorMode: 'sequential', fontFamily: 'Georgia',
+              gradient: { type: 'linear', angle: 45, stops: [{ color: '#3a5a7a', alpha: 1, position: 0 }, { color: '#2e3d50', alpha: 1, position: 100 }] }
+            }
           }
         ]
       }
@@ -1510,45 +1877,6 @@ export function buildExampleScenes(defaultPieceConfig) {
       }
     },
 
-    palindromeWorm: {
-      label: 'Palindrome worm',
-      config: {
-        ...structuredClone(defaultPieceConfig),
-        id: 'tirita-palindrome-worm-v6',
-        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 96, blockGap: 54, bottomMargin: 420 },
-        behaviors: {
-          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
-          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false }
-        },
-        blocks: [
-          {
-            id: 'la-ruta-natural',
-            text: 'larutanatural',
-            transform: { x: 0, y: 0, scale: 1.9, width: 620 },
-            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear', unlockThreshold: 999, longStripAssist: false },
-            peelPoints: [{ line: 0, direction: 'left', starterCount: 1 }],
-            hint: { enabled: true, peelPointIndex: 0, text: 'tira hacia abajo' },
-            letterMotion: {
-              type: 'palindrome-flip',
-              lineGap: 25,
-              strength: 0.2,
-              damping: 0.74,
-              settleTolerance: 14,
-              loop: true
-            },
-            style: { color: '#325f51', colorMode: 'solid', fontFamily: 'Courier New' }
-          },
-          {
-            id: 'palindrome-note',
-            text: 'La ruta natural: el mismo paso visto desde el otro lado.',
-            transform: { x: 0, y: 0, scale: 0.9, width: 620 },
-            peel: { fromBeginning: true, initialUnlockCount: 0 },
-            style: { color: '#784830', colorMode: 'solid', fontFamily: 'Georgia', opacity: 0.72 }
-          }
-        ]
-      }
-    },
-
     // ── All shapes showcase ───────────────────────────────────────────────────
     shapesShowcase: {
       label: 'Shape-constrained text',
@@ -1575,6 +1903,264 @@ export function buildExampleScenes(defaultPieceConfig) {
           { id: 'sc-arrow',  text: 'La flecha siempre apunta hacia algún sitio. Pero nadie te dice si lo que hay allí merece la pena. La dirección no es destino. Puedes ir hacia delante y llegar exactamente al mismo punto de siempre, solo que más cansado. Es la forma de la intención y del proyectil, una línea recta que ignora el paisaje con tal de alcanzar lo que siempre está un paso más allá.', transform: { x: 0, y: 0, scale: 1, width: 580, height: 440 }, peel: { fromBeginning: true, initialUnlockCount: 1 }, clipShape: { type: 'arrow' }, style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' } },
           { id: 'sc-penta',  text: 'Cinco lados, cinco ángulos obtusos, ninguna arista que corte de verdad. El pentágono es el polígono de los compromisos, una forma que busca la redondez sin querer renunciar del todo a sus esquinas. Es un refugio amurallado que intenta proteger lo que hay dentro, ignorando que los secretos más grandes siempre encuentran la forma de saltar por encima de cualquier muro.', transform: { x: 0, y: 0, scale: 1, width: 440, height: 440 }, peel: { fromBeginning: true, initialUnlockCount: 1 }, clipShape: { type: 'pentagon' }, style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' } },
           { id: 'sc-custom', text: 'Un camino hecho a medida. No encaja en ningún nombre. No es círculo ni triángulo ni nada conocido. Es solo esta forma, esta vez, para este texto que busca su propio contorno en la irregularidad de lo que sentimos. No necesitamos nombres para las formas que nos contienen, solo espacio suficiente para que las palabras respiren y se acomoden a su manera. Puedes elegir el contorno que quieras dibujando una forma SVG en programas como Vectorpea/Inkscape.', transform: { x: 0, y: 0, scale: 1, width: 440, height: 440 }, peel: { fromBeginning: true, initialUnlockCount: 1 }, clipShape: { type: 'custom', pathD: 'M 220,10 C 350,10 430,90 430,220 C 430,330 350,380 265,410 L 220,430 L 175,410 C 90,380 10,330 10,220 C 10,90 90,10 220,10 Z' }, style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' } }
+        ]
+      }
+    },
+
+    drainPull: {
+      label: 'Drain: pulling hair',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-drain-pull',
+        style: { ...structuredClone(defaultPieceConfig.style), backgroundColor: '#e6e1d6' },
+        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 60, blockGap: 40, bottomMargin: 520 },
+        peel: { ...structuredClone(defaultPieceConfig.peel), mode: 'linear', initialUnlockCount: 2, unlockThreshold: 1 },
+        physics: { ...structuredClone(defaultPieceConfig.physics), gravity: 0.16, damping: 0.97 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false }
+        },
+        blocks: [
+          {
+            id: 'drain-strand',
+            text: 'tira de lo que se acumuló en la cañería: cada pelo es un recuerdo que creías ido, una culpa enredada con otra, y cuanto más tiras más sale, larguísima, viscosa, imposible de soltar una vez la tienes entre los dedos.',
+            transform: { x: 0, y: 0, scale: 1.05, width: 620 },
+            peel: { fromBeginning: true, initialUnlockCount: 2, mode: 'linear' },
+            drain: {
+              enabled: true,
+              x: 330, y: 180,
+              dropsEnabled: true, dropRate: 0.8, dropColor: '#2a2521',
+              bugsEnabled: true, bugRate: 0.18, bugColor: '#1c1814'
+            },
+            hint: { enabled: true, peelPointIndex: 0 },
+            style: { color: '#23201c', colorMode: 'variation', variationStrength: 0.1, fontFamily: 'Georgia' }
+          }
+        ]
+      }
+    }
+  };
+}
+
+export function buildCableScenes(defaultPieceConfig) {
+  // Three-cable scene: right → right → LEFT.
+  //
+  // drawPath anchors: BLOCK-LOCAL. container_x = transform.x + anchor.x.
+  //
+  // Layout (topMargin=80, blockGap=0). Each cable block ≈ 240px layout height.
+  // Cables b & c use transform.y to shift up to the same visual y as cable-a.
+  //
+  //   cable-a: startY=80   h≈163  (rightward, x=80→2600)
+  //   cable-b: startY=243  h≈163  transform.y=-163  (rightward, x=2600→4800)
+  //   cable-c: startY=406  h≈163  transform.y=-326  (LEFTWARD,  x=4800→1000)
+  //
+  // Decorative startY (empirically derived; h_cable≈163):
+  //   nota-a=569  illus-a=646  nota-b=788  illus-b=839
+  //   nota-c=981  el-mar=1058  costa=1130
+  // transform.y = desired_container_y − startY.
+  // Cable visual center ≈ container y 235 (startY=80 + anchor y≈155).
+  // el-mar & costa at x≈1100–1500 appear on the wide initial viewport;
+  // they drift leftward off-screen as the camera pans right, then reappear
+  // as cable-c pulls the camera back left.
+  return {
+    cableToSea: {
+      label: 'Camera panning',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-cable-sea',
+        layout: { type: 'paragraph', blockGap: 0, margin: 0, topMargin: 80, bottomMargin: 0 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: false, visibleCount: 1, compactFlow: false, advanceDelayMs: 0, perBlockAdvanceDelayMs: {}, perBlockVisibleCount: {} },
+          cablePull: {
+            enabled: true,
+            mode: 'frontier',
+            followBlockIds: ['cable-a', 'cable-b', 'cable-c'],
+            ease: 0.1,
+            leadMargin: 280,
+            maxPan: 0,
+            lockVerticalScroll: true,
+            lockOnComplete: true
+          }
+        },
+        blocks: [
+          // ── Cable A — rightward, x=80→2600 ─────────────────────────────────
+          {
+            id: 'cable-a',
+            cable: true,
+            text: 'Un cable textual o una frase-cable atraviesa la pantalla. Al tirar, la cámara se mueve hacia la derecha, revelando más texto, pasando',
+            transform: { x: 0, y: 0, scale: 1, width: 3000 },
+            peel: { fromBeginning: true, initialUnlockCount: 4, mode: 'linear' },
+            peelPoints: [{ direction: 'right', starterCount: 4 }],
+            drawPath: {
+              enabled: true, spacing: 2.5, angleMix: 0.85,
+              anchors: [
+                { x: 80,   y: 155, in: { x: 0,    y: 0   }, out: { x: 280,  y: -65 } },
+                { x: 660,  y: 105, in: { x: -250, y: 65  }, out: { x: 250,  y: 75  } },
+                { x: 1200, y: 185, in: { x: -230, y: -75 }, out: { x: 240,  y: -60 } },
+                { x: 1780, y: 110, in: { x: -230, y: 60  }, out: { x: 240,  y: 75  } },
+                { x: 2300, y: 190, in: { x: -220, y: -75 }, out: { x: 200,  y: -55 } },
+                { x: 2600, y: 145, in: { x: -180, y: 55  }, out: { x: 0,    y: 0   } }
+              ]
+            },
+            hint: { enabled: true, peelPointIndex: 0 },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── Cable B — rightward, x=2600→4800 ───────────────────────────────
+          // startY=320; transform.y=-240 aligns it to the same visual y as cable-a.
+          // Handle appears at x=2600 (screen-right of viewport) when cable-a finishes.
+          {
+            id: 'cable-b',
+            cable: true,
+            text: ' por ilustraciones y otros bloques de texto repartidos a lo largo de esta gran cuerda que oscila y esquiva',
+            transform: { x: 0, y: -163, scale: 1, width: 5000 },
+            peel: { fromBeginning: true, initialUnlockCount: 0, mode: 'linear' },
+            peelPoints: [{ direction: 'right', starterCount: 4 }],
+            drawPath: {
+              enabled: true, spacing: 2.5, angleMix: 0.85,
+              anchors: [
+                { x: 2600, y: 145, in: { x: 0,    y: 0   }, out: { x: 230,  y: -55 } },
+                { x: 3100, y: 105, in: { x: -200, y: 55  }, out: { x: 220,  y: 70  } },
+                { x: 3700, y: 185, in: { x: -210, y: -70 }, out: { x: 220,  y: -55 } },
+                { x: 4300, y: 110, in: { x: -210, y: 55  }, out: { x: 200,  y: 70  } },
+                { x: 4800, y: 180, in: { x: -190, y: -70 }, out: { x: 0,    y: 0   } }
+              ]
+            },
+            hint: { enabled: true, peelPointIndex: 0, appearMs: 1200, textMs: 4000, text: 'sigue...' },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── Cable C — LEFTWARD, x=4800→1000 ────────────────────────────────
+          // startY=560; transform.y=-480 aligns to same visual y.
+          // Path goes RIGHT TO LEFT: first anchor at x=4800, last at x=1000.
+          // direction:'left' so the peel handle sits at x=4800 and user drags left.
+          // As letters unlock (moving leftward), frontierX decreases and
+          // cameraTargetX = max(0, frontierX - leadMargin_offset) shrinks → camera pans LEFT.
+          {
+            id: 'cable-c',
+            cable: true,
+            text: ', y al final: el mar. El cable sigue y sigue, oscilando, esquivando palabras que flotan a su paso, hasta que el hilo se cansa de ser hilo y quiere ser ola. Y el mar estaba ahí, siempre al lado.',
+            transform: { x: 0, y: -326, scale: 1, width: 5000 },
+            peel: { fromBeginning: true, initialUnlockCount: 0, mode: 'linear' },
+            peelPoints: [{ direction: 'right', starterCount: 4 }],
+            drawPath: {
+              enabled: true, spacing: 2.5, angleMix: 0.85,
+              anchors: [
+                { x: 4800, y: 145, in: { x: 0,    y: 0   }, out: { x: -220, y: -60 } },
+                { x: 4200, y: 100, in: { x: 210,  y: 60  }, out: { x: -210, y: 70  } },
+                { x: 3600, y: 180, in: { x: 200,  y: -70 }, out: { x: -200, y: -55 } },
+                { x: 3000, y: 110, in: { x: 195,  y: 55  }, out: { x: -195, y: 70  } },
+                { x: 2400, y: 185, in: { x: 185,  y: -70 }, out: { x: -185, y: -55 } },
+                { x: 1800, y: 120, in: { x: 180,  y: 55  }, out: { x: -180, y: 65  } },
+                { x: 1000, y: 175, in: { x: 185,  y: -65 }, out: { x: 0,    y: 0   } }
+              ]
+            },
+            hint: { enabled: true, peelPointIndex: 0, appearMs: 1200, textMs: 4000, text: 'ahora izquierda' },
+            style: { color: '#4a4a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── Decorative blocks ───────────────────────────────────────────────
+          // Cable blocks are ≈200px tall (not 240). startY values adjusted accordingly.
+          // transform.y = desired_container_y − startY.
+
+          {
+            id: 'nota-a',
+            text: 'a medio camino,\nalgo se cuelga\ndel cable',
+            // startY=569; want y=160 (above cable): 160−569=−409
+            transform: { x: 700, y: -409, scale: 0.85, width: 180 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'random' },
+            style: { color: '#7a6a58', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'illus-a',
+            text: ' ',
+            // startY=646 (569+77); want attach at y=270: text top=240 → 240−646=−406
+            transform: { x: 1100, y: -406, scale: 1, width: 100 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear' },
+            attachment: {
+              type: 'lineart', src: null,
+              width: 80, height: 112, gap: 0, opticalOffsetY: 8,
+              strokeResistance: 28,
+              strokes: [
+                { pathPoints: [[0.5,0.04],[0.88,0.38],[0.78,0.72],[0.5,0.94],[0.22,0.72],[0.12,0.38],[0.5,0.04]],
+                  nodeCount: 22, starterCount: 2, endStarterCount: 2, lineWidth: 2.2, color: '#6a5a4a' },
+                { pathPoints: [[0.22,0.55],[0.78,0.55]],
+                  nodeCount: 10, starterCount: 2, endStarterCount: 2, lineWidth: 1.6, color: '#6a5a4a' }
+              ]
+            },
+            style: { color: '#6a5a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          {
+            id: 'nota-b',
+            text: 'palabras que flotan\ncolgadas del hilo',
+            // startY=788 (646+142); want y=160: 160−788=−628
+            transform: { x: 2200, y: -628, scale: 0.85, width: 360 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'random' },
+            style: { color: '#7a6a58', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'illus-b',
+            text: ' ',
+            // startY=839 (788+51); want attach at y=270: text top=240 → 240−839=−599
+            transform: { x: 2600, y: -599, scale: 1, width: 100 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear' },
+            attachment: {
+              type: 'lineart', src: null,
+              width: 90, height: 110, gap: 0, opticalOffsetY: 8,
+              strokeResistance: 28,
+              strokes: [
+                { pathPoints: [[0.5,0.04],[0.96,0.5],[0.5,0.96],[0.04,0.5],[0.5,0.04]],
+                  nodeCount: 20, starterCount: 2, endStarterCount: 2, lineWidth: 2.2, color: '#6a5a4a' },
+                { pathPoints: [[0.04,0.5],[0.96,0.5]], nodeCount: 8, starterCount: 2, endStarterCount: 2, lineWidth: 1.5, color: '#6a5a4a' },
+                { pathPoints: [[0.5,0.04],[0.5,0.96]], nodeCount: 8, starterCount: 2, endStarterCount: 2, lineWidth: 1.5, color: '#6a5a4a' }
+              ]
+            },
+            style: { color: '#6a5a4a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          {
+            id: 'nota-c',
+            text: 'el cable\nvuelve\nhacia atrás',
+            // startY=981 (839+142); want y=160: 160−981=−821
+            transform: { x: 4200, y: -821, scale: 0.85, width: 160 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'random' },
+            style: { color: '#7a6a58', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+
+          // ── Arrival — visible when camera returns left during cable-c ────────
+          // el-mar at x=1500, costa at x=1100. During the rightward journey the
+          // camera overshoots both (max camera≈3880). As cable-c pulls the camera
+          // left past x≈1500 these elements re-enter the viewport from the left.
+          {
+            id: 'el-mar',
+            text: 'el mar.',
+            // startY=1058 (981+77); want y=130: 130−1058=−928
+            transform: { x: 1500, y: -928, scale: 2.4, width: 320 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear' },
+            style: { color: '#2a5a8a', colorMode: 'solid', fontFamily: 'Georgia' }
+          },
+          {
+            id: 'costa',
+            text: ' ',
+            // startY=1130 (1058+72); want attach at y=270: text top=240 → 240−1130=−890
+            transform: { x: 1100, y: -890, scale: 1, width: 360 },
+            peel: { fromBeginning: true, initialUnlockCount: 1, mode: 'linear' },
+            attachment: {
+              type: 'lineart', src: null,
+              width: 360, height: 200, gap: 0, opticalOffsetY: 10,
+              strokeResistance: 18,
+              strokes: [
+                { pathPoints: [[0.04,0.2],[0.2,0.12],[0.4,0.22],[0.6,0.12],[0.8,0.22],[0.96,0.16]],
+                  nodeCount: 22, starterCount: 3, endStarterCount: 0, lineWidth: 2.4, color: '#2a5a8a' },
+                { pathPoints: [[0.04,0.5],[0.2,0.42],[0.4,0.52],[0.6,0.42],[0.8,0.52],[0.96,0.46]],
+                  nodeCount: 20, starterCount: 3, endStarterCount: 0, lineWidth: 2.0, color: '#3a6a9a' },
+                { pathPoints: [[0.04,0.8],[0.2,0.72],[0.4,0.82],[0.6,0.72],[0.8,0.82],[0.96,0.76]],
+                  nodeCount: 20, starterCount: 3, endStarterCount: 0, lineWidth: 1.6, color: '#4a7aaa' }
+              ]
+            },
+            style: { color: '#2a5a8a', colorMode: 'solid', fontFamily: 'Georgia' }
+          }
         ]
       }
     }

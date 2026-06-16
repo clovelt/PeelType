@@ -160,6 +160,10 @@ export function runAmbientAction(action = {}) {
   const name = action.name || 'ambient';
   const target = ensureAmbientLayer(name, Number(action.gain ?? 0.035));
   if (!target) return;
+  // An explicit gain re-targets an existing layer; without one the layer keeps
+  // its previous intensity (ensureAmbientLayer only sets gain on creation).
+  const explicitGain = Number(action.gain);
+  if (action.gain != null && Number.isFinite(explicitGain)) target.targetGain = explicitGain;
   const now = audioState.audioCtx.currentTime;
   if (action.mode === 'crossfade') {
     for (const [layerName, layer] of audioState.ambientLayers) {

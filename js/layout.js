@@ -261,7 +261,70 @@ export function layoutBlockInPath(block, blockIdx, pathD, W, H, startY) {
   };
 }
 
+// ── Ring path layout ─────────────────────────────────────────────────────────
+// Places text ON a circular path at a given radius, each letter rotated to follow
+// the tangent — exactly the concentric-ring look from the reference image.
+//
+// ringPath config:
+//   radius    — ring radius in px (local, before scale). Required.
+//   centerX   — x of ring center in local coords (transform.x is origin, MARGIN is added).
+//               Default null → auto = MARGIN + maxWidth/2, centering the ring in content.
+//   centerY   — y of ring center local from block top. Default = radius.
+//               For concentric rings: all rings share the same centerY = outerRadius.
+//   startAngle — degrees from which text begins (0=right, -90=top). Default -90.
+//   angleMix  — 0..1 how much letters rotate to follow the path. Default 1 (full curve).
+//   reverse   — counterclockwise when true. Default false.
+//   spacing   — extra px gap between letters. Default 2.
+export function layoutBlockOnRingPath(block, maxWidth, startY, blockIdx = null) {
+  const rp = block.ringPath;
+  const scale = Math.max(0.1, Number(block.transform.scale || 1));
+  const radius = Math.max(10, Number(rp.radius ?? 200)) * scale;
+  // centerX: local coord (no MARGIN). null → auto-center = MARGIN + maxWidth/2.
+  const cxLocal = (rp.centerX != null) ? Number(rp.centerX) : (state.MARGIN + maxWidth / 2);
+  const cx = Number(block.transform.x || 0) + cxLocal * scale;
+  // centerY: local from block top. Default = radius (so ring fits in a square).
+  const cyLocal = (rp.centerY != null) ? Number(rp.centerY) : Number(rp.radius ?? 200);
+  const cy = startY + Number(block.transform.y || 0) + cyLocal * scale;
+  const angleMix = Math.max(0, Math.min(1, Number(rp.angleMix ?? 1)));
+  const reverse = Boolean(rp.reverse);
+  const startAngleRad = (Number(rp.startAngle ?? -90) * Math.PI) / 180;
+  const spacing = Number(rp.spacing ?? 2);
+  const lineHeight = getBlockRawLineHeight(block);
+  const visualLineHeight = getBlockVisualLineHeight(block);
+
+  const positions = [];
+  let dist = Math.max(0, Number(rp.startOffset || 0));
+  const dir = reverse ? -1 : 1;
+
+  for (let gi = 0; gi < block.graphemes.length; gi++) {
+    const w = block.widths[gi] * scale;
+    const midDist = dist + w / 2;
+    const angle = startAngleRad + dir * midDist / radius;
+    const x = cx + radius * Math.cos(angle) - w / 2;
+    const y = cy + radius * Math.sin(angle) - state.LINE_HEIGHT * scale / 2;
+    const letterAngle = angleMix * (angle + (reverse ? -Math.PI / 2 : Math.PI / 2));
+    positions.push({ x, y, w, angle: letterAngle, lineHeight: visualLineHeight });
+    dist += w + spacing;
+  }
+
+  // Block height: enough to contain the ring (center + radius below center, plus letter height).
+  const blockH = Math.max(
+    (cyLocal + Number(rp.radius ?? 200) + lineHeight) * scale,
+    Number(block.transform.height || 0)
+  );
+  return {
+    positions,
+    lineIndices: [positions.map((_, i) => i)],
+    textHeight: blockH,
+    attachment: getAttachmentLayout(block, positions, blockH),
+    height: blockH + getAttachmentHeight(block)
+  };
+}
+
 export function getBlockLayout(block, blockIdx, maxWidth, startY) {
+  if (block.ringPath?.enabled) {
+    return layoutBlockOnRingPath(block, maxWidth, startY, blockIdx);
+  }
   if (block.clipShape) {
     const scale = Math.max(0.1, Number(block.transform.scale || 1));
     const W = Math.max(80, Math.min(maxWidth, (block.transform.width || maxWidth) / scale));
@@ -283,21 +346,33 @@ export function layoutPositions(maxWidth) {
   const offsetY = Math.max(state.TOP_MARGIN, centeredOffset);
 
   let y = offsetY;
-  // When the Layers behavior is on, blocks sharing a layer.group stack on top of
-  // one another (matrioska) instead of flowing down the page.
-  const layersOn = Boolean(state.pieceConfig.behaviors?.layers?.enabled);
-  const groupStartY = new Map();
+  // groupNext stacking: blocks in a group share the same startY and only
+  // advance y after the last member (by the tallest member's height).
+  let groupEndIdx = -1;   // last blockIdx of the active group
+  let groupBaseY = 0;     // shared startY for all group members
+  let groupTallest = 0;   // max height seen so far in this group
   const layouts = state.textBlocks.map((block, blockIdx) => {
-    const groupKey = layersOn && block.layer?.group ? String(block.layer.group) : null;
-    let startY = y;
-    let advance = true;
-    if (groupKey) {
-      if (groupStartY.has(groupKey)) { startY = groupStartY.get(groupKey); advance = false; }
-      else groupStartY.set(groupKey, y);
+    if (groupEndIdx >= 0 && blockIdx <= groupEndIdx) {
+      // Inside a group — stack at groupBaseY, don't advance y yet
+      const layout = getBlockLayout(block, blockIdx, maxWidth, groupBaseY);
+      groupTallest = Math.max(groupTallest, heights[blockIdx]);
+      if (blockIdx === groupEndIdx) {
+        // Last member: now advance y
+        y = groupBaseY + groupTallest + state.BLOCK_GAP;
+        groupEndIdx = -1;
+      }
+      return layout;
     }
-    const layout = getBlockLayout(block, blockIdx, maxWidth, startY);
-    if (advance) y += heights[blockIdx] + state.BLOCK_GAP;
-    else y = Math.max(y, startY + heights[blockIdx] + state.BLOCK_GAP);
+    const layout = getBlockLayout(block, blockIdx, maxWidth, y);
+    if ((block.groupNext || 0) > 0) {
+      // Start a group: this block is the anchor; members follow at same y
+      groupEndIdx = blockIdx + block.groupNext;
+      groupBaseY = y;
+      groupTallest = heights[blockIdx];
+      // Don't advance y here; wait until the last group member
+    } else {
+      y += heights[blockIdx] + state.BLOCK_GAP;
+    }
     return layout;
   });
   const isCompact = state.pieceConfig.behaviors?.stepParagraphs?.enabled && state.pieceConfig.behaviors?.stepParagraphs?.compactFlow;

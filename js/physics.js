@@ -1,6 +1,8 @@
 const state = globalThis.__tiritaState || (globalThis.__tiritaState = {});
 import { getLetterLineHeight } from './layout.js';
 import { applyCrossBlockIdleArcs } from './peel-segments.js';
+import { applyTieConstraints, simulateTieRopes } from './ties.js';
+import { simulateTangledLines, applyTangledConstraints } from './tangled-lines.js';
 import { getForceFieldAcceleration } from './force-fields.js';
 import { renderEffects, simulateEffects } from './effects.js';
 
@@ -11,121 +13,49 @@ function getMotionItemsForBlock(blockIdx) {
   return Array.isArray(motion) ? motion : (motion ? [motion] : []);
 }
 
-function getPalindromeMotionForBlock(blockIdx) {
-  return getMotionItemsForBlock(blockIdx).find(item => item?.type === 'palindrome-flip' && item.enabled !== false) || null;
-}
+// Peel modes whose chain order is non-linear; they get a higher unlock threshold
+// to prevent "chain plucking" (see unlock propagation in simulate()).
+const UNSTRUCTURED_PEEL_MODES = new Set([
+  'random', 'drunken', 'outward', 'inward', 'random-neighbors', 'center', 'spiral', 'spiral-center', 'random-walk',
+  'alternating-ends', 'vowels-first', 'punctuation-last', 'odd-even', 'first-letters', 'syllables-in-order',
+  'first-syllables', 'last-syllables'
+]);
 
-function getPalindromeFlipTarget(letter, item) {
-  const positions = state.positions?.[letter.blockIdx]?.positions;
-  if (!positions?.length) return null;
-  // Row spacing = full letter line height + configured gap, so flipped rows never
-  // overlap (must match releasePalindromeWordFromDrag in main.js).
-  const rowSpacing = getLetterLineHeight(letter) + Math.max(0, Number(item.lineGap ?? 56));
-  // Deterministic: each letter carries its own worm cycle (0 = original row).
-  const cycle = Math.max(0, Math.floor(letter.palindromeCycle ?? 0));
-  const own = positions[letter.readingIdx] || { x: letter.ox, y: letter.oy };
-  const mirrorIdx = Math.max(0, Math.min(positions.length - 1, positions.length - 1 - letter.readingIdx));
-  const mirrored = positions[mirrorIdx] || own;
-  // Odd cycles mirror the word (seen from the other side); even cycles read normally.
-  const baseX = cycle % 2 === 1 ? mirrored.x : own.x;
-  return {
-    x: baseX,
-    y: own.y + rowSpacing * cycle
-  };
-}
-
-function isNearPalindromeTarget(letter, item) {
-  const target = getPalindromeFlipTarget(letter, item);
-  if (!target) return false;
-  const tolerance = Math.max(8, Number(item.settleTolerance ?? 16));
-  return Math.hypot(letter.x - target.x, letter.y - target.y) <= tolerance;
-}
-
-function armManualPalindromeLetter(idx, cycle) {
-  const l = state.letters[idx];
-  if (!l || l.deleted) return;
-  l.palindromeCycle = Math.max(1, Math.floor(cycle || l.palindromeCycle || 1));
-  l.starterIdle = true;
-  l.px = l.x;
-  l.py = l.y;
-  state.els[idx]?.classList.add('draggable');
-}
-
-function unlockNextManualPalindromeLetters() {
-  for (let blockIdx = 0; blockIdx < state.blockRanges.length; blockIdx++) {
-    const blockConfig = getBlockConfig(blockIdx);
-    if (!blockConfig.peel?.manualOneByOne) continue;
-    const item = getPalindromeMotionForBlock(blockIdx);
-    if (!item) continue;
-    const segs = state.segmentRanges[blockIdx] || [];
-    for (const segment of segs) {
-      let hasUnsettled = false;
-      let nextLocked = -1;
-      for (let i = segment.end; i >= segment.start; i--) {
-        const l = state.letters[i];
-        if (!l || l.deleted) continue;
-        if (l.locked) {
-          nextLocked = i;
-          break;
-        }
-        if (state.isDragged(i) || l.starterIdle || !isNearPalindromeTarget(l, item)) {
-          hasUnsettled = true;
-          break;
-        }
-      }
-      if (!hasUnsettled && nextLocked >= 0) {
-        state.unlockLetter(nextLocked, true, { bakeY: false });
-        armManualPalindromeLetter(nextLocked, 1);
-      } else if (!hasUnsettled && nextLocked < 0 && item.loop) {
-        const cycleValues = [];
-        for (let i = segment.start; i <= segment.end; i++) {
-          const l = state.letters[i];
-          if (l && !l.deleted) cycleValues.push(Math.max(1, Math.floor(l.palindromeCycle || 1)));
-        }
-        const targetCycle = Math.min(...cycleValues) + 1;
-        for (let i = segment.end; i >= segment.start; i--) {
-          const l = state.letters[i];
-          if (!l || l.deleted) continue;
-          if (Math.max(1, Math.floor(l.palindromeCycle || 1)) < targetCycle) {
-            armManualPalindromeLetter(i, targetCycle);
-            break;
-          }
-        }
-      }
+// Mirror-line motion: target slot is the horizontal mirror of the letter's
+// original slot within its layout line, offsetLines below. The chain rest
+// lengths already match the mirrored slot spacing (neighbors land on adjacent
+// slots), so the strip stays taut and slides into place without fighting the
+// constraint solver. Cached per letter; invalidated when the block relayouts
+// (positions array identity changes).
+function getMirrorLineTarget(letter, item) {
+  const layout = state.positions?.[letter.blockIdx];
+  const positions = layout?.positions;
+  if (!positions) return null;
+  if (letter._mirrorLayout === positions) return letter._mirrorTarget;
+  const line = layout.lineIndices?.find(l => l.includes(letter.readingIdx));
+  let target = null;
+  if (line?.length) {
+    let left = Infinity, right = -Infinity, lineBaseY = Infinity, lineH = 0;
+    for (const ri of line) {
+      const p = positions[ri];
+      if (!p) continue;
+      if (p.x < left) left = p.x;
+      if (p.x + p.w > right) right = p.x + p.w;
+      if (p.y < lineBaseY) lineBaseY = p.y;
+      if ((p.lineHeight || 0) > lineH) lineH = p.lineHeight || 0;
+    }
+    const p = positions[letter.readingIdx];
+    if (p && left < right && lineBaseY < Infinity) {
+      const lh = lineH || getLetterLineHeight(letter);
+      target = {
+        x: left + right - p.x - p.w,
+        y: lineBaseY + lh * Number(item.offsetLines ?? 1)
+      };
     }
   }
-}
-
-function updatePalindromeWormCycles() {
-  if (!state.palindromeWormCycles) return;
-  for (let blockIdx = 0; blockIdx < state.blockRanges.length; blockIdx++) {
-    const item = getPalindromeMotionForBlock(blockIdx);
-    if (!item) {
-      state.palindromeWormCycles.delete(blockIdx);
-      continue;
-    }
-    if (!item.loop) {
-      state.palindromeWormCycles.set(blockIdx, 1);
-      continue;
-    }
-    if (getBlockConfig(blockIdx).peel?.manualOneByOne) {
-      state.palindromeWormCycles.set(blockIdx, 1);
-      continue;
-    }
-    const range = state.blockRanges[blockIdx];
-    const positions = state.positions?.[blockIdx]?.positions;
-    const sample = state.letters[range?.start] || null;
-    const lineGap = Math.max(1, Number(item.lineGap ?? 56));
-    let maxCycle = Math.max(1, Math.floor(state.palindromeWormCycles.get(blockIdx) || 1));
-    for (let i = range.start; i <= range.end; i++) {
-      const l = state.letters[i];
-      if (!l || l.deleted || l.locked || l.starterIdle) continue;
-      const baseY = positions?.[l.readingIdx]?.y ?? l.oy;
-      const cycle = Math.floor(((l.y - baseY) / lineGap) + 0.12);
-      if (cycle > maxCycle) maxCycle = cycle;
-    }
-    state.palindromeWormCycles.set(blockIdx, Math.max(1, maxCycle));
-  }
+  letter._mirrorLayout = positions;
+  letter._mirrorTarget = target;
+  return target;
 }
 
 let prevSimMaxY = null;
@@ -139,21 +69,6 @@ function getFixedDt() {
 
 export function applyLetterMotion(idx, letter, velocity, fieldForce) {
   const motions = getMotionItemsForBlock(letter.blockIdx);
-  const palStarterItem = letter.starterIdle ? getPalindromeMotionForBlock(letter.blockIdx) : null;
-  if (palStarterItem) {
-    // Hang: gravity droops the starter while a soft spring tethers it to its slot,
-    // so it dangles and sways (a "grab me" hint) instead of sitting rigid or falling.
-    const target = getPalindromeFlipTarget(letter, palStarterItem);
-    const hangK = Number(palStarterItem.hangSpring ?? 0.022);
-    const damp = Number(palStarterItem.hangDamping ?? 0.9);
-    let hvx = velocity.x * damp;
-    let hvy = velocity.y * damp + (state.gravityOn ? state.TICK_GRAVITY : 0);
-    if (target) {
-      hvx += (target.x - letter.x) * hangK;
-      hvy += (target.y - letter.y) * hangK;
-    }
-    return { x: hvx, y: hvy };
-  }
   if (letter.starterIdle && !motions.some(item => item?.applyToStarters)) {
     return {
       x: velocity.x,
@@ -203,15 +118,6 @@ export function applyLetterMotion(idx, letter, velocity, fieldForce) {
       const targetY = letter.lineLockY ?? letter.oy;
       vx *= Number(item.damping ?? 0.9);
       vy = (targetY - letter.y) * Number(item.strength ?? 0.45);
-    } else if (type === 'palindrome-flip') {
-      const target = getPalindromeFlipTarget(letter, item);
-      if (target) {
-        const damping = Number(item.damping ?? 0.68);
-        const pull = Number(item.strength ?? 0.18) * state.SIM_STEP_SCALE;
-        vx = vx * damping + (target.x - letter.x) * pull;
-        vy = vy * damping + (target.y - letter.y) * pull;
-        extraAngle += (0 - (letter.angle || 0)) * 0.08;
-      }
     } else if (type === 'buoyancy') {
       const wave = Math.sin(age * Number(item.frequency ?? 0.16) + letter.readingIdx * 0.71);
       vy -= strength * (Number(item.lift ?? 7) + wave * Number(item.wave ?? 4));
@@ -246,6 +152,69 @@ export function applyLetterMotion(idx, letter, velocity, fieldForce) {
           vx = vx * damp - ddx * snapStrength;
           vy = vy * damp - ddy * snapStrength;
         }
+      }
+    } else if (type === 'mirror-line') {
+      // Peeled letters lay themselves down one line below, each at the
+      // horizontal mirror of its original slot — the line rebuilds itself in
+      // reverse reading order (a palindrome literally re-writes itself).
+      // Zipper from the chain's free end: a letter springs to its slot only
+      // once the already-docked neighbor (idx+1) is within dockRadius of its
+      // own target. While waiting, velocity is killed so the letter doesn't
+      // drift. Gravity is always fully cancelled so abrupt peeling can never
+      // send a letter past its target and onto the floor.
+      const target = getMirrorLineTarget(letter, item);
+      if (target) {
+        let active = true;
+        const next = state.letters[idx + 1];
+        if (next && !next.deleted && next.blockIdx === letter.blockIdx && state.restLengths?.[idx] !== null) {
+          const nextTarget = getMirrorLineTarget(next, item);
+          if (nextTarget) {
+            // Permissive radius: fires early so fast peeling never stalls the zipper
+            const dockRadius = Number(item.dockRadius ?? 3.0) * Math.max(14, next.w + 6);
+            active = !next.locked && Math.hypot(next.x - nextTarget.x, next.y - nextTarget.y) < dockRadius;
+          }
+        }
+        if (active) {
+          const damping = Number(item.damping ?? 0.86);
+          // Higher cap so the spring can recover a letter dropped far below target
+          const maxPull = Number(item.maxPull ?? 2.0) * state.SIM_STEP_SCALE;
+          let fx = (target.x - letter.x) * strength;
+          let fy = (target.y - letter.y) * strength;
+          const f = Math.hypot(fx, fy);
+          if (f > maxPull) { fx = fx / f * maxPull; fy = fy / f * maxPull; }
+          vx = vx * damping + fx;
+          vy = vy * damping + fy;
+          // Realign restLength to mirror target spacing so the chain constraint
+          // doesn't fight the spring (rest lengths were set during drag and can
+          // be 2-3px longer than the settled mirror spacing)
+          if (state.restLengths?.[idx] != null) {
+            const nextL = state.letters[idx + 1];
+            if (nextL && !nextL.deleted && nextL.blockIdx === letter.blockIdx) {
+              const nt = getMirrorLineTarget(nextL, item);
+              if (nt) {
+                state.restLengths[idx] = Math.hypot(
+                  (target.x + (letter.w || 0) / 2) - (nt.x + (nextL.w || 0) / 2),
+                  target.y - nt.y
+                );
+              }
+            }
+          }
+          // Snap when close and nearly still to prevent residual scatter
+          if (Math.hypot(target.x - letter.x, target.y - letter.y) < 1.5 && Math.hypot(vx, vy) < 0.3) {
+            vx = 0; vy = 0;
+            letter.x = target.x; letter.y = target.y;
+          }
+        } else {
+          // Zipper not yet fired: bleed off release velocity so the letter
+          // parks near where it was dropped rather than flying away
+          vx *= 0.55;
+          vy *= 0.55;
+        }
+        // Always cancel gravity — the spring provides the full restoring
+        // force, so letters can't fall past their target regardless of peel speed
+        if (state.gravityOn) vy -= state.TICK_GRAVITY;
+        // Settle flat: bleed off any rotation as the letter beds in
+        if (letter.angle) letter.angle *= 0.94;
       }
     }
   }
@@ -346,6 +315,7 @@ export function simulate() {
     }
   }
   applyCrossBlockIdleArcs();
+  simulateTieRopes();
   state.updateForceFieldVisualOffsets();
 
   // Unlock propagation. Keep the original mechanic: unlocked tail pulls
@@ -364,13 +334,8 @@ export function simulate() {
       const dist = Math.hypot(dx, dy);
 
       const blockConfig = getBlockConfig(a.blockIdx);
-      if (blockConfig.peel?.manualOneByOne) continue;
       const peelMode = blockConfig.peel?.mode || state.pieceConfig.peel.mode || 'zigzag';
-      const isUnstructured = [
-        'random', 'drunken', 'outward', 'inward', 'random-neighbors', 'center', 'spiral', 'spiral-center', 'random-walk',
-        'alternating-ends', 'vowels-first', 'punctuation-last', 'odd-even', 'first-letters', 'syllables-in-order',
-        'first-syllables', 'last-syllables'
-      ].includes(peelMode);
+      const isUnstructured = UNSTRUCTURED_PEEL_MODES.has(peelMode);
       // Sensitivity fix: increase threshold for unstructured modes to prevent "chain plucking"
       const baseUnlockThreshold = Math.max(0, Number(blockConfig.peel?.unlockThreshold ?? state.UNLOCK_THRESHOLD));
       let thresh = isUnstructured ? (baseUnlockThreshold + 4 * a.scale) : baseUnlockThreshold;
@@ -503,8 +468,12 @@ export function simulate() {
         b.x -= dx * diff * 0.5; b.y -= dy * diff * 0.5;
       }
     }
+    applyTieConstraints();
+    applyTangledConstraints();
   }
   applyCrossBlockIdleArcs();
+  simulateTieRopes();
+  simulateTangledLines();
 
   // Letter collision
   const collisionLimit = state.mobileRuntime ? 45 : 140;
@@ -697,13 +666,14 @@ export function render(now) {
   accumulator += dt;
 
   state.updateFrameState();
+  state.updateCamera?.();
   state.positionAttachments();
   state.syncPeelStrokeOrigins(false);
+  state.positionInlineLinkButtons();
   state.positionTimedButtons();
   state.positionClipShapeFrames();
   state.positionHint();
   if (!state.mobileRuntime) state.positionBlockGizmos();
-  const isEditor = document.body.classList.contains('editor-open');
 
   let steps = 0;
   const simStart = performance.now();
@@ -744,6 +714,7 @@ export function render(now) {
   state.updateBehaviorVisibility();
   state.positionAttachments();
   state.syncPeelStrokeOrigins(false);
+  state.positionInlineLinkButtons();
   state.positionTimedButtons();
   state.positionClipShapeFrames();
   renderEffects();

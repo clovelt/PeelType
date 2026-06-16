@@ -102,7 +102,9 @@ export function buildLabyrinthThreads(opts = {}) {
 
   // Size the maze so the longest thread fits without clamping.
   const usable = width - margin * 2;
-  const avgAdvance = fontPx * 0.5 + spacing;
+  // Rough mean glyph advance for prose (incl. spaces). Errs slightly wide so the
+  // longest thread never overflows its corridors and piles up at the path end.
+  const avgAdvance = fontPx * 0.42 + spacing;
   const charsPerLane = Math.max(4, Math.floor(usable / avgAdvance));
   const lanesNeeded = texts.reduce((max, txt) => Math.max(max, Math.ceil([...txt].length / charsPerLane)), 0);
   const lanes = Math.min(60, Math.max(rows, lanesNeeded));

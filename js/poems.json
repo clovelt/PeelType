@@ -1,5 +1,10 @@
 [
   {
+    "key": "labyrinth",
+    "label": "Procedural labyrinths",
+    "src": "./js/labyrinth.json"
+  },
+  {
     "key": "tirita",
     "label": "Peel after reading",
     "src": "./js/peel-after-reading.json"
@@ -8,10 +13,5 @@
     "key": "me-cubre-un-perro-negro",
     "label": "me cubre un perro negro",
     "src": "./js/me-cubre-un-perro-negro.json"
-  },
-  {
-    "key": "laberinto",
-    "label": "laberinto",
-    "src": "./js/laberinto.json"
   }
 ]

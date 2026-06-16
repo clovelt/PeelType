@@ -1,5 +1,6 @@
 const state = globalThis.__tiritaState || (globalThis.__tiritaState = {});
 import { playGrabSound, playNamedSound } from './audio.js';
+import { renderTies } from './ties.js';
 
 export function createParticle({ x, y, vx = 0, vy = 0, life = 900, size = 10, kind = 'spark', gravity = 0, bounce = 0.45, rotateWithVelocity = true, fade = true, color }) {
   if (state.particles.length >= state.MAX_PARTICLES || state.particlesSpawnedThisStep >= state.MAX_PARTICLES_PER_STEP) return false;
@@ -78,6 +79,32 @@ export function spawnParticles(preset, anchor, count = 12, color = null) {
         bounce: 0.18,
         rotateWithVelocity: false
       });
+    } else if (preset === 'inkdrop') {
+      createParticle({
+        x: anchor.x + (Math.random() - 0.5) * 14,
+        y: anchor.y + (Math.random() - 0.5) * 8,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: 0.4 + Math.random() * 1.1,
+        life: 1400 + Math.random() * 1000,
+        size: 4 + Math.random() * 5,
+        kind: 'inkdrop',
+        gravity: 0.16,
+        bounce: 0.28,
+        color: color || '#2a2521'
+      });
+    } else if (preset === 'sludgeDrop') {
+      createParticle({
+        x: anchor.x + (Math.random() - 0.5) * 8,
+        y: anchor.y,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: 0.1 + Math.random() * 0.4,
+        life: 2500 + Math.random() * 1500,
+        size: 7 + Math.random() * 8,
+        kind: 'inkdrop',
+        gravity: 0.08,
+        bounce: 0.12,
+        color: color || '#1a1208'
+      });
     } else {
       createParticle({
         x: anchor.x,
@@ -150,6 +177,25 @@ export function createPhysicsProp(anchor, action = {}) {
   });
 }
 
+function spawnInkSplash(x, y) {
+  const count = 3 + Math.floor(Math.random() * 4);
+  for (let s = 0; s < count; s++) {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.6;
+    const speed = 1.5 + Math.random() * 4;
+    createParticle({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 340 + Math.random() * 280,
+      size: 3 + Math.random() * 5,
+      kind: 'splash',
+      gravity: 0.18,
+      bounce: 0.0,
+      rotateWithVelocity: true
+    });
+  }
+}
+
 export function simulateEffects() {
   const minX = -state.frameViewport.containerLeft;
   const minY = -state.frameViewport.containerTop;
@@ -181,8 +227,14 @@ export function simulateEffects() {
     p.py = p.y;
     p.x += vx;
     p.y += vy + p.gravity * state.SIM_STEP_SCALE;
-    if (p.x < minX) { p.x = minX; p.px = p.x + vx * p.bounce; }
-    if (p.x + p.size > maxX) { p.x = maxX - p.size; p.px = p.x + vx * p.bounce; }
+    if (p.x < minX) {
+      p.x = minX; p.px = p.x + vx * p.bounce;
+      if (p.kind === 'inkdrop' && !p.spawnedSplash) { p.spawnedSplash = true; spawnInkSplash(p.x, p.y); }
+    }
+    if (p.x + p.size > maxX) {
+      p.x = maxX - p.size; p.px = p.x + vx * p.bounce;
+      if (p.kind === 'inkdrop' && !p.spawnedSplash) { p.spawnedSplash = true; spawnInkSplash(p.x, p.y); }
+    }
     if (p.y < minY && p.kind === 'smoke') p.life = Math.min(p.life, 80);
     if (p.y + p.size > maxY) {
       p.y = maxY - p.size;
@@ -193,6 +245,7 @@ export function simulateEffects() {
           createParticle({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 4, vy: -1 - Math.random() * 3, life: 420, size: 3 + Math.random() * 4, kind: 'splash', gravity: 0.16 });
         }
       }
+      if (p.kind === 'inkdrop' && !p.spawnedSplash) { p.spawnedSplash = true; spawnInkSplash(p.x, p.y); }
     }
     if (p.life <= 0) {
       state.particles.splice(i, 1);
@@ -264,6 +317,195 @@ export function simulateEffects() {
         b.x += dx * push; b.y += dy * push;
       }
     }
+  }
+  simulateDrainAmbient();
+}
+
+// ── Drain ambient ───────────────────────────────────────────────────────────
+// Dark drops welling up out of the plughole, plus occasional bugs that crawl
+// out and wander. Bugs are DOM elements (draggable, tap to squish).
+// Drop and bug rates scale up while the block is actively being pulled.
+// Both stop entirely once the block is fully unclogged (completed).
+
+function isDrainBlockBeingPulled(blockIdx) {
+  if (!state.drags?.size) return false;
+  const range = state.blockRanges?.[blockIdx];
+  if (!range) return false;
+  for (const d of state.drags.values()) {
+    if (d.idx >= range.start && d.idx <= range.end) return true;
+  }
+  return false;
+}
+
+function spawnBug(x, y, color) {
+  state.bugs ||= [];
+  if (state.bugs.length >= 12) return;
+  const s = 3.5 + Math.random() * 2.5;
+  const col = color || '#1c1814';
+  // Transparent DOM element: only for hit detection (drag + tap)
+  const hitW = Math.ceil(s * 4);
+  const hitH = Math.ceil(s * 5);
+
+  const el = document.createElement('div');
+  el.className = 'bug-prop';
+  el.style.cssText = `position:absolute;left:0;top:0;width:${hitW}px;height:${hitH}px;pointer-events:auto;touch-action:none;cursor:pointer;`;
+  state.container.appendChild(el);
+
+  const bug = {
+    el, s, hitW, hitH,
+    x, y,
+    angle: Math.random() * Math.PI * 2,
+    speed: 0.7 + Math.random() * 1.0,
+    legPhase: Math.random() * 6.28,
+    wander: Math.random() * 6.28,
+    life: 7000 + Math.random() * 7000,
+    color: col,
+    dragging: false, dragMoved: false, dragOffX: 0, dragOffY: 0,
+    dying: false, dieStarted: 0
+  };
+  state.bugs.push(bug);
+
+  el.addEventListener('pointerdown', (e) => {
+    state.armAudio?.();
+    e.stopPropagation();
+    e.preventDefault();
+    bug.dragging = true;
+    bug.dragMoved = false;
+    const rect = state.container.getBoundingClientRect();
+    bug.dragOffX = e.clientX - rect.left - bug.x;
+    bug.dragOffY = e.clientY - rect.top - bug.y;
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!bug.dragging) return;
+    bug.dragMoved = true;
+    const rect = state.container.getBoundingClientRect();
+    bug.x = e.clientX - rect.left - bug.dragOffX;
+    bug.y = e.clientY - rect.top - bug.dragOffY;
+  });
+  el.addEventListener('pointerup', (e) => {
+    if (!bug.dragging) return;
+    bug.dragging = false;
+    if (!bug.dragMoved) killBug(bug, true);
+  });
+  el.addEventListener('pointercancel', () => { bug.dragging = false; });
+}
+
+function killBug(bug, splat = false) {
+  if (bug.dying) return;
+  bug.dying = true;
+  bug.dieStarted = performance.now();
+  bug.el.style.pointerEvents = 'none';
+  if (splat) spawnParticles('redDrops', { x: bug.x, y: bug.y, vx: 0, vy: -0.5 }, 10);
+}
+
+function simulateDrainAmbient() {
+  state.bugs ||= [];
+  const blocks = state.pieceConfig?.blocks || [];
+  const flags = state.activeBlockFlags || [];
+  const isEditor = document.body.classList.contains('editor-open');
+  const perSec = state.STEP_MS / 1000;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const d = blocks[i]?.drain;
+    if (!d?.enabled) continue;
+    if (!isEditor && flags[i] === false) continue;
+    // Stop everything once the block is fully unclogged
+    if (!isEditor && state.completedBlocks?.[i]) continue;
+    const hx = Number(d.x ?? 360);
+    const hy = Number(d.y ?? 150);
+    // Rates scale up 8× while being actively pulled
+    const pull = isEditor ? 1 : (isDrainBlockBeingPulled(i) ? 8 : 1);
+    if (d.dropsEnabled !== false) {
+      const rate = Math.max(0, Number(d.dropRate ?? 0.7)) * pull;
+      if (Math.random() < rate * perSec) {
+        spawnParticles('inkdrop', { x: hx, y: hy }, 1, d.dropColor || '#2a2521');
+      }
+    }
+    if (d.bugsEnabled !== false) {
+      const rate = Math.max(0, Number(d.bugRate ?? 0.08)) * pull;
+      if (Math.random() < rate * perSec) spawnBug(hx, hy, d.bugColor || '#1c1814');
+    }
+  }
+
+  // Advance and update every live bug
+  const minX = -state.frameViewport.containerLeft - 80;
+  const minY = -state.frameViewport.containerTop - 80;
+  const maxX = state.frameViewport.width - state.frameViewport.containerLeft + 80;
+  const maxY = state.frameViewport.height - state.frameViewport.containerTop + 80;
+  const now = performance.now();
+
+  for (let i = state.bugs.length - 1; i >= 0; i--) {
+    const b = state.bugs[i];
+    if (b.dying) {
+      if (now - b.dieStarted > 200) {
+        b.el.remove();
+        state.bugs.splice(i, 1);
+      }
+      continue;
+    }
+    b.life -= state.STEP_MS;
+    if (b.life <= 0 || b.x < minX || b.x > maxX || b.y < minY || b.y > maxY) {
+      killBug(b);
+      continue;
+    }
+    if (!b.dragging) {
+      b.wander += 0.07 * state.SIM_STEP_SCALE;
+      b.angle += Math.sin(b.wander) * 0.055 * state.SIM_STEP_SCALE;
+      const step = b.speed * state.SIM_STEP_SCALE;
+      b.x += Math.cos(b.angle) * step;
+      b.y += Math.sin(b.angle) * step;
+      b.legPhase += step * 0.6;
+    }
+    // Keep transparent hit area centred on the bug position
+    b.el.style.transform = `translate(${b.x - b.hitW / 2}px, ${b.y - b.hitH / 2}px)`;
+  }
+}
+
+function renderBugs(offX, offY) {
+  if (!state.bugs?.length) return;
+  const ctx = state.effectsCtx;
+  const now = performance.now();
+  for (const b of state.bugs) {
+    let fade = Math.max(0, Math.min(1, Math.min(b.life, 800) / 800));
+    let squishX = 1, squishY = 1;
+    if (b.dying) {
+      const t = Math.min(1, (now - b.dieStarted) / 180);
+      fade = 1 - t;
+      squishX = 1 + t * 1.8;
+      squishY = 1 - t * 0.72;
+    }
+    if (fade <= 0) continue;
+    const s = b.s;
+    ctx.save();
+    ctx.translate(b.x + offX, b.y + offY);
+    ctx.rotate(b.angle + Math.PI / 2);
+    ctx.scale(squishX, squishY);
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = b.color;
+    ctx.fillStyle = b.color;
+    ctx.lineWidth = Math.max(0.7, s * 0.22);
+    ctx.lineCap = 'round';
+    for (let li = 0; li < 3; li++) {
+      const ly = (li - 1) * s * 0.55;
+      const swing  = Math.sin(b.legPhase + li * 1.7) * s * 0.5;
+      const swing2 = Math.sin(b.legPhase + li * 1.7 + Math.PI) * s * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, ly); ctx.lineTo(-s * 1.4, ly + swing);
+      ctx.moveTo(0, ly); ctx.lineTo( s * 1.4, ly + swing2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, s * 0.3, s * 0.7, s * 1.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.9, s * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.2, -s * 1.2); ctx.lineTo(-s * 0.7, -s * 2.1);
+    ctx.moveTo( s * 0.2, -s * 1.2); ctx.lineTo( s * 0.7, -s * 2.1);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
@@ -350,19 +592,22 @@ export function renderEffects() {
       state.effectsCtx.closePath();
       state.effectsCtx.fill();
     } else {
-      state.effectsCtx.fillStyle = p.kind === 'smoke'
-        ? 'rgba(102, 98, 91, 0.34)'
-        : p.kind === 'tear'
-          ? 'rgba(160, 195, 220, 0.82)'
-          : p.kind === 'splash'
-            ? '#d2454b'
-            : '#b3282d';
+      state.effectsCtx.fillStyle = p.color
+        ? p.color
+        : p.kind === 'smoke'
+          ? 'rgba(102, 98, 91, 0.34)'
+          : p.kind === 'tear'
+            ? 'rgba(160, 195, 220, 0.82)'
+            : p.kind === 'splash'
+              ? '#d2454b'
+              : '#b3282d';
       state.effectsCtx.beginPath();
       state.effectsCtx.arc(0, 0, size / 2, 0, Math.PI * 2);
       state.effectsCtx.fill();
     }
     state.effectsCtx.restore();
   }
+  renderBugs(containerCanvasLeft, containerCanvasTop);
   for (const prop of state.physicsProps) {
     prop.el.style.transform = `translate(${prop.x}px, ${prop.y}px) rotate(${prop.angle}rad)`;
   }
@@ -492,5 +737,6 @@ export function renderEffects() {
       state.effectsCtx.restore();
     }
   }
+  renderTies(containerCanvasLeft, containerCanvasTop, isEditor);
   state.renderLooseParts();
 }

@@ -5,6 +5,13 @@ import { quoteFontFamily } from './font.js';
 
 function getBlockConfig(blockIdx) { return state.pieceConfig?.blocks?.[blockIdx] || state.activeBlocks?.[blockIdx] || {}; }
 
+// Peel modes whose chain order is non-linear (must match UNSTRUCTURED_PEEL_MODES in physics.js).
+const UNSTRUCTURED_MODES = new Set([
+  'spiral', 'spiral-center', 'random', 'drunken', 'outward', 'inward', 'random-neighbors', 'center', 'random-walk',
+  'alternating-ends', 'vowels-first', 'punctuation-last', 'odd-even', 'first-letters', 'syllables-in-order',
+  'first-syllables', 'last-syllables'
+]);
+
 export function buildSpiralOrder(segLines, direction) {
   const rows = segLines.map(line => direction === 'left' ? line.slice().reverse() : line.slice());
   const consumed = rows.map(row => row.map(() => false));
@@ -46,11 +53,7 @@ export function buildSpiralOrder(segLines, direction) {
 
 export function buildSegmentOrder(segLines, direction, mode, graphemes, blockPositions) {
   let peelOrder = [];
-  const unstructured = [
-    'spiral', 'spiral-center', 'random', 'drunken', 'outward', 'inward', 'random-neighbors', 'center', 'random-walk',
-    'alternating-ends', 'vowels-first', 'punctuation-last', 'odd-even', 'first-letters', 'syllables-in-order',
-    'first-syllables', 'last-syllables'
-  ].includes(mode);
+  const unstructured = UNSTRUCTURED_MODES.has(mode);
 
   if (mode === 'spiral') {
     peelOrder = buildSpiralOrder(segLines, direction);
@@ -290,8 +293,11 @@ export function computeRestLengths() {
     const blockConfig = getBlockConfig(a.blockIdx);
     const motion = blockConfig.letterMotion || state.pieceConfig.letterMotion;
     const motions = Array.isArray(motion) ? motion : (motion ? [motion] : []);
-    if (motions.some(item => item?.type === 'palindrome-flip' && item.enabled !== false)) { rests.push(null); continue; }
     if (blockConfig.physics?.noConstraints || blockConfig.peel?.popGrid) { rests.push(null); continue; }
+    // Drain: letters are stacked on a single point, so the distance between their
+    // origins is ~0. Give the strand a natural per-letter spacing instead, so the
+    // pulled chain reads as text-hair rather than snapping back into the hole.
+    if (blockConfig.drain?.enabled) { rests.push((a.w + b.w) * 0.62); continue; }
     const aLineHeight = getLetterLineHeight(a);
     const bLineHeight = getLetterLineHeight(b);
     const sameRow = Math.abs(b.oy - a.oy) < Math.max(aLineHeight, bLineHeight) / 2;
@@ -300,11 +306,7 @@ export function computeRestLengths() {
     let dist = Math.hypot(dx, dy);
 
     const peelMode = blockConfig.peel?.mode || state.pieceConfig.peel.mode || 'zigzag';
-    const unstructured = [
-      'spiral', 'spiral-center', 'random', 'drunken', 'outward', 'inward', 'random-neighbors', 'center', 'random-walk',
-      'alternating-ends', 'vowels-first', 'punctuation-last', 'odd-even', 'first-letters', 'syllables-in-order',
-      'first-syllables', 'last-syllables'
-    ].includes(peelMode);
+    const unstructured = UNSTRUCTURED_MODES.has(peelMode);
     if (unstructured && dist > Math.max(aLineHeight * 1.1, (a.w + b.w) * 2.2)) {
       dist = (a.w + b.w) * 0.62;
     } else if (!unstructured) {

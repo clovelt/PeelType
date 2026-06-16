@@ -435,7 +435,7 @@ const TIRITA_POEM_BLOCKS = [
   {
     id: 'tit-b53',
     transform: { x: 0, y: 0, scale: 1, width: 660 },
-    timedButton: { text: '+', action: 'url', url: 'https://gustavochico.com', spawnAt: 'afterAll', delayMs: 1500 },
+    linkButton: { text: '+', url: 'https://gustavochico.com' },
     peelPoints: [{ line: 0, direction: 'right', starterCount: 1 }],
     triggers: [
       { on: 'blockAppear', actions: [{ type: 'bgColor', color: '#f5f0e8', duration: 3000 }, { type: 'textColor', color: '#7e7e7e' }] },

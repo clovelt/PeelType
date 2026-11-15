@@ -27,24 +27,22 @@
     }
     #bootOverlay.boot-hide { opacity: 0; visibility: hidden; pointer-events: none; }
     .boot-word {
-      font: clamp(38px, 9vw, 60px) / 1 'EB Garamond', Georgia, serif;
+      position: relative;
+      /* Room above the word for the peeled strip to curl up into. */
+      margin-top: 2.6em;
+      font: clamp(34px, min(9vw, 8vh), 60px) / 1 'EB Garamond', Georgia, serif;
       letter-spacing: 0.01em;
       white-space: nowrap;
       user-select: none;
     }
-    .boot-word span {
-      display: inline-block;
-      transform-origin: 0% 100%;
-      animation: boot-peel 2.8s cubic-bezier(0.45, 0, 0.3, 1) infinite;
-      animation-delay: calc(var(--i) * 0.11s);
-    }
-    /* A letter lifts from its bottom-left corner like a sticker, hangs, and settles back. */
-    @keyframes boot-peel {
-      0%, 16%  { transform: none; text-shadow: none; }
-      30%      { transform: translateY(-0.26em) rotate(-17deg); text-shadow: 0 0.2em 0.12em rgba(74, 74, 74, 0.16); }
-      43%      { transform: translate(0.05em, -0.4em) rotate(8deg); text-shadow: 0 0.3em 0.16em rgba(74, 74, 74, 0.12); }
-      55%      { transform: translateY(-0.1em) rotate(-3deg); text-shadow: 0 0.08em 0.06em rgba(74, 74, 74, 0.1); }
-      64%, 100% { transform: none; text-shadow: none; }
+    .boot-word span { display: inline-block; }
+    /* Once measured, letters are placed by the peel loop below (bottom-centre pivot). */
+    .boot-word.boot-ready span {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      transform-origin: 50% 100%;
+      will-change: transform;
     }
     .boot-status {
       font: italic 14px 'EB Garamond', Georgia, serif;
@@ -53,27 +51,101 @@
       animation: boot-breathe 1.8s ease-in-out infinite;
     }
     @keyframes boot-breathe { 50% { opacity: 0.45; } }
-    #bootOverlay[data-state="error"] .boot-word span,
     #bootOverlay[data-state="error"] .boot-status { animation: none; }
     #bootOverlay[data-state="error"] { cursor: pointer; }
-    @media (prefers-reduced-motion: reduce) {
-      .boot-word span { animation: none; }
-    }
   </style>
 </head>
 <body>
   <div id="bootOverlay" role="status" aria-live="polite">
-    <div class="boot-word" aria-label="PeelType"><span style="--i:0">P</span><span style="--i:1">e</span><span style="--i:2">e</span><span style="--i:3">l</span><span style="--i:4">T</span><span style="--i:5">y</span><span style="--i:6">p</span><span style="--i:7">e</span></div>
+    <div class="boot-word" aria-label="PeelType"><span>P</span><span>e</span><span>e</span><span>l</span><span>T</span><span>y</span><span>p</span><span>e</span></div>
     <div class="boot-status">loading…</div>
   </div>
   <script>
-    // Thumbnail captures must show the scene, not the loader. Failsafe: never block the page forever.
     (function () {
       var boot = document.getElementById('bootOverlay');
+      // Thumbnail captures must show the scene, not the loader.
       if (/[?&]thumb(\b|=|&|$)/.test(location.search)) { boot.remove(); return; }
+      // Failsafe: never block the page forever.
       setTimeout(function () {
         if (boot.isConnected && !boot.dataset.state) { boot.classList.add('boot-hide'); setTimeout(function () { boot.remove(); }, 600); }
       }, 25000);
+
+      // Peel spinner: the word is a strip peeled off left→right, then stuck back right→left.
+      // A peel front sweeps along the baseline; every letter behind it rides the lifted strip,
+      // which leaves the front steeply (the peel kink) and flattens out towards the free end,
+      // like a ribbon held up. Concave-down, so letters fan apart instead of crushing.
+      var word = boot.querySelector('.boot-word');
+      var spans = Array.prototype.slice.call(word.children);
+      var layout = null, total = 0, lineH = 40;
+
+      function measure() {
+        word.classList.remove('boot-ready');
+        word.style.width = ''; word.style.height = '';
+        spans.forEach(function (s) { s.style.transform = ''; s.style.textShadow = ''; });
+        var base = word.getBoundingClientRect();
+        layout = spans.map(function (s) {
+          var r = s.getBoundingClientRect();
+          return { x: r.left - base.left, w: r.width };
+        });
+        var last = layout[layout.length - 1];
+        total = last.x + last.w;
+        lineH = base.height;
+        word.style.width = base.width + 'px';
+        word.style.height = base.height + 'px';
+        word.classList.add('boot-ready');
+      }
+
+      function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+      var PEEL = 1500, HOLD_UP = 380, STICK = 1500, HOLD_DOWN = 520;
+      var PERIOD = PEEL + HOLD_UP + STICK + HOLD_DOWN;
+
+      function place(now) {
+        var t = now % PERIOD, p;
+        if (t < PEEL) p = ease(t / PEEL);
+        else if (t < PEEL + HOLD_UP) p = 1;
+        else if (t < PEEL + HOLD_UP + STICK) p = 1 - ease((t - PEEL - HOLD_UP) / STICK);
+        else p = 0;
+        // Overshoot a little so the last letter is fully lifted at the top of the cycle.
+        var front = p * (total + lineH * 0.25);
+        // Elevation of the strip at distance s from the front: steep at the kink, flattening
+        // towards the free end. The kink breathes slightly so a held strip isn't frozen.
+        var e0 = 0.82 + 0.06 * Math.sin(now / 420), e1 = 0.12;
+        function elev(s) { return e0 - (e0 - e1) * Math.pow(Math.min(1, s / total), 0.7); }
+        // Walk from the front outwards (last letter first) integrating the strip's path.
+        var x = 0, y = 0, walked = 0;
+        for (var i = spans.length - 1; i >= 0; i--) {
+          var L = layout[i];
+          var s = front - (L.x + L.w / 2);          // distance along the strip from the front
+          if (s <= 0) {
+            spans[i].style.transform = 'translate(' + L.x + 'px,0)';
+            spans[i].style.textShadow = '';
+            continue;
+          }
+          while (walked < s) {
+            var ds = Math.min(2, s - walked), e = elev(walked + ds / 2);
+            x -= Math.cos(e) * ds;                  // walking back left…
+            y -= Math.sin(e) * ds;                  // …and up
+            walked += ds;
+          }
+          var a = elev(s), lift = -y;
+          spans[i].style.transform = 'translate(' + (front + x - L.w / 2).toFixed(2) + 'px,' + y.toFixed(2) + 'px) rotate(' + a.toFixed(4) + 'rad)';
+          spans[i].style.textShadow = '0 ' + (lift * 0.2).toFixed(1) + 'px ' + (3 + lift * 0.07).toFixed(1) + 'px rgba(74,74,74,0.16)';
+        }
+      }
+
+      function frame(now) {
+        if (!boot.isConnected || boot.dataset.state === 'error') return;
+        place(now);
+        requestAnimationFrame(frame);
+      }
+
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      measure();
+      requestAnimationFrame(frame);
+      // Widths change when EB Garamond replaces the fallback font, and on resize.
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (boot.isConnected) measure(); });
+      window.addEventListener('resize', function () { if (boot.isConnected) measure(); });
     })();
   </script>
   <canvas id="effectsCanvas"></canvas>

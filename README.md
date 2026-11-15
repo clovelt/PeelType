@@ -140,6 +140,7 @@ The overview is the fastest way to see the editor's shape: choose a scene, chang
 Useful authoring controls:
 
 - **Scene selector**: load the included examples and experiments.
+- **Examples grid (▦)**: the button left of the scene selector opens a grid of every example with a live preview; click a card to load it. On the local server, **Generate thumbnails** captures a real screenshot of each scene and saves it to `thumbs/` as a small JPEG so previews stay faithful (including SVG line art and generated shapes) on static hosting too.
 - **Content**: edit text, BBCode tags, paragraph behavior, language/localized strings, and raw JSON.
 - **Design**: change typography, gradients, layout, paths, shapes, and illustration rendering.
 - **Behavior**: configure peel modes, physics, force fields, events, step progression, persistence, and conditional narrative.
@@ -208,6 +209,7 @@ css/
 docs/media/
 fonts/
 illustrations/
+thumbs/
 js/
 ```
 
@@ -233,6 +235,7 @@ server.js                Dependency-free local authoring server
 css/style.css            Runtime and editor styles
 fonts/                   Bundled local EB Garamond files
 illustrations/           SVG and image assets used by scenes
+thumbs/                  Pre-rendered scene preview thumbnails (generated)
 js/main.js               App bootstrap and orchestration
 js/editor.js             Runtime editor UI
 js/peel-after-reading.json

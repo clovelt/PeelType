@@ -61,6 +61,10 @@ const { applyLetterMotion, migrateGripOneStep, simulate, render } = await import
 const { computeTies, normalizeTie, TIE_TYPES,
         simulateTieRopes, hitTestTieRope } = await import(`./ties.js?v=${_v}`);
 const { computeTangledLines, simulateTangledLines } = await import(`./tangled-lines.js?v=${_v}`);
+const { createSession, refreshSession, deleteSession, fetchAuthorFeed, uploadBlob,
+        createRecord, getRecord, createPost, publishScene, loadSession, saveSession,
+        facetsToBbcode, parseAtUri } = await import(`./bluesky.js?v=${_v}`);
+const { buildFeedScene } = await import(`./feed-generator.js?v=${_v}`);
 console.log("Tirita: Local offline modules imported successfully.");
 
 let spanishHyphenator = null;
@@ -216,6 +220,14 @@ const fallbackTiritaConfig = {
 fallbackTiritaConfig.blocks[0].hint = { enabled: true, peelPointIndex: 0 };
 
 const poemScenes = await loadPoemsFromManifest(defaultPieceConfig);
+// Main-language (unlocalized) text of the tirita poem, captured before localization.
+// Locales without a string for a block (e.g. EN, the JSON's language) fall back to this.
+const tiritaBaseTextById = new Map(
+  (poemScenes.tirita?.config.blocks || buildBlocks({ strings: {} })).map(b => [b.id, b.text])
+);
+function tiritaTextForLocale(blockId, locale) {
+  return locale?.strings?.[blockId] ?? tiritaBaseTextById.get(blockId);
+}
 for (const scene of Object.values(poemScenes)) {
   scene.config.blocks = applyLocaleToBlocks(scene.config.blocks, currentLocale);
 }
@@ -229,12 +241,51 @@ const scenePresets = {
   ...poemScenes
 };
 
+// Re-inject the generated/loaded Atmosphere feed scene (persisted across reloads).
+try {
+  const feed = JSON.parse(localStorage.getItem('tirita.bskyFeed') || 'null');
+  if (feed?.config && Array.isArray(feed.config.blocks)) {
+    scenePresets['bluesky-feed'] = { label: feed.label || 'My feed', config: feed.config };
+  }
+} catch {}
+
+// Open a remote at:// scene from the query string (?scene=at://did/…/…).
+{
+  const q = new URLSearchParams(window.location.search).get('scene') || '';
+  if (q.startsWith('at://')) {
+    try {
+      const record = await getRecord(q);
+      const remoteConfig = record?.value?.config;
+      if (remoteConfig && Array.isArray(remoteConfig.blocks)) {
+        const label = record.value.title || 'Published scene';
+        scenePresets['bluesky-feed'] = { label, config: remoteConfig };
+        localStorage.setItem('tirita.bskyFeed', JSON.stringify({ label, config: remoteConfig }));
+        localStorage.setItem('tirita.scene', 'bluesky-feed');
+        // Writes both tirita.pieceConfig and the per-scene key, which loadPieceConfig prefers.
+        persistPieceConfig(remoteConfig, 'bluesky-feed');
+      }
+    } catch (e) {
+      console.warn('Remote scene load failed:', e?.message || e);
+    }
+  }
+}
+
 
 // --- Initialization Calls ---
 applySceneQueryOverride(scenePresets);
 let pieceConfig = loadPieceConfig(scenePresets, defaultPieceConfig, DEFAULT_OPTIMIZATION, storedLocale);
 if (pieceConfig?.id === 'tirita-poema' && Array.isArray(pieceConfig.blocks)) {
   pieceConfig.blocks = applyLocaleToBlocks(pieceConfig.blocks, currentLocale);
+  // The stored config can still hold another language's text for blocks the current
+  // locale has no string for (the main/JSON language). Swap only text that verbatim
+  // matches another locale, so in-progress edits survive.
+  for (const block of pieceConfig.blocks) {
+    const target = tiritaTextForLocale(block.id, currentLocale);
+    if (target === undefined || block.text === target) continue;
+    const isOtherLocaleText = Object.values(LOCALES).some(loc =>
+      loc !== currentLocale && tiritaTextForLocale(block.id, loc) === block.text);
+    if (isOtherLocaleText) block.text = target;
+  }
 }
 const isTouchMobile = window.innerWidth < 760 || (window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 900);
 if (isTouchMobile) document.body.classList.add('mobile-runtime');
@@ -253,6 +304,18 @@ const mobileRuntime = isTouchMobile;
     uiToggle.setAttribute('aria-label', uiToggle.title);
   };
   setHidden(params.has('hideUI') && truthy(params.get('hideUI')));
+  if (params.has('thumb')) {
+    document.body.classList.add('thumb-mode');
+    document.documentElement.classList.add('thumb-mode');
+    state.thumbMode = true;
+    // Show the whole scene for the preview: no step/fade gating, no hidden blocks.
+    const b = pieceConfig?.behaviors || {};
+    pieceConfig.behaviors = {
+      ...b,
+      stepParagraphs: { ...(b.stepParagraphs || {}), enabled: false },
+      fadeReveal: { ...(b.fadeReveal || {}), enabled: false }
+    };
+  }
   uiToggle?.addEventListener('click', () => {
     setHidden(!document.body.classList.contains('ui-hidden'));
   });
@@ -1357,8 +1420,21 @@ function mapSvgFracToAttachment(fx, fy, stroke, layout, offsetY) {
 
 async function extractStrokesFromSvg(src) {
   try {
-    const resp = await fetch(src);
-    if (!resp.ok) return [];
+    let resp = null;
+    const candidates = [src];
+    const migrated = String(src).replace(/^illustrations\/(t_[^/]+)$/i, 'illustrations/tirita/$1');
+    if (migrated !== src) candidates.push(migrated);
+    for (const url of candidates) {
+      try {
+        resp = await fetch(url);
+      } catch (err) {
+        // Navigation aborts surface as NetworkError in some browsers — treat as transient.
+        resp = null;
+      }
+      if (resp && resp.ok) break;
+      resp = null;
+    }
+    if (!resp) return [];
     const text = await resp.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, 'image/svg+xml');
@@ -1441,7 +1517,8 @@ async function extractStrokesFromSvg(src) {
     walk(svg, [1, 0, 0, 1, 0, 0], null);
     return extracted;
   } catch (e) {
-    console.error("SVG stroke extraction error:", e);
+    if (e && (e.name === 'AbortError')) return [];
+    console.warn("SVG stroke extraction skipped:", e?.message || e);
     return [];
   }
 }
@@ -4976,6 +5053,13 @@ const editorRuntimeSource = await fetch(`./js/editor.js?v=${_v}`).then((response
   return response.text();
 });
 eval(editorRuntimeSource);
+
+const atmosphereRuntimeSource = await fetch(`./js/atmosphere.js?v=${_v}`).then((response) => {
+  if (!response.ok) throw new Error(`Failed to load atmosphere runtime: ${response.status}`);
+  return response.text();
+});
+try { eval(atmosphereRuntimeSource); }
+catch (e) { console.warn("Atmosphere panel failed to initialize:", e?.message || e); }
 
 
 function triggerAutoReload() {

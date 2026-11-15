@@ -23,6 +23,7 @@ export function setForceFieldEnabledById(fieldId, enabled) {
 }
 
 export function runTriggerAction(action, anchor) {
+  if (state.thumbMode) return; // thumbnail capture: skip dynamic trigger side-effects
   if (action.type === 'particles') {
     if (action.preset === 'violentGeyser') createParticleEmitter(action.preset, anchor, Number(action.count || 120), Number(action.duration || 1300));
     else spawnParticles(action.preset || 'spark', anchor, Number(action.count || 12), action.color);

@@ -13,6 +13,7 @@ css/
 docs/media/
 fonts/
 illustrations/
+thumbs/
 js/
 ```
 

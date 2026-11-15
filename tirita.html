@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <title>peel after reading</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
   <canvas id="effectsCanvas"></canvas>
@@ -18,6 +18,8 @@
   <button id="sceneResetBtn" title="Reset current scene to default">Reset</button>
   <button id="sceneClearOnceBtn" title="Clear saved local state for this scene once">Clean once</button>
   <button id="sceneNewBtn" title="Create a new blank scene">New</button>
+  <button id="sceneGalleryBtn" type="button" title="Browse all examples" aria-label="Browse all example scenes">▦</button>
+  <button id="atmosphereBtn" type="button" title="Atmosphere: peel your Bluesky posts" aria-label="Open Atmosphere">🦋</button>
   <div id="sceneSelectCustom">
     <button id="sceneSelectTrigger" type="button" title="Switch scene" aria-haspopup="listbox" aria-expanded="false">
       <span class="scene-icon" aria-hidden="true">⊞</span>
@@ -1033,6 +1035,103 @@
     </div>
   </section>
 
+  <section id="sceneGallery" aria-label="Scene gallery" hidden>
+    <div class="scene-gallery-header">
+      <span class="scene-gallery-title">Examples</span>
+      <div class="scene-gallery-actions">
+        <button id="sceneGalleryGenerate" type="button" title="Capture a screenshot of every scene and save it as a compressed thumbnail (needs the local server)">Generate thumbnails</button>
+        <button id="sceneGalleryClose" type="button" aria-label="Close gallery">×</button>
+      </div>
+    </div>
+    <div id="sceneGalleryGrid" class="scene-gallery-grid"></div>
+  </section>
+
+  <section id="atmospherePanel" aria-label="Atmosphere" hidden>
+    <div class="atmosphere-header">
+      <span class="atmosphere-title">Atmosphere</span>
+      <button id="atmosphereClose" type="button" aria-label="Close Atmosphere">×</button>
+    </div>
+    <div class="atmosphere-body">
+      <div id="atmosphereLogin">
+        <div class="atmosphere-login-heading">
+          <span class="atmosphere-login-eyebrow">Bluesky connection</span>
+          <h2>Bring your posts into PeelType</h2>
+          <p>Turn your feed into a scene, or publish the scene you are editing.</p>
+        </div>
+
+        <div class="atmosphere-login-form">
+          <label class="atmosphere-field">
+            <span>Bluesky handle</span>
+            <input id="atmosphereHandle" type="text" placeholder="yourname.bsky.social" autocomplete="username" spellcheck="false">
+          </label>
+          <div class="atmosphere-field">
+            <div class="atmosphere-field-heading">
+              <label for="atmospherePassword">App Password</label>
+              <a class="atmosphere-app-password-link" href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">Create App Password ↗</a>
+            </div>
+            <input id="atmospherePassword" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+          </div>
+          <button id="atmosphereLoginBtn" type="button" class="atmosphere-primary">Connect account</button>
+        </div>
+
+        <p class="atmosphere-note"><span aria-hidden="true">◇</span><span>Use an App Password, never your main password. It is exchanged for a session and is not stored. <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">Open Bluesky App Password settings ↗</a></span></p>
+      </div>
+
+      <div id="atmosphereConnected" hidden>
+        <div class="atmosphere-status-row">
+          <div class="atmosphere-account">
+            <span class="atmosphere-account-dot" aria-hidden="true"></span>
+            <div>
+              <span class="atmosphere-account-label">Connected account</span>
+              <p class="atmosphere-status" id="atmosphereStatus"></p>
+            </div>
+          </div>
+          <button id="atmosphereLogoutBtn" type="button" class="atmosphere-danger atmosphere-logout">Disconnect</button>
+        </div>
+
+        <div class="atmosphere-actions">
+          <div class="atmosphere-section">
+            <div class="atmosphere-section-copy">
+              <div class="atmosphere-section-title">Your feed</div>
+              <p>Turn your latest posts into a new scene.</p>
+            </div>
+            <div class="atmosphere-row atmosphere-feed-actions">
+              <label class="atmosphere-count-field">
+                <input id="atmosphereLimit" type="number" value="20" min="1" max="100" aria-label="Number of posts">
+                <span aria-hidden="true">posts</span>
+              </label>
+              <button id="atmosphereLoadBtn" type="button">Load my posts</button>
+            </div>
+          </div>
+
+          <div class="atmosphere-section atmosphere-publish-section">
+            <div class="atmosphere-section-copy">
+              <div class="atmosphere-section-title">Share</div>
+              <p>Publish the scene you are currently editing.</p>
+            </div>
+            <button id="atmospherePublishBtn" type="button" class="atmosphere-primary">Publish current scene</button>
+          </div>
+
+          <div class="atmosphere-section atmosphere-open-section">
+            <div class="atmosphere-section-copy">
+              <div class="atmosphere-section-title">Published scene</div>
+              <p>Open a scene from its Atmosphere URI.</p>
+            </div>
+            <button id="atmosphereRemoteToggleBtn" type="button" aria-expanded="false" aria-controls="atmosphereRemoteForm">Load scene</button>
+            <div id="atmosphereRemoteForm" class="atmosphere-remote-form" hidden>
+              <label for="atmosphereRemoteUri">Scene URI</label>
+              <input id="atmosphereRemoteUri" type="text" placeholder="at://did:plc:…/com.peeltype.scene/…" spellcheck="false" autocomplete="off">
+              <div class="atmosphere-remote-actions">
+                <button id="atmosphereLoadRemoteBtn" type="button" class="atmosphere-primary">Open scene</button>
+                <button id="atmosphereRemoteCancelBtn" type="button" class="atmosphere-quiet">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <script>
     // Global error tracker to catch silent module failures
     window.addEventListener('error', function(e) {
@@ -1101,6 +1200,6 @@
     });
   })();
   </script>
-  <script type="module" src="./js/main.js?v=159"></script>
+  <script type="module" src="./js/main.js?v=162"></script>
 </body>
 </html>

@@ -1,9 +1,15 @@
 const http = require('node:http');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { execFile } = require('node:child_process');
+const util = require('node:util');
+const execFileAsync = util.promisify(execFile);
 
 const root = __dirname;
 const illustrationsDir = path.join(root, 'illustrations');
+const thumbsDir = path.join(root, 'thumbs');
 const port = Number(process.env.PORT || 4242);
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -71,6 +77,46 @@ function safeAssetName(name) {
   if (!['.svg', '.png', '.jpg', '.jpeg', '.gif'].includes(ext)) return null;
   const base = path.basename(name, ext).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'asset';
   return `${base}${ext}`;
+}
+
+// ── Scene thumbnail generation (headless Chrome + sips, macOS dev tool) ────
+function resolveChromeBinary() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser'
+  ].filter(Boolean);
+  for (const p of candidates) {
+    try { fsSync.accessSync(p, fsSync.constants.X_OK); return p; } catch {}
+  }
+  return null;
+}
+
+async function captureSceneThumb(key, baseUrl) {
+  const chrome = resolveChromeBinary();
+  if (!chrome) throw new Error('Chrome/Chromium not found (set CHROME_PATH to its binary)');
+  await fs.mkdir(thumbsDir, { recursive: true });
+  const profileDir = path.join(os.tmpdir(), `peeltype-thumb-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  await fs.mkdir(profileDir, { recursive: true });
+  const pngPath = path.join(profileDir, 'shot.png');
+  const jpgPath = path.join(thumbsDir, `${key}.jpg`);
+  const url = `${baseUrl}/tirita.html?scene=${encodeURIComponent(key)}&hideUI&thumb`;
+  try {
+    await execFileAsync(chrome, [
+      '--headless=new', '--disable-gpu', '--no-sandbox', '--no-first-run', '--disable-crashpad',
+      '--hide-scrollbars', `--user-data-dir=${profileDir}`,
+      '--window-size=800,600', '--virtual-time-budget=5500',
+      `--screenshot=${pngPath}`, url
+    ], { timeout: 45000, maxBuffer: 4 * 1024 * 1024 });
+    await execFileAsync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '70', '-Z', '640', pngPath, '--out', jpgPath], { timeout: 20000 });
+    return jpgPath;
+  } finally {
+    await fs.rm(profileDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 const server = http.createServer(async (req, res) => {
@@ -152,6 +198,30 @@ const server = http.createServer(async (req, res) => {
       const content = `export const ${constName} = {\n  lang: ${JSON.stringify(lang)},\n  label: ${JSON.stringify(label || lang)},\n  strings: {\n${strLines}\n  },\n  wordTriggers: {\n${wtLines}\n  }\n};\n`;
       await fs.writeFile(path.join(root, 'js', 'locales', `${lang}.js`), content, 'utf8');
       sendJson(res, 200, { ok: true, path: `js/locales/${lang}.js` });
+      return;
+    }
+
+    if (url.pathname === '/api/thumbs' && req.method === 'POST') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      let body;
+      try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { body = null; }
+      const keys = Array.isArray(body?.keys) ? body.keys.map(String) : [];
+      if (!keys.length) { sendJson(res, 400, { error: 'Provide an array of scene keys.' }); return; }
+      const baseUrl = `http://${req.headers.host || `localhost:${port}`}`;
+      const generated = [];
+      const failed = [];
+      for (const rawKey of keys.slice(0, 80)) {
+        const key = rawKey.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/^-+|-+$/g, '');
+        if (!key) continue;
+        try {
+          await captureSceneThumb(key, baseUrl);
+          generated.push(key);
+        } catch (err) {
+          failed.push({ key, error: String((err && err.message) || err) });
+        }
+      }
+      sendJson(res, 200, { ok: true, generated, failed });
       return;
     }
 

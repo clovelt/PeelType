@@ -3899,16 +3899,21 @@ function initSceneSelector() {
   sceneSelect.value = localStorage.getItem('tirita.scene') || 'default';
 }
 
-function loadScene(key) {
+// fresh: ignore any stored edits for `key` and load scenePresets[key] as-is
+// (used when the preset itself was just replaced, e.g. a regenerated Bluesky feed).
+function loadScene(key, { fresh = false } = {}) {
   const scene = scenePresets[key] || scenePresets.default;
   const previousSceneKey = localStorage.getItem('tirita.scene') || 'default';
-  if (editorInitialized) {
+  if (fresh && previousSceneKey === key) {
+    // Don't save the outgoing (stale) version of the scene we're replacing.
+  } else if (editorInitialized) {
     try { persistPieceConfig(buildConfigFromVisualControls(), previousSceneKey); } catch {}
   } else if (pieceConfig) {
     persistPieceConfig(pieceConfig, previousSceneKey);
   }
   let config = structuredClone(scene.config);
-  const storedConfig = getStoredSceneConfigString(key);
+  const storedConfig = fresh ? null : getStoredSceneConfigString(key);
+  if (fresh) persistPieceConfig(config, key);
   if (storedConfig) {
     try { config = JSON.parse(storedConfig); } catch {}
   }
@@ -3925,6 +3930,254 @@ function loadScene(key) {
   localStorage.removeItem('tirita.cursorEnd');
   if (window.location.search) window.location.replace(`${window.location.pathname}${window.location.hash || ''}`);
   else window.location.reload();
+}
+
+// ── Scene gallery (grid of example previews) ──────────────────────────────
+function buildGalleryWords(graphemes, inlineStyles) {
+  const tokens = [];
+  let buf = '';
+  let bufStyle = null;
+  const flush = () => {
+    if (buf) { tokens.push({ text: buf, style: bufStyle }); buf = ''; bufStyle = null; }
+  };
+  for (let i = 0; i < graphemes.length; i++) {
+    const ch = graphemes[i];
+    const is = inlineStyles[i] || {};
+    if (ch === '\n') { flush(); tokens.push({ newline: true }); continue; }
+    if (buf && !bufStyle) bufStyle = is;
+    buf += ch;
+    if (ch === ' ') flush();
+  }
+  flush();
+  return tokens;
+}
+
+function renderSceneThumbnail(config, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const style = config?.style || {};
+  ctx.fillStyle = style.backgroundColor || '#f5f0e8';
+  ctx.fillRect(0, 0, width, height);
+
+  const font = style.font || '20px "EB Garamond"';
+  const baseColor = style.color || '#4a4a4a';
+  const lineHeight = Number(style.lineHeight) || 30;
+  const match = String(font).match(/(\d+(?:\.\d+)?)px/);
+  const basePx = match ? Number(match[1]) : 20;
+  const family = String(font).replace(/^\d+(?:\.\d+)?px\s*/, '').replace(/["']/g, '').trim() || 'Georgia';
+
+  const pad = Math.max(6, Math.round(width * 0.06));
+  const maxW = width - pad * 2;
+  const thumbScale = Math.max(0.55, Math.min(1, width / 440));
+  let y = pad;
+  const blocks = (Array.isArray(config?.blocks) ? config.blocks : []).slice(0, 5);
+
+  ctx.textBaseline = 'top';
+  for (const block of blocks) {
+    if (!block || typeof block.text !== 'string' || !block.text.trim()) continue;
+    const bs = block.style || {};
+    const fam = bs.fontFamily || family;
+    const col = bs.color || baseColor;
+    const blockScale = Math.max(0.1, Number(block.transform?.scale) || 1);
+    const px = Math.max(6, basePx * blockScale * thumbScale);
+    const lh = Math.max(px * 1.25, lineHeight * blockScale * thumbScale);
+    const parsed = parseBBCode(block.text);
+    const tokens = buildGalleryWords(parsed.graphemes, parsed.inlineStyles);
+    let x = pad;
+    for (const token of tokens) {
+      if (token.newline) { x = pad; y += lh; continue; }
+      const is = token.style || {};
+      const sz = Math.max(6, Math.round(is.size ? px * is.size : px));
+      const weight = (is.bold ? 'bold ' : '') + (is.italic ? 'italic ' : '');
+      ctx.font = `${weight}${sz}px "${fam}"`;
+      const w = ctx.measureText(token.text).width;
+      if (x > pad && x + w > pad + maxW) { x = pad; y += lh; }
+      if (y > height - pad * 0.5) break;
+      ctx.fillStyle = is.color || col;
+      ctx.fillText(token.text, x, y);
+      x += w;
+    }
+    y += lh + Math.max(2, px * 0.45);
+    if (y > height) break;
+  }
+  return canvas;
+}
+
+function initSceneGallery() {
+  const btn = document.getElementById('sceneGalleryBtn');
+  const overlay = document.getElementById('sceneGallery');
+  const grid = document.getElementById('sceneGalleryGrid');
+  const closeBtn = document.getElementById('sceneGalleryClose');
+  const generateBtn = document.getElementById('sceneGalleryGenerate');
+  if (!btn || !overlay || !grid || !closeBtn) return;
+
+  let built = false;
+  function buildCard(key, scene) {
+    const card = document.createElement('div');
+    card.className = 'scene-gallery-card';
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.dataset.key = key;
+    card.title = scene.label;
+
+    const media = document.createElement('div');
+    media.className = 'scene-gallery-media';
+    const fallback = renderSceneThumbnail(scene.config || {}, 360, 270);
+    fallback.className = 'scene-gallery-thumb';
+    const img = document.createElement('img');
+    img.className = 'scene-gallery-thumb-img';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.onload = () => { img.classList.add('loaded'); fallback.style.display = 'none'; };
+    img.onerror = () => { img.remove(); };
+    media.appendChild(fallback);
+    media.appendChild(img);
+    img.src = `thumbs/${key}.jpg`;
+
+    const label = document.createElement('span');
+    label.className = 'scene-gallery-label';
+    label.textContent = scene.label;
+
+    card.appendChild(media);
+    card.appendChild(label);
+
+    const activate = () => { close(); loadScene(key); };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+    return card;
+  }
+  function buildAtmosphereCard() {
+    const hasFeed = Boolean(scenePresets['bluesky-feed']);
+    const scene = scenePresets['bluesky-feed'];
+    const card = document.createElement('div');
+    card.className = 'scene-gallery-card scene-gallery-card-atmosphere';
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.dataset.key = 'bluesky-feed';
+    card.title = hasFeed ? 'Your peeled Bluesky feed' : 'Connect Bluesky and peel your posts';
+
+    const media = document.createElement('div');
+    media.className = 'scene-gallery-media';
+    if (hasFeed) {
+      const fallback = renderSceneThumbnail(scene.config || {}, 360, 270);
+      fallback.className = 'scene-gallery-thumb';
+      const img = document.createElement('img');
+      img.className = 'scene-gallery-thumb-img';
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.onload = () => { img.classList.add('loaded'); fallback.style.display = 'none'; };
+      img.onerror = () => { img.remove(); };
+      media.appendChild(fallback);
+      media.appendChild(img);
+      img.src = 'thumbs/bluesky-feed.jpg';
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'scene-gallery-atmosphere-placeholder';
+      const emoji = document.createElement('span');
+      emoji.className = 'atmosphere-placeholder-emoji';
+      emoji.textContent = '🦋';
+      const ptext = document.createElement('span');
+      ptext.className = 'atmosphere-placeholder-text';
+      ptext.textContent = 'Connect Bluesky';
+      placeholder.appendChild(emoji);
+      placeholder.appendChild(ptext);
+      media.appendChild(placeholder);
+    }
+
+    const label = document.createElement('span');
+    label.className = 'scene-gallery-label';
+    const icon = document.createElement('span');
+    icon.className = 'scene-gallery-atmosphere-icon';
+    icon.textContent = '🦋';
+    icon.setAttribute('aria-hidden', 'true');
+    label.appendChild(icon);
+    label.appendChild(document.createTextNode(hasFeed ? ` ${scene.label}` : ' Atmosphere'));
+
+    card.appendChild(media);
+    card.appendChild(label);
+
+    const activate = (e) => {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      close();
+      if (hasFeed) { state.loadScene('bluesky-feed'); }
+      else if (typeof state.openAtmosphere === 'function') { state.openAtmosphere(); }
+      else { document.getElementById('atmosphereBtn')?.click(); }
+    };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') activate(e);
+    });
+    return card;
+  }
+  function build() {
+    grid.innerHTML = '';
+    grid.appendChild(buildAtmosphereCard());
+    for (const [key, scene] of Object.entries(scenePresets)) {
+      if (key === 'bluesky-feed') continue;
+      grid.appendChild(buildCard(key, scene));
+    }
+    built = true;
+  }
+  function refreshActive() {
+    const activeKey = localStorage.getItem('tirita.scene') || sceneSelect.value || 'default';
+    grid.querySelectorAll('.scene-gallery-card').forEach((card) => {
+      card.classList.toggle('active', card.dataset.key === activeKey);
+    });
+  }
+  function open() {
+    if (!built) build();
+    refreshActive();
+    overlay.removeAttribute('hidden');
+  }
+  function close() {
+    overlay.setAttribute('hidden', '');
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (overlay.hasAttribute('hidden')) open(); else close();
+  });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.hasAttribute('hidden')) close();
+  });
+
+  if (generateBtn) {
+    generateBtn.addEventListener('click', async () => {
+      generateBtn.disabled = true;
+      const original = generateBtn.textContent;
+      generateBtn.textContent = 'Generating…';
+      try {
+        const res = await fetch('/api/thumbs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: Object.keys(scenePresets) })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          const okCount = (data.generated || []).length;
+          const failCount = (data.failed || []).length;
+          showToast(failCount ? `Generated ${okCount} thumbnails, ${failCount} failed.` : `Generated ${okCount} thumbnails.`);
+          built = false;
+          build();
+          refreshActive();
+        } else {
+          showToast('Thumbnails need the local Node server (npm start).');
+        }
+      } catch {
+        showToast('Thumbnails need the local Node server (npm start).');
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = original;
+      }
+    });
+  }
 }
 
 function getSelectedLiveLetters() {
@@ -4222,6 +4475,10 @@ function syncEditorRangeControl(control) {
 }
 
 initSceneSelector();
+initSceneGallery();
+// Expose helpers the Atmosphere panel (eval'd separately) needs.
+state.loadScene = loadScene;
+state.renderSceneThumbnail = renderSceneThumbnail;
 {
   const _sk = localStorage.getItem('tirita.scene') || 'default';
   const _sl = scenePresets[_sk]?.label;
@@ -4241,11 +4498,11 @@ function setLocaleAndReload(newLocale) {
         const config = JSON.parse(stored);
         if (config?.id === 'tirita-poema' && Array.isArray(config.blocks)) {
           const newLocaleData = LOCALES[newLocale];
-          const baseBlocks = scenePresets.tirita?.config?.blocks || [];
-          const baseById = new Map(baseBlocks.map(b => [b.id, b]));
           if (newLocaleData) {
             for (const block of config.blocks) {
-              const newText = newLocaleData.strings?.[block.id] ?? baseById.get(block.id)?.text;
+              // Fall back to the unlocalized JSON text, not scenePresets.tirita (already
+              // localized to the *current* locale, which kept ES text when switching to EN).
+              const newText = tiritaTextForLocale(block.id, newLocaleData);
               if (newText !== undefined) block.text = newText;
               const wordOverrides = newLocaleData.wordTriggers?.[block.id];
               if (wordOverrides && Array.isArray(block.triggers)) {

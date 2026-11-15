@@ -5263,10 +5263,32 @@ async function performSoftReload() {
 try { restorePeelState(); } catch(e) { console.error("Peel state restoration failed:", e); }
 requestAnimationFrame(render);
 restoreSceneScroll();
+hideBootOverlay();
+}
+
+// Fade out the inline boot overlay (tirita.html). On error, keep it with the message
+// instead; a click dismisses it so the debug panel underneath is reachable.
+function hideBootOverlay(errorText = '') {
+  const boot = document.getElementById('bootOverlay');
+  if (!boot || boot.dataset.state) return;
+  if (errorText) {
+    boot.dataset.state = 'error';
+    const status = boot.querySelector('.boot-status');
+    if (status) status.textContent = errorText;
+    boot.addEventListener('click', () => boot.remove(), { once: true });
+    return;
+  }
+  boot.dataset.state = 'done';
+  // Two frames: let the first scene frame reach the screen before fading.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    boot.classList.add('boot-hide');
+    setTimeout(() => boot.remove(), 600);
+  }));
 }
 
 initTirita().catch((err) => {
   console.error("FATAL STARTUP ERROR:", err);
+  hideBootOverlay("couldn't load — tap to see details");
   const debugBody = document.getElementById('debugBody');
   if (debugBody) {
     debugBody.textContent = `${err?.name || 'Error'}: ${err?.message || err}`;

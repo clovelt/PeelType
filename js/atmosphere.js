@@ -49,7 +49,11 @@
     const maxLeft = Math.max(viewportInset, window.innerWidth - panelWidth - viewportInset);
     const left = Math.min(Math.max(viewportInset, idealLeft), maxLeft);
     panel.style.left = `${Math.round(left)}px`;
-    panel.style.top = `${Math.round(buttonRect.bottom + 8)}px`;
+    // Open upward when the launcher sits at the bottom (mobile bottom bar).
+    const below = buttonRect.bottom + 8;
+    const fitsBelow = below + panel.offsetHeight <= window.innerHeight - viewportInset;
+    const top = fitsBelow ? below : Math.max(viewportInset, buttonRect.top - 8 - panel.offsetHeight);
+    panel.style.top = `${Math.round(top)}px`;
   }
 
   function refresh() {

@@ -7,9 +7,75 @@
   <meta http-equiv="Pragma" content="no-cache">
   <title>peel after reading</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link rel="preload" href="fonts/eb-garamond-400.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="css/style.css?v=21">
+  <style>
+    /* Boot overlay: inline so it paints before anything else loads. Removed by main.js
+       (hideBootOverlay) once the first scene frame is rendered. */
+    #bootOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: #f5f0e8;
+      color: #4a4a4a;
+      transition: opacity 0.45s ease, visibility 0s linear 0.45s;
+    }
+    #bootOverlay.boot-hide { opacity: 0; visibility: hidden; pointer-events: none; }
+    .boot-word {
+      font: clamp(38px, 9vw, 60px) / 1 'EB Garamond', Georgia, serif;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .boot-word span {
+      display: inline-block;
+      transform-origin: 0% 100%;
+      animation: boot-peel 2.8s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+      animation-delay: calc(var(--i) * 0.11s);
+    }
+    /* A letter lifts from its bottom-left corner like a sticker, hangs, and settles back. */
+    @keyframes boot-peel {
+      0%, 16%  { transform: none; text-shadow: none; }
+      30%      { transform: translateY(-0.26em) rotate(-17deg); text-shadow: 0 0.2em 0.12em rgba(74, 74, 74, 0.16); }
+      43%      { transform: translate(0.05em, -0.4em) rotate(8deg); text-shadow: 0 0.3em 0.16em rgba(74, 74, 74, 0.12); }
+      55%      { transform: translateY(-0.1em) rotate(-3deg); text-shadow: 0 0.08em 0.06em rgba(74, 74, 74, 0.1); }
+      64%, 100% { transform: none; text-shadow: none; }
+    }
+    .boot-status {
+      font: italic 14px 'EB Garamond', Georgia, serif;
+      letter-spacing: 0.08em;
+      color: rgba(74, 74, 74, 0.55);
+      animation: boot-breathe 1.8s ease-in-out infinite;
+    }
+    @keyframes boot-breathe { 50% { opacity: 0.45; } }
+    #bootOverlay[data-state="error"] .boot-word span,
+    #bootOverlay[data-state="error"] .boot-status { animation: none; }
+    #bootOverlay[data-state="error"] { cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) {
+      .boot-word span { animation: none; }
+    }
+  </style>
 </head>
 <body>
+  <div id="bootOverlay" role="status" aria-live="polite">
+    <div class="boot-word" aria-label="PeelType"><span style="--i:0">P</span><span style="--i:1">e</span><span style="--i:2">e</span><span style="--i:3">l</span><span style="--i:4">T</span><span style="--i:5">y</span><span style="--i:6">p</span><span style="--i:7">e</span></div>
+    <div class="boot-status">loading…</div>
+  </div>
+  <script>
+    // Thumbnail captures must show the scene, not the loader. Failsafe: never block the page forever.
+    (function () {
+      var boot = document.getElementById('bootOverlay');
+      if (/[?&]thumb(\b|=|&|$)/.test(location.search)) { boot.remove(); return; }
+      setTimeout(function () {
+        if (boot.isConnected && !boot.dataset.state) { boot.classList.add('boot-hide'); setTimeout(function () { boot.remove(); }, 600); }
+      }, 25000);
+    })();
+  </script>
   <canvas id="effectsCanvas"></canvas>
   <canvas id="pileCanvas"></canvas>
   <div id="container"></div>
@@ -1200,6 +1266,6 @@
     });
   })();
   </script>
-  <script type="module" src="./js/main.js?v=163"></script>
+  <script type="module" src="./js/main.js?v=164"></script>
 </body>
 </html>

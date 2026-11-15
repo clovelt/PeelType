@@ -714,11 +714,12 @@ body.mobile-runtime #headerApply {
 }
 
 /* Mobile: collapse scene selector to icon only. Scene tools (selector ⊞, gallery ▦,
-   Atmosphere 🦋) get their own second row so they never collide with the right-hand
-   Reload / Mute / Skip group on narrow phones. */
+   Atmosphere 🦋) sit bottom-left beside the ⤢ UI toggle: the top row has no room next
+   to Reload / Mute / Skip, and a second top row would cover the first paragraph. */
 body.mobile-runtime #sceneSelectCustom {
-  left: 12px;
-  top: 56px;
+  left: calc(12px + 32px + 8px);
+  top: auto;
+  bottom: 12px;
   width: 36px;
 }
 body.mobile-runtime #sceneSelectTrigger {
@@ -741,17 +742,22 @@ body.mobile-runtime #sceneSelectDropdown {
   width: min(260px, calc(100vw - 24px));
   left: 0;
   right: auto;
+  top: auto;
+  bottom: calc(100% + 6px); /* opens upward from the bottom bar */
+  max-height: min(420px, calc(100vh - 120px));
 }
 body.mobile-runtime #sceneGalleryBtn {
-  left: calc(12px + 36px + 6px);
-  top: 56px;
+  left: calc(12px + 32px + 8px + 36px + 6px);
+  top: auto;
+  bottom: 12px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
 }
 body.mobile-runtime #atmosphereBtn {
-  left: calc(12px + 36px + 6px + 36px + 6px);
-  top: 56px;
+  left: calc(12px + 32px + 8px + 36px + 6px + 36px + 6px);
+  top: auto;
+  bottom: 12px;
   width: 36px;
   height: 36px;
   border-radius: 50%;

@@ -476,9 +476,15 @@ body.editor-open .overflow-gizmo.active { display: block; }
   border: 1px solid rgba(74, 74, 74, 0.28);
   background: rgba(245, 240, 232, 0.94);
   color: #4a4a4a;
-  font: 13px Georgia, serif;
+  font: 14px Georgia, serif;
   line-height: 1;
   cursor: pointer;
+}
+#uiToggle::before {
+  content: "≡";
+}
+#uiToggle[aria-pressed="true"]::before {
+  content: "✕";
 }
 #uiToggle:hover { background: rgba(245, 240, 232, 1); }
 body.mobile-runtime #uiToggle {

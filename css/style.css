@@ -554,22 +554,22 @@ body.ui-hidden #mobileFps {
 }
 body.editor-open #reloadButton { display: none; }
 body.editor-open #headerApply { display: inline-block; }
-body.mobile-runtime #skipButton {
-  right: 12px;
-  top: 12px;
-}
-body.mobile-runtime #muteButton {
-  right: 68px;
-  top: 12px;
-}
-body.mobile-runtime #reloadButton {
-  right: 126px;
-  top: 12px;
-}
+/* Mobile header is one row: [lang][⊞][▦][🦋] ……… [Reload][Mute][Skip], sized to fit 360px. */
+body.mobile-runtime #skipButton,
+body.mobile-runtime #muteButton,
+body.mobile-runtime #reloadButton,
 body.mobile-runtime #headerApply {
-  right: 126px;
   top: 12px;
+  height: 32px;
+  min-width: 0;
+  padding: 0;
+  font-size: 11px;
+  text-align: center;
 }
+body.mobile-runtime #skipButton { right: 12px; width: 38px; }
+body.mobile-runtime #muteButton { right: 54px; width: 44px; }
+body.mobile-runtime #reloadButton,
+body.mobile-runtime #headerApply { right: 102px; width: 52px; }
 #sceneSelect {
   display: none;
 }
@@ -714,17 +714,16 @@ body.mobile-runtime #headerApply {
 }
 
 /* Mobile: collapse scene selector to icon only. Scene tools (selector ⊞, gallery ▦,
-   Atmosphere 🦋) sit bottom-left beside the ⤢ UI toggle: the top row has no room next
-   to Reload / Mute / Skip, and a second top row would cover the first paragraph. */
+   Atmosphere 🦋) sit in the top row right after the language select (12–82px):
+   ⊞ 88–120, ▦ 124–156, 🦋 160–192; the right group starts at 100vw − 154px. */
 body.mobile-runtime #sceneSelectCustom {
-  left: calc(12px + 32px + 8px);
-  top: auto;
-  bottom: 12px;
-  width: 36px;
+  left: 88px;
+  top: 12px;
+  width: 32px;
 }
 body.mobile-runtime #sceneSelectTrigger {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   justify-content: center;
   border-radius: 50%;
@@ -742,24 +741,19 @@ body.mobile-runtime #sceneSelectDropdown {
   width: min(260px, calc(100vw - 24px));
   left: 0;
   right: auto;
-  top: auto;
-  bottom: calc(100% + 6px); /* opens upward from the bottom bar */
-  max-height: min(420px, calc(100vh - 120px));
 }
 body.mobile-runtime #sceneGalleryBtn {
-  left: calc(12px + 32px + 8px + 36px + 6px);
-  top: auto;
-  bottom: 12px;
-  width: 36px;
-  height: 36px;
+  left: calc(88px + 32px + 4px);
+  top: 12px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
 }
 body.mobile-runtime #atmosphereBtn {
-  left: calc(12px + 32px + 8px + 36px + 6px + 36px + 6px);
-  top: auto;
-  bottom: 12px;
-  width: 36px;
-  height: 36px;
+  left: calc(88px + 2 * (32px + 4px));
+  top: 12px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
 }
 
@@ -796,7 +790,10 @@ body.mobile-runtime #atmosphereBtn {
 body.mobile-runtime #languageSelect {
   top: 12px;
   left: 12px;
-  width: 78px;
+  width: 70px;
+  height: 32px;
+  padding: 4px 6px;
+  font-size: 11px;
 }
 #debugPanel {
   position: fixed;
@@ -847,9 +844,9 @@ body.mobile-runtime #languageSelect {
 }
 #mobileFps {
   position: fixed;
-  right: 8px;  /* bottom-left belongs to the mobile ⤢ UI toggle */
-  bottom: 8px;
-  z-index: 41;
+  right: 12px; /* under Skip in the mobile header */
+  top: 50px;
+  z-index: 30; /* below the scene dropdown (34) */
   display: none;
   padding: 4px 6px;
   background: rgba(245, 240, 232, 0.8);

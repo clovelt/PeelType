@@ -4438,7 +4438,9 @@ function updateBehaviorVisibility() {
       if (url) els[i].style.cursor = 'pointer';
       const revealEl = censorRevealEls[i];
       if (revealEl && censorRevealedFlags[i]) {
-        revealEl.style.opacity = (!blockEraseCompleted || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
+        // Revealed censor text is pinned at its reading position, so once the block is done it must
+        // go away in compact flow (the next paragraph takes that spot) or when erasing completed blocks.
+        revealEl.style.opacity = (!(isCompact || blockEraseCompleted) || blockAllowed || !completedBlocks[blockIdx]) ? '1' : '0';
       }
     }
   }

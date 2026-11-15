@@ -488,8 +488,7 @@ body.editor-open .overflow-gizmo.active { display: block; }
 }
 #uiToggle:hover { background: rgba(245, 240, 232, 1); }
 body.mobile-runtime #uiToggle {
-  top: auto;
-  bottom: 14px;
+  top: 48px;
   left: 12px;
   width: 32px;
   height: 32px;

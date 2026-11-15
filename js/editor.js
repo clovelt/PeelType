@@ -4012,6 +4012,9 @@ function initSceneGallery() {
   const closeBtn = document.getElementById('sceneGalleryClose');
   const generateBtn = document.getElementById('sceneGalleryGenerate');
   if (!btn || !overlay || !grid || !closeBtn) return;
+  // Thumbnail capture needs the local Node server; hide it on static hosting.
+  const isLocalHost = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
+  if (generateBtn && !isLocalHost) generateBtn.hidden = true;
 
   let built = false;
   function buildCard(key, scene) {

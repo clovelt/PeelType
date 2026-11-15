@@ -3239,7 +3239,6 @@ function deleteDynamicOverflow() {
   for (let idx = scanStart; idx <= scanEnd; idx++) {
     const letter = letters[idx];
     if (!isLooseLetterForLimit(idx, true)) continue;
-    if (!textBlocks[letter.blockIdx]?.eraseCompleted) continue;
     loose.push({ letter, idx });
   }
 

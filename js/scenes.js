@@ -1955,6 +1955,7 @@ export function buildExampleScenes(defaultPieceConfig) {
         },
         ingrown: {
           fontSize: 21,
+          camera: 'right', panTime: 2.2,
           patches: [
             {
               fuzz: 9, fuzzWords: 'sí no ya tú yo y de',
@@ -1965,20 +1966,30 @@ export function buildExampleScenes(defaultPieceConfig) {
               ]
             },
             {
-              fuzz: 12, fuzzWords: 'aún más casi nada luz',
+              fuzz: 10, fuzzWords: 'aún más casi nada luz',
               lines: [
-                { text: 'se curvó al final, como un anzuelo', type: 'hook' },
-                { text: 'dio una vuelta y se cruzó consigo', type: 'loop', chain: true },
-                { text: 'esta salió pálida de tanto esperar', type: 'arc', white: true },
-                { text: 'dos frases compartían el mismo poro', type: 'wave', twin: 'y la segunda era más tímida' }
+                { text: 'esta asoma en curva y entra por dos sitios a la vez', type: 'bridge' },
+                { text: 'se rizó sobre sí misma una vuelta y otra y otra', type: 'spring' },
+                { text: 'dos frases compartían el mismo poro', type: 'wave', twin: 'y la segunda salía detrás, sin prisa' },
+                { text: 'se curvó al final, como un anzuelo', type: 'hook' }
               ]
             },
             {
-              fuzz: 6, fuzzWords: 'shh ven ah oh',
+              fuzz: 8, fuzzWords: 'shh ven ah oh',
               lines: [
-                { text: 'me enredé tantas veces en la misma idea que ya era un nudo', type: 'knot', snags: 2 },
+                { text: 'se retorció hasta dibujar un ocho que no cerraba', type: 'eight' },
+                { text: 'fue y vino y volvió a ir, doblándose en zigzag', type: 'fold', snags: 1 },
+                { text: 'dio una vuelta y se cruzó consigo', type: 'loop', chain: true },
+                { text: 'esta salió pálida de tanto esperar', type: 'arc', white: true },
+                { text: 'me enredé tantas veces en la misma idea que ya era un nudo', type: 'knot', snags: 2 }
+              ]
+            },
+            {
+              fuzz: 6, fuzzWords: 'ya casi',
+              lines: [
+                { text: 'la curva más larga entraba por un poro y salía por el de al lado, como una costura', type: 'bridge' },
                 { text: 'se enroscó despacio, vuelta a vuelta, esperando que alguien tirara con paciencia', type: 'coil' },
-                { text: 'la más honda llevaba años ahí, enroscada como una raíz, y salió entera solo porque nadie tuvo prisa', type: 'giant', hidden: 0.25, snags: 1 }
+                { text: 'la más honda llevaba años ahí, enroscada como una raíz', type: 'giant', hidden: 0.2, twin: 'y detrás de ella, otra que nadie había visto' }
               ]
             }
           ]

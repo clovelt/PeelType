@@ -8,15 +8,16 @@
 //     onChange(cfg, { remount }),
 //     onTool(tool), onShowPatch(idx), onSelectLine(idx), onRestart()
 //   })
-import { INGROWN_LINE_TYPES, normalizeIngrownLine } from './ingrown.js';
+import { INGROWN_LINE_TYPES, INGROWN_CAMERA_MODES, normalizeIngrownLine } from './ingrown.js';
 
 const ACTIONS = ['none', 'revealBlock', 'hideBlock', 'skipBlock', 'setFlag', 'sound', 'particles', 'bgColor'];
 const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-const TYPE_HELP = 'arc: a gentle curve · wave: curly · hook: curls at the root · pin: doubles back on itself · loop: crosses itself once · knot: tangled · coil: a spiral · giant: a big deep spiral';
+const TYPE_HELP = 'arc: a gentle curve · wave: curly · hook: curls at the root · pin: doubles back on itself · loop: crosses itself once · knot: tangled · coil: a spiral · giant: a big deep spiral · spring: a run of curls, twisting on itself · eight: twisted into a figure eight · fold: zig-zags back and forth · bridge: a curve of text already out, going in through two pores close together — pull the curve and it comes out of both sides';
+const CAMERA_HELP = 'Where the next set of lines is. right/left/down/up: the rounds lie side by side across a wider page, and when one is cleared the view pans to the next. none: the next round grows in where you are.';
 
 export function defaultIngrownConfig() {
   return {
-    fontSize: 20, resistance: 1, snapTolerance: 1, openEffort: 1, painRate: 1, gravity: 1, pores: 1, sound: true,
+    fontSize: 20, camera: 'right', panTime: 1.8, resistance: 1, snapTolerance: 1, openEffort: 1, painRate: 1, gravity: 1, pores: 1, sound: true,
     patches: [{
       fuzz: 10, fuzzWords: '',
       lines: [
@@ -79,7 +80,7 @@ export function renderIngrownEditor(root, cfg, api) {
         ${row('Pale', 'Pale ink, like a white hair.', `<input data-lk="white" type="checkbox" ${n.white ? 'checked' : ''}>`)}
         ${row('Chain', 'Pulling it out drags the tips of nearby buried lines out too.', `<input data-lk="chain" type="checkbox" ${n.chain ? 'checked' : ''}>`)}
       </div>
-      ${row('Twin', 'A second line in the same pore: it comes out right after this one.', `<input data-lk="twin" type="text" value="${esc(n.twin)}" placeholder="(none)">`, 'editor-row')}
+      ${row('Twin', 'A second line joined to the root of this one: as you pull, it follows the first out.', `<input data-lk="twin" type="text" value="${esc(n.twin)}" placeholder="(none)">`, 'editor-row')}
       <div class="editor-grid-2">
         ${row('X', 'Centre across the page (0–1). Empty = placed automatically. Drag it with Move lines.', `<input data-lk="x" type="number" min="0" max="1" step="0.01" value="${n.x ?? ''}" placeholder="auto">`)}
         ${row('Y', 'Centre down the buried area (0–1). Empty = automatic.', `<input data-lk="y" type="number" min="0" max="1" step="0.01" value="${n.y ?? ''}" placeholder="auto">`)}
@@ -114,6 +115,8 @@ export function renderIngrownEditor(root, cfg, api) {
         ${row('Pale ink', 'Colour of pale lines.', `<input data-k="paleInk" type="color" value="${esc(cfg.paleInk || '#a39c93')}">`)}
         ${row('Font', 'Font family. Empty = the scene’s font.', `<input data-k="fontFamily" type="text" value="${esc(cfg.fontFamily || '')}" placeholder="scene font">`)}
         ${row('Sound', 'Scraping, sliding, strain and pop sounds.', `<input data-k="sound" type="checkbox" ${cfg.sound !== false ? 'checked' : ''}>`)}
+        ${row('Camera', CAMERA_HELP, `<select data-k="camera">${INGROWN_CAMERA_MODES.map(m => `<option value="${m}" ${m === (cfg.camera || 'none') ? 'selected' : ''}>${m === 'none' ? 'none (grow in place)' : 'pan ' + m}</option>`).join('')}</select>`)}
+        ${row('Pan time', 'Seconds the camera takes to glide to the next set.', numIn('panTime', cfg.panTime ?? 1.8, 0.3, 6, 0.1))}
         ${row('Endless', 'After the last round (or for rounds with no lines), keep growing random lines from the text pool.', `<input data-k="endless" type="checkbox" ${cfg.endless ? 'checked' : ''}>`)}
         ${row('On complete', 'What happens when the last round is cleared.', actionSel('data-k', 'completeAction', complete.action))}
         <div class="editor-row inline" style="display:${complete.action === 'none' ? 'none' : 'grid'}"><label>Target</label><input data-k="completeTarget" type="text" list="${dl}" value="${esc(complete.target)}"></div>
@@ -131,6 +134,8 @@ export function renderIngrownEditor(root, cfg, api) {
       <div class="editor-grid-2">
         ${row('Fuzz', 'Short words already standing out of pores (pinch and pluck).', `<input data-pk="fuzz" type="number" min="0" max="80" step="1" value="${patch.fuzz ?? 10}">`)}
         ${row('Fuzz words', 'Words for the fuzz, separated by spaces.', `<input data-pk="fuzzWords" type="text" value="${esc(patch.fuzzWords || '')}" placeholder="sí no ya…">`)}
+        ${row('Offset X', 'Where this round lies, in screens across (camera mode only). Empty = next along the camera direction.', `<input data-pk="offsetX" type="number" step="0.1" value="${patch.offset?.x ?? ''}" placeholder="auto">`)}
+        ${row('Offset Y', 'Where this round lies, in screens down (camera mode only). Empty = next along the camera direction.', `<input data-pk="offsetY" type="number" step="0.1" value="${patch.offset?.y ?? ''}" placeholder="auto">`)}
         ${row('On clear', 'What happens when this round’s lines are all out.', actionSel('data-pk', 'clearAction', clear.action))}
         <div class="editor-row inline" style="display:${clear.action === 'none' ? 'none' : 'grid'}"><label>Target</label><input data-pk="clearTarget" type="text" list="${dl}" value="${esc(clear.target)}"></div>
       </div>
@@ -166,6 +171,11 @@ export function renderIngrownEditor(root, cfg, api) {
     if (k === 'clearAction' || k === 'clearTarget') {
       setAction(patch, 'onClear', root.querySelector('[data-pk="clearAction"]').value, root.querySelector('[data-pk="clearTarget"]').value.trim());
       changed(true, k === 'clearAction'); return;
+    }
+    if (k === 'offsetX' || k === 'offsetY') {
+      const ox = root.querySelector('[data-pk="offsetX"]').value, oy = root.querySelector('[data-pk="offsetY"]').value;
+      if (ox === '' && oy === '') delete patch.offset; else patch.offset = { x: Number(ox) || 0, y: Number(oy) || 0 };
+      changed(true, false, e.type === 'input' ? 450 : 0); return;
     }
     patch[k] = el.type === 'number' ? Number(v) || 0 : v;
     changed(true, false, e.type === 'input' ? 450 : 0);

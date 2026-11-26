@@ -1157,8 +1157,59 @@ shapeTypeSelect.addEventListener('change', updateShapeFieldVisibility);
 // Initial call to set correct visibility on load
 updateShapeFieldVisibility();
 
+// ── Skin (ingrown lines) editor ───────────────────────────────────────────────
+// The panel itself lives in skin-editor.js; here it is fed the selected block's
+// skin config and its changes are pushed into the live scene.
+const skinEditorRows = document.getElementById('skinEditorRows');
+let currentSkin = null;
+const skinEditUi = { patchIdx: 0, lineIdx: -1, tool: 'off', blockIdx: -1 };
+function syncSkinEditState() {
+  state.skinEditState = { blockIdx: selectedBlockIdx, tool: skinEditUi.tool, patchIdx: skinEditUi.patchIdx, lineIdx: skinEditUi.lineIdx };
+}
+function setSkinTool(tool) {
+  skinEditUi.tool = tool;
+  state.skinGames?.forEach((game, idx) => game.setEditTool(idx === selectedBlockIdx ? tool : 'off'));
+  const game = state.skinGames?.get(selectedBlockIdx);
+  if (game && tool !== 'off') { game.showPatch(skinEditUi.patchIdx); game.select(skinEditUi.lineIdx); }
+  syncSkinEditState();
+}
+function renderSkinPanel() {
+  if (!skinEditorRows) return;
+  if (attachTypeSelect.value !== 'skin') { skinEditorRows.innerHTML = ''; return; }
+  currentSkin ||= defaultSkinConfig();
+  if (skinEditUi.blockIdx !== selectedBlockIdx) { skinEditUi.blockIdx = selectedBlockIdx; skinEditUi.patchIdx = 0; skinEditUi.lineIdx = -1; }
+  renderSkinEditor(skinEditorRows, currentSkin, {
+    ui: skinEditUi,
+    blockIds: (textBlocks || []).map(b => b?.id).filter(Boolean),
+    onChange: (_skin, { remount }) => {
+      applyLiveEditorState();
+      if (remount) state.remountSkinGame?.(selectedBlockIdx);
+    },
+    onTool: tool => setSkinTool(tool),
+    onShowPatch: idx => { syncSkinEditState(); state.skinGames?.get(selectedBlockIdx)?.showPatch(idx); },
+    onSelectLine: idx => { syncSkinEditState(); state.skinGames?.get(selectedBlockIdx)?.select(idx); },
+    onRestart: () => { setSkinTool('off'); renderSkinPanel(); state.skinGames?.get(selectedBlockIdx)?.restart(); }
+  });
+  syncSkinEditState();
+}
+// Canvas → panel: a line was moved/turned on the skin, or clicked.
+state.onSkinEdit = (blockIdx, patchIdx, lineIdx, change) => {
+  if (blockIdx !== selectedBlockIdx || !currentSkin?.patches?.[patchIdx]?.lines?.[lineIdx]) return;
+  Object.assign(currentSkin.patches[patchIdx].lines[lineIdx], change);
+  skinEditUi.patchIdx = patchIdx; skinEditUi.lineIdx = lineIdx;
+  applyLiveEditorState(); // the game already shows the change: no remount
+  renderSkinPanel();
+};
+state.onSkinEditSelect = (blockIdx, patchIdx, lineIdx) => {
+  if (blockIdx !== selectedBlockIdx) return;
+  skinEditUi.patchIdx = patchIdx; skinEditUi.lineIdx = lineIdx;
+  renderSkinPanel();
+};
+
 function updateAttachFieldVisibility() {
   const t = attachTypeSelect.value;
+  if (skinEditorRows) skinEditorRows.style.display = t === 'skin' ? 'block' : 'none';
+  if (t !== 'skin' && skinEditUi.tool !== 'off') setSkinTool('off');
   attachFields.style.display              = t ? 'grid' : 'none';
   attachLabelRow.style.display            = t === 'placeholder' ? 'grid' : 'none';
   attachSrcRow.style.display              = (t === 'image' || t === 'lineart') ? 'grid' : 'none';
@@ -1346,10 +1397,14 @@ function applyLastAttachmentSettingsToControls(type) {
 
 attachTypeSelect.addEventListener('change', () => {
   applyLastAttachmentSettingsToControls(attachTypeSelect.value);
-  if (attachTypeSelect.value && illustrationSizeLooksAuto()) {
+  if (attachTypeSelect.value === 'skin') {
+    currentSkin ||= defaultSkinConfig();
+    if (illustrationSizeLooksAuto() || Number(attachHeight.value) < 360) { setControlValue(attachWidth, 680); setControlValue(attachHeight, 540); }
+  } else if (attachTypeSelect.value && illustrationSizeLooksAuto()) {
     setControlValue(attachHeight, 195);
   }
   updateAttachFieldVisibility();
+  renderSkinPanel();
 });
 
 function setLineartCanvasTool(tool) {
@@ -2182,6 +2237,10 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
           };
         }
       }
+      if (attType === 'skin') {
+        delete next.strokes;
+        next.skin = structuredClone(currentSkin || (currentAttachment.type === 'skin' ? currentAttachment.skin : null) || defaultSkinConfig());
+      }
       next.x = Number(attachX.value) || 0;
       next.y = Number(attachY.value) || 0;
       block.attachment = next;
@@ -2419,7 +2478,7 @@ function getVisibleBlockWindow() {
       const range = blockRanges[i];
       if (!range) continue;
       const lastLetter = letters[range.end];
-      if ((lastLetter?.oy ?? 0) + LINE_HEIGHT < vTop) start = i + 1;
+      if (Math.max((lastLetter?.oy ?? 0) + LINE_HEIGHT, attachmentBottomY(i)) < vTop) start = i + 1;
       else break;
     }
     for (let i = blockRanges.length - 1; i >= start; i--) {
@@ -2479,7 +2538,7 @@ function blockIntersectsViewport(blockIdx) {
     if (!range) return false;
     const offsetY = getBlockRenderOffsetY(blockIdx);
     const top = (letters[range.start]?.oy ?? Infinity) + offsetY;
-    const bottom = (letters[range.end]?.oy ?? -Infinity) + LINE_HEIGHT + offsetY;
+    const bottom = Math.max((letters[range.end]?.oy ?? -Infinity) + LINE_HEIGHT, attachmentBottomY(blockIdx)) + offsetY;
     return bottom >= viewportTop && top <= viewportBottom;
   }
   const bounds = getRenderedBlockBounds(blockIdx);
@@ -2588,7 +2647,7 @@ function mountVisibleBlocks() {
     if (!firstLetter) continue;
     if (firstLetter.oy > viewportBottom) break;
     const lastLetter = letters[range.end];
-    if ((lastLetter?.oy ?? firstLetter.oy) + LINE_HEIGHT < viewportTop) continue;
+    if (Math.max((lastLetter?.oy ?? firstLetter.oy) + LINE_HEIGHT, attachmentBottomY(blockIdx)) < viewportTop) continue;
     mountBlock(blockIdx);
   }
 }
@@ -3547,7 +3606,9 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   attachHeight.value          = att.height  ?? 180;
   attachGap.value             = att.gap     ?? 16;
   attachOffsetY.value         = att.opticalOffsetY ?? 0;
+  currentSkin = att.type === 'skin' ? structuredClone(att.skin || defaultSkinConfig()) : null;
   updateAttachFieldVisibility();
+  renderSkinPanel();
   updateLocaleSyncMarkers();
   blockHiddenToggle.checked = Boolean(selectedBlock.hidden);
   if (groupNextInput) groupNextInput.value = selectedBlock.groupNext || '';

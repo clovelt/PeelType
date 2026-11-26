@@ -184,6 +184,26 @@ html.thumb-mode .letter { opacity: 1 !important; }
   background: none;
   overflow: visible;
 }
+.scene-attachment.type-skin {
+  border: none;
+  background: none;
+  display: block;
+  overflow: hidden;
+  border-radius: 18px;
+  pointer-events: auto;
+  touch-action: none;
+  box-shadow: 0 10px 30px rgba(96, 34, 34, 0.18);
+}
+.scene-attachment.type-skin .skin-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 .scene-attachment.type-image img,
 .scene-attachment.type-lineart img {
   width: 100%;
@@ -2707,3 +2727,19 @@ body.mobile-runtime #atmospherePanel {
   border-top: 1px solid rgba(74, 74, 74, 0.12);
   width: 100%;
 }
+
+/* ── Skin (ingrown lines) editor panel ─────────────────────────────────────── */
+.skin-editor-rows { grid-column: 1 / -1; }
+.skin-editor { display: grid; gap: 6px; }
+.skin-editor .skin-tools { grid-template-columns: auto auto auto minmax(44px, 1fr); }
+.skin-editor details.skin-sub { border-top: 1px solid rgba(74, 74, 74, 0.12); padding-top: 4px; }
+.skin-editor details.skin-sub > summary { cursor: pointer; font-size: 12px; opacity: 0.75; margin: 2px 0 6px; }
+.skin-editor textarea { width: 100%; resize: vertical; font: inherit; font-size: 12px; }
+.skin-editor .skin-lines { display: grid; gap: 6px; margin-top: 6px; }
+.skin-editor .skin-line .tie-top { grid-template-columns: auto 1fr auto auto; }
+.skin-editor .skin-line.is-selected { border-color: rgba(79, 124, 148, 0.75); box-shadow: 0 0 0 2px rgba(79, 124, 148, 0.18); }
+.skin-editor .skin-line-num {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: #3b1f2a; color: #fcfbf7; font: 700 10px Manrope, sans-serif;
+}
+.skin-editor .skin-line.is-selected .skin-line-num { background: #4f7c94; }

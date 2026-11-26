@@ -82,9 +82,17 @@ export function buildChatStrokes(geom, theme) {
       lineWidth: lw, color: ink, source: 'manual'
     });
   };
-  const Hb = geom.Hb, r = Math.min(10, Hb / 2);
-  // the bubble: one closed line from the tail's tip, round the box, back to the tip
-  add(bubblePath(W, Hb, r, geom.side, geom.tail ? geom.tailW : 0), 6, [1, 1]);
+  const Hb = geom.Hb, r = Math.min(8, Hb / 3);
+  const rc = (geom.reactions || [])[0];
+  // the bubble: one line. Closed from the tail's tip when there is no reaction; with
+  // one, it starts and ends either side of the reaction badges sitting on its bottom edge
+  let gap = null;
+  if (rc) { // where the badges cross the bottom edge: the bubble's line stops either side
+    const R = rc.h / 2, sink = Hb - rc.y, chord = Math.sqrt(Math.max(0, R * R - (R - sink) * (R - sink)));
+    const n = rc.kinds.length;
+    gap = [rc.x + R - chord - 2, rc.x + R + (n - 1) * (rc.h + 3) + chord + 2];
+  }
+  add(bubblePath(W, Hb, r, geom.side, geom.tail ? geom.tailW : 0, gap), 6, [1, 1]);
   // ticks: one ✓ sent, two ✓✓ delivered / read
   if (geom.ticks && geom.tickKind !== 'none') {
     const s = 9, { x, y } = geom.ticks;
@@ -92,26 +100,33 @@ export function buildChatStrokes(geom, theme) {
     add(check(0), 2.5);
     if (geom.tickKind !== 'sent') add(check(4.5), 2.5);
   }
-  // reactions: small icons in a row just under the bubble, one or two strokes each
-  for (const rc of geom.reactions || []) {
-    rc.kinds.forEach((kind, i) => {
-      for (const pts of reactionIcon(kind, rc.x + rc.h / 2 + i * rc.h * 1.3, rc.y + rc.h / 2, rc.h / 2)) add(pts, 2);
-    });
-  }
+  // reactions: a round badge on the bottom edge for each, the icon inside
+  if (rc) rc.kinds.forEach((kind, i) => {
+    const R = rc.h / 2, cx = rc.x + R + i * (rc.h + 3), cy = rc.y + R;
+    add(arc(cx, cy, R, -Math.PI / 2, Math.PI * 1.5, 24), 3);
+    for (const pts of reactionIcon(kind, cx, cy, R)) add(pts, 2);
+  });
   return out;
 }
 
 function arc(cx, cy, r, a0, a1, n = 8) { const p = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } return p; }
-// the bubble outline with its tail, as a single path starting and ending at the tail's tip
-function bubblePath(W, H, r, side, t) {
-  const right = [[W - r, 0], ...arc(W - r, r, r, -Math.PI / 2, 0), [W, H - r], ...arc(W - r, H - r, r, 0, Math.PI / 2), [r, H], ...arc(r, H - r, r, Math.PI / 2, Math.PI)];
+// The bubble outline with its tail as one path (drawn for an incoming bubble, tail at
+// the top-left, then mirrored for outgoing). Without a gap it is closed at the tail's
+// tip; with gap [x0, x1] on the bottom edge it runs from x0 all the way round to x1.
+function bubblePath(W, H, r, side, t, gap) {
+  const mir = side === 'out';
+  let g = gap ? (mir ? [W - gap[1], W - gap[0]] : gap) : null;
+  if (g) g = [Math.max(r, g[0]), Math.min(W - r, g[1])];
+  const leftUp = [...arc(r, H - r, r, Math.PI / 2, Math.PI), ...(t > 0 ? [[0, Math.min(H - r, t * 1.6)], [-t, 0]] : [[0, r], ...arc(r, r, r, Math.PI, Math.PI * 1.5)])];
+  const topRightDown = [[W - r, 0], ...arc(W - r, r, r, -Math.PI / 2, 0), [W, H - r], ...arc(W - r, H - r, r, 0, Math.PI / 2)];
   let pts;
-  if (t > 0) pts = [[-t, 0], ...right, [0, Math.min(H - r, t * 1.6)], [-t, 0]]; // tail at the top-left
-  else pts = [[r, 0], ...right, [0, r], ...arc(r, r, r, Math.PI, Math.PI * 1.5)];
-  return side === 'out' ? pts.map(([x, y]) => [W - x, y]) : pts; // outgoing: mirrored, tail at the top-right
+  if (g && g[1] > g[0]) pts = [[g[0], H], [r, H], ...leftUp, ...topRightDown, [g[1], H]];
+  else pts = t > 0 ? [[-t, 0], ...topRightDown, [r, H], ...leftUp] : [[r, 0], ...topRightDown, [r, H], ...leftUp];
+  return mir ? pts.map(([x, y]) => [W - x, y]) : pts;
 }
-// each reaction: one or two simple strokes inside a circle of radius r around (cx, cy)
-function reactionIcon(kind, cx, cy, r) {
+// the icon inside a reaction badge of radius R: heart, star, or a face (the badge is its outline)
+function reactionIcon(kind, cx, cy, R) {
+  const r = R * 0.58;
   if (kind === 'heart') {
     const p = []; for (let i = 0; i <= 36; i++) { const t = Math.PI * 2 * i / 36; p.push([cx + 16 * Math.sin(t) ** 3 * r / 17, cy - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r / 17 - r * 0.08]); }
     return [p];
@@ -120,11 +135,11 @@ function reactionIcon(kind, cx, cy, r) {
     const p = []; for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r * 0.42 : r; p.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad + r * 0.08]); }
     return [p];
   }
-  const face = arc(cx, cy, r, -Math.PI / 2, Math.PI * 1.5, 22);
+  const eyes = [[[cx - R * 0.3, cy - R * 0.3], [cx - R * 0.3, cy - R * 0.1]], [[cx + R * 0.3, cy - R * 0.3], [cx + R * 0.3, cy - R * 0.1]]];
   let mouth;
-  if (kind === 'laugh') mouth = [...arc(cx, cy + r * 0.02, r * 0.55, Math.PI, 0, 10), [cx - r * 0.55, cy + r * 0.02]]; // D
-  else if (kind === 'wow') mouth = arc(cx, cy + r * 0.32, r * 0.2, 0, Math.PI * 2, 10);                                  // o
-  else if (kind === 'sad') mouth = arc(cx, cy + r * 0.85, r * 0.5, Math.PI + 0.65, Math.PI * 2 - 0.65, 8);              // ⌒
-  else mouth = arc(cx, cy - r * 0.05, r * 0.55, 0.55, Math.PI - 0.55, 8);                                                // ‿
-  return [face, mouth];
+  if (kind === 'laugh') mouth = [...arc(cx, cy + R * 0.08, R * 0.42, Math.PI, 0, 10), [cx - R * 0.42, cy + R * 0.08]]; // D
+  else if (kind === 'wow') mouth = arc(cx, cy + R * 0.32, R * 0.16, 0, Math.PI * 2, 10);                                  // o
+  else if (kind === 'sad') mouth = arc(cx, cy + R * 0.72, R * 0.36, Math.PI + 0.7, Math.PI * 2 - 0.7, 8);                // ⌒
+  else mouth = arc(cx, cy + R * 0.02, R * 0.4, 0.5, Math.PI - 0.5, 8);                                                   // ‿
+  return [...eyes, mouth];
 }

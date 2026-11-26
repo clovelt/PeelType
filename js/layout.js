@@ -460,9 +460,9 @@ function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
   const originX = state.MARGIN * sc + block.transform.x;
   let last = rawPositions.length - 1;
   while (last > 0 && (block.graphemes[last] === ' ' || block.graphemes[last] === '\n')) last--;
-  const tickW = chat.side === 'out' && chat.ticks !== 'none' ? 19 : 0;
+  const tickW = chat.side === 'out' && chat.ticks !== 'none' ? 17 : 0;
   const lastRight = last >= 0 ? (rawPositions[last].x + rawPositions[last].w - originX) / sc : 0;
-  const innerW = Math.max(o.maxLineW, lastRight + (tickW ? tickW + 3 : 0), o.lineHeight);
+  const innerW = Math.max(o.maxLineW, lastRight + (tickW ? tickW + 4 : 0), o.lineHeight);
   const bubbleW = innerW + 2 * o.chatPadX;
   const bubbleX = chat.side === 'out' ? originX + (o.blockWidth - o.chatTail - bubbleW) * sc : originX + o.chatTail * sc;
   const bubbleY = o.startY + block.transform.y;
@@ -470,21 +470,30 @@ function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
   const basePx = (state.baseFontPx || 20) * sc;
   rawPositions.forEach((p, i) => {
     p.x += dx; p.y += dy;
-    const size = block.inlineStyles?.[i]?.size; // the small time sits on the baseline, not the top of the line
-    if (size && size < basePx) p.y += (basePx - size) * 0.78;
+    const size = block.inlineStyles?.[i]?.size; // the small time sits a little below the text's baseline
+    if (size && size < basePx) p.y += (basePx - size) * 0.78 + basePx * 0.12;
   });
-  const Hb = (o.textUnits + 2 * o.chatPadY) * sc, W = bubbleW * sc;
+  const Hb = (o.textUnits + 2 * o.chatPadY) * sc + basePx * 0.1, W = bubbleW * sc;
+  // the time (and the ticks after it) hug the bubble's bottom-right corner, like a chat app
+  const timeIdx = []; for (let i = 0; i < rawPositions.length; i++) if (block.inlineStyles?.[i]?.size) timeIdx.push(i);
+  if (timeIdx.length) {
+    const timeRight = Math.max(...timeIdx.map(i => rawPositions[i].x + rawPositions[i].w));
+    const target = bubbleX + W - o.chatPadX * sc * 0.7 - (tickW ? (tickW + 4) * sc : 0);
+    const shift = target - timeRight;
+    if (shift > 0) timeIdx.forEach(i => { rawPositions[i].x += shift; });
+  }
   let total = Hb + 2;
   const reactions = [];
   if (chat.reactions.length) {
-    const h = Math.round(o.lineHeight * 0.95 * sc), w = h * 1.3 + (chat.reactions.length - 1) * h * 0.82;
-    const x = chat.side === 'out' ? W - w - 8 * sc : 8 * sc;
-    reactions.push({ x, y: Hb - h * 0.3, w, h, kinds: chat.reactions });
-    total = Hb + h * 0.7 + 4;
+    // just under the bottom edge: below the ticks on outgoing messages, at the left corner on incoming ones
+    const h = Math.round(o.lineHeight * 0.62 * sc), w = h + (chat.reactions.length - 1) * h * 1.3;
+    const x = chat.side === 'out' ? W - w - o.chatPadX * sc * 0.7 - 2 * sc : o.chatPadX * sc * 0.7;
+    reactions.push({ x, y: Hb + 3 * sc, w, h, kinds: chat.reactions });
+    total = Hb + 3 * sc + h + 3;
   }
   const lp = last >= 0 ? rawPositions[last] : null;
   const tsz = lp && block.inlineStyles?.[last]?.size ? block.inlineStyles[last].size : basePx;
-  const ticks = tickW && lp ? { x: lp.x + lp.w - bubbleX + 4, y: lp.y - bubbleY + tsz * 0.5 - 4 } : null;
+  const ticks = tickW && lp ? { x: lp.x + lp.w - bubbleX + 4 * sc, y: lp.y - bubbleY + tsz * 0.62 - 4.5 } : null;
   const geom = { side: chat.side, W, Hb, total, tail: chat.tail, tailW: o.chatTail * sc, ticks, tickKind: chat.ticks, reactions, color: chat.color };
   return {
     positions: rawPositions,

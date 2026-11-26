@@ -2011,7 +2011,7 @@ export function buildExampleScenes(defaultPieceConfig) {
         layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 14, topMargin: 90, bottomMargin: 120 },
         behaviors: {
           fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
-          stepParagraphs: { enabled: true, visibleCount: 6, compactFlow: true, advanceDelayMs: 250 }
+          stepParagraphs: { enabled: true, visibleCount: 4, compactFlow: true, advanceDelayMs: 250 }
         },
         blocks: [
             {
@@ -2272,7 +2272,7 @@ export function buildExampleScenes(defaultPieceConfig) {
                 "side": "in",
                 "time": "23:47",
                 "reactions": [
-                  "pray"
+                  "star"
                 ]
               }
             },

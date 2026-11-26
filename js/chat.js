@@ -7,7 +7,7 @@
 // time is appended as smaller letters in the same ink. Everything else is a
 // peelable line (lineart stroke) in that same ink: the bubble is ONE stroke —
 // outline and tail in a single closed line — then the ticks, and each reaction:
-// a one-stroke pill and a one-stroke icon.
+// a small icon in one or two strokes, just under the bubble.
 //
 // layout.js lays a chat block out inside its bubble (padding, tail, right
 // alignment for outgoing) and returns the bubble box as the block's attachment
@@ -17,7 +17,7 @@
 
 export const CHAT_SIDES = ['in', 'out'];
 export const CHAT_TICKS = ['none', 'sent', 'delivered', 'read'];
-export const CHAT_REACTIONS = ['heart', 'laugh', 'wow', 'sad', 'smile', 'pray'];
+export const CHAT_REACTIONS = ['heart', 'laugh', 'wow', 'sad', 'smile', 'star'];
 export const CHAT_THEME = { lineColor: '', lineWidth: 1.8 };
 
 // ink defaults to the scene's text colour, so bubbles look like the rest of the page
@@ -32,7 +32,7 @@ export function normalizeChat(raw) {
   if (!raw) return null;
   const r = typeof raw === 'object' ? raw : {};
   const reactions = (Array.isArray(r.reactions) ? r.reactions : String(r.reactions || '').split(/[\s,]+/))
-    .map(s => String(s).trim()).filter(s => CHAT_REACTIONS.includes(s)).slice(0, 4);
+    .map(s => String(s).trim()).map(s => (s === 'pray' ? 'star' : s)).filter(s => CHAT_REACTIONS.includes(s)).slice(0, 4);
   return {
     side: r.side === 'out' ? 'out' : 'in',
     time: String(r.time ?? '').trim().slice(0, 12),
@@ -92,21 +92,16 @@ export function buildChatStrokes(geom, theme) {
     add(check(0), 2.5);
     if (geom.tickKind !== 'sent') add(check(4.5), 2.5);
   }
-  // reactions: a one-stroke pill, and one stroke per icon
+  // reactions: small icons in a row just under the bubble, one or two strokes each
   for (const rc of geom.reactions || []) {
-    const h = rc.h, rr = h / 2;
-    add(roundRect(rc.x, rc.y, rc.w, h, rr), 4);
-    rc.kinds.forEach((kind, i) => add(reactionIcon(kind, rc.x + h * 0.65 + i * (h * 0.82), rc.y + h / 2, h * 0.5), 2));
+    rc.kinds.forEach((kind, i) => {
+      for (const pts of reactionIcon(kind, rc.x + rc.h / 2 + i * rc.h * 1.3, rc.y + rc.h / 2, rc.h / 2)) add(pts, 2);
+    });
   }
   return out;
 }
 
 function arc(cx, cy, r, a0, a1, n = 8) { const p = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } return p; }
-function roundRect(x, y, w, h, r) {
-  r = Math.min(r, w / 2, h / 2);
-  return [[x + r, y], [x + w - r, y], ...arc(x + w - r, y + r, r, -Math.PI / 2, 0), [x + w, y + h - r], ...arc(x + w - r, y + h - r, r, 0, Math.PI / 2),
-    [x + r, y + h], ...arc(x + r, y + h - r, r, Math.PI / 2, Math.PI), [x, y + r], ...arc(x + r, y + r, r, Math.PI, Math.PI * 1.5)];
-}
 // the bubble outline with its tail, as a single path starting and ending at the tail's tip
 function bubblePath(W, H, r, side, t) {
   const right = [[W - r, 0], ...arc(W - r, r, r, -Math.PI / 2, 0), [W, H - r], ...arc(W - r, H - r, r, 0, Math.PI / 2), [r, H], ...arc(r, H - r, r, Math.PI / 2, Math.PI)];
@@ -115,13 +110,21 @@ function bubblePath(W, H, r, side, t) {
   else pts = [[r, 0], ...right, [0, r], ...arc(r, r, r, Math.PI, Math.PI * 1.5)];
   return side === 'out' ? pts.map(([x, y]) => [W - x, y]) : pts; // outgoing: mirrored, tail at the top-right
 }
-// one simple line per reaction, centred on (cx, cy), size s
-function reactionIcon(kind, cx, cy, s) {
-  if (kind === 'heart') { const p = []; for (let i = 0; i <= 32; i++) { const t = Math.PI * 2 * i / 32; p.push([cx + 16 * Math.sin(t) ** 3 * s / 34, cy - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * s / 34 + s * 0.06]); } return p; }
-  if (kind === 'smile') return arc(cx, cy - s * 0.25, s * 0.5, 0.35, Math.PI - 0.35, 10);           // ‿
-  if (kind === 'sad') return arc(cx, cy + s * 0.55, s * 0.5, Math.PI + 0.45, Math.PI * 2 - 0.45, 10); // ⌒
-  if (kind === 'wow') return arc(cx, cy, s * 0.3, 0, Math.PI * 2, 12);                              // o
-  if (kind === 'laugh') return [...arc(cx, cy - s * 0.15, s * 0.5, Math.PI, 0, 10), [cx - s * 0.5, cy - s * 0.15]]; // a wide open mouth: half circle closed by a line
-  if (kind === 'pray') return [[cx - s * 0.4, cy + s * 0.45], [cx, cy - s * 0.5], [cx + s * 0.4, cy + s * 0.45]]; // ^ two hands together
-  return [[cx - s * 0.3, cy], [cx + s * 0.3, cy]];
+// each reaction: one or two simple strokes inside a circle of radius r around (cx, cy)
+function reactionIcon(kind, cx, cy, r) {
+  if (kind === 'heart') {
+    const p = []; for (let i = 0; i <= 36; i++) { const t = Math.PI * 2 * i / 36; p.push([cx + 16 * Math.sin(t) ** 3 * r / 17, cy - (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * r / 17 - r * 0.08]); }
+    return [p];
+  }
+  if (kind === 'star') {
+    const p = []; for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r * 0.42 : r; p.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad + r * 0.08]); }
+    return [p];
+  }
+  const face = arc(cx, cy, r, -Math.PI / 2, Math.PI * 1.5, 22);
+  let mouth;
+  if (kind === 'laugh') mouth = [...arc(cx, cy + r * 0.02, r * 0.55, Math.PI, 0, 10), [cx - r * 0.55, cy + r * 0.02]]; // D
+  else if (kind === 'wow') mouth = arc(cx, cy + r * 0.32, r * 0.2, 0, Math.PI * 2, 10);                                  // o
+  else if (kind === 'sad') mouth = arc(cx, cy + r * 0.85, r * 0.5, Math.PI + 0.65, Math.PI * 2 - 0.65, 8);              // ⌒
+  else mouth = arc(cx, cy - r * 0.05, r * 0.55, 0.55, Math.PI - 0.55, 8);                                                // ‿
+  return [face, mouth];
 }

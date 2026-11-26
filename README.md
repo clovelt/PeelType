@@ -74,6 +74,8 @@ Fade letters ahead to build a specific narrative for your story, or add narrativ
 
 Ingrown lines bury text under the page itself — no frame, no interface, only its pores. Rub a line's dark tip to open its pore, pull slowly and go back and forth to reel the rest in; pull too fast and it snaps. Lines snag on word gaps, share a pore with a twin, or drag their neighbours out. Every letter that comes out is part of a strand with PeelType's own letter physics: it hangs from your hand and, when you let go, falls to the floor of the page, where it can be picked up again. Set it up in the editor's **Ingrown lines** section (scene *Ingrown lines*).
 
+Chat bubbles are a block prefab: turn any paragraph into an incoming or outgoing message from the editor's **Chat bubble** section (or add one with **+ Incoming / + Outgoing**). The text stays peelable letters; the bubble, its tail, the time, the read ticks and the reactions are all peelable lines. In the *Chat* scene, peeling a message brings the conversation up.
+
 Check out the rest of the examples for much, much more ways you can use interactive text and apply it to your own stories.
 
 ## Install

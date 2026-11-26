@@ -1997,6 +1997,430 @@ export function buildExampleScenes(defaultPieceConfig) {
         blocks: []
       }
     }
+    ,
+    // ── Chat: peel a conversation, message by message ──────────────────────────
+    // Every block is a chat-bubble prefab (block.chat, js/chat.js): the message
+    // is peelable text, the bubble, its tail, the time, the ticks and the
+    // reactions are peelable lines. Step paragraphs with compact flow keep a
+    // window of messages; peeling the top one brings the conversation up.
+    chatPeel: {
+      label: 'Chat',
+      config: {
+        ...structuredClone(defaultPieceConfig),
+        id: 'tirita-chat',
+        style: { ...structuredClone(defaultPieceConfig.style), backgroundColor: '#efeae2', color: '#111b21' },
+        layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 10, topMargin: 90, bottomMargin: 120 },
+        behaviors: {
+          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
+          stepParagraphs: { enabled: true, visibleCount: 6, compactFlow: true, advanceDelayMs: 250 }
+        },
+        chat: { inColor: '#ffffff', outColor: '#d9fdd3' },
+        blocks: [
+            {
+              "id": "msg-01",
+              "text": "¿Sigues despierta?",
+              "textEn": "Still up?",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:41"
+              }
+            },
+            {
+              "id": "msg-02",
+              "text": "Sí. Estaba releyendo todo esto",
+              "textEn": "Yes. I was rereading all of this",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:41",
+                "ticks": "read"
+              }
+            },
+            {
+              "id": "msg-03",
+              "text": "¿Todo qué?",
+              "textEn": "All of what?",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:42"
+              }
+            },
+            {
+              "id": "msg-04",
+              "text": "Lo que nos escribimos. Desde el principio",
+              "textEn": "Everything we wrote to each other. From the start",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:42",
+                "ticks": "read",
+                "reactions": [
+                  "wow"
+                ]
+              }
+            },
+            {
+              "id": "msg-05",
+              "text": "Eso no se relee, se arranca",
+              "textEn": "You don't reread that, you peel it off",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:43",
+                "reactions": [
+                  "laugh"
+                ]
+              }
+            },
+            {
+              "id": "msg-06",
+              "text": "Lo estoy haciendo. Línea a línea",
+              "textEn": "I'm doing it. Line by line",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:43",
+                "ticks": "read"
+              }
+            },
+            {
+              "id": "msg-07",
+              "text": "Cada mensaje que quito hace subir el siguiente",
+              "textEn": "Every message I take off brings the next one up",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:44",
+                "ticks": "read"
+              }
+            },
+            {
+              "id": "msg-08",
+              "text": "¿Y debajo qué hay?",
+              "textEn": "And what's underneath?",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:44"
+              }
+            },
+            {
+              "id": "msg-09",
+              "text": "Lo que nunca llegamos a mandarnos",
+              "textEn": "What we never got around to sending",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:45",
+                "ticks": "delivered",
+                "reactions": [
+                  "heart",
+                  "sad"
+                ]
+              }
+            },
+            {
+              "id": "msg-10",
+              "text": "Te echo de menos, por ejemplo",
+              "textEn": "I miss you, for example",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:46",
+                "reactions": [
+                  "heart"
+                ]
+              }
+            },
+            {
+              "id": "msg-11",
+              "text": "Eso también se despega",
+              "textEn": "That comes off too",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:46",
+                "ticks": "read"
+              }
+            },
+            {
+              "id": "msg-12",
+              "text": "No tires tan fuerte",
+              "textEn": "Don't pull so hard",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:47",
+                "reactions": [
+                  "pray"
+                ]
+              }
+            },
+            {
+              "id": "msg-13",
+              "text": "Ya casi no queda nada",
+              "textEn": "There's almost nothing left",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:47",
+                "ticks": "read"
+              }
+            },
+            {
+              "id": "msg-14",
+              "text": "Deja al menos esto",
+              "textEn": "Leave at least this",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "in",
+                "time": "23:48",
+                "reactions": [
+                  "heart"
+                ]
+              }
+            },
+            {
+              "id": "msg-15",
+              "text": "Vale",
+              "textEn": "Okay",
+              "transform": {
+                "x": 0,
+                "y": 0,
+                "scale": 0.86,
+                "width": 660
+              },
+              "peel": {
+                "fromBeginning": true,
+                "initialUnlockCount": 1,
+                "mode": "linear"
+              },
+              "style": {
+                "color": "#111b21",
+                "colorMode": "solid",
+                "fontFamily": "Inter"
+              },
+              "chat": {
+                "side": "out",
+                "time": "23:48",
+                "ticks": "sent"
+              }
+            }
+          ]
+      }
+    }
   };
 }
 

@@ -830,6 +830,52 @@
         </div>
       </details>
       <details class="editor-section" open>
+        <summary data-help="Turn this block into a chat message: its text sits in a bubble made of peelable lines, with the time, read ticks and reactions — all peelable. Use the buttons to add ready-made messages.">Chat bubble</summary>
+        <div class="editor-section-body">
+          <div class="editor-grid-2">
+            <div class="editor-row inline">
+              <label for="chatEnabled" data-help="Make this block a chat message">Message</label>
+              <input id="chatEnabled" type="checkbox">
+            </div>
+            <div class="editor-row inline">
+              <label for="chatSide" data-help="Incoming messages sit on the left, outgoing on the right">Side</label>
+              <select id="chatSide"><option value="in">incoming · left</option><option value="out">outgoing · right</option></select>
+            </div>
+            <div class="editor-row inline">
+              <label for="chatTime" data-help="Time shown in the corner of the bubble (peelable). Empty = none">Time</label>
+              <input id="chatTime" type="text" placeholder="21:04">
+            </div>
+            <div class="editor-row inline">
+              <label for="chatTicks" data-help="Delivery ticks on outgoing messages">Ticks</label>
+              <select id="chatTicks"><option value="none">none</option><option value="sent">sent ✓</option><option value="delivered">delivered ✓✓</option><option value="read">read ✓✓ (blue)</option></select>
+            </div>
+            <div class="editor-row inline">
+              <label for="chatTail" data-help="The little tab on the bubble's top corner">Tail</label>
+              <input id="chatTail" type="checkbox" checked>
+            </div>
+            <div class="editor-row inline">
+              <label for="chatColor" data-help="Bubble colour for this message. Empty = the scene's (white incoming, green outgoing)">Colour</label>
+              <input id="chatColor" type="text" placeholder="theme">
+            </div>
+          </div>
+          <div class="editor-row">
+            <label data-help="Reactions under the bubble, each drawn in peelable lines (up to 4)">Reactions</label>
+            <div class="chat-react-picks">
+                <button type="button" class="chat-react-pick" data-react="heart" title="heart" aria-pressed="false">♥</button>
+                <button type="button" class="chat-react-pick" data-react="laugh" title="laugh" aria-pressed="false">😆</button>
+                <button type="button" class="chat-react-pick" data-react="wow" title="wow" aria-pressed="false">😮</button>
+                <button type="button" class="chat-react-pick" data-react="sad" title="sad" aria-pressed="false">😢</button>
+                <button type="button" class="chat-react-pick" data-react="smile" title="smile" aria-pressed="false">🙂</button>
+                <button type="button" class="chat-react-pick" data-react="pray" title="pray" aria-pressed="false">🙏</button>
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button id="chatAddIn" type="button" data-help="Add an incoming message after this block">+ Incoming</button>
+            <button id="chatAddOut" type="button" data-help="Add an outgoing message after this block">+ Outgoing</button>
+          </div>
+        </div>
+      </details>
+      <details class="editor-section" open>
         <summary>Modifiers</summary>
         <div class="editor-section-body">
           <div class="letter-motion-list">
@@ -1393,6 +1439,6 @@
     });
   })();
   </script>
-  <script type="module" src="./js/main.js?v=169"></script>
+  <script type="module" src="./js/main.js?v=170"></script>
 </body>
 </html>

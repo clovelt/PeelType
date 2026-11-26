@@ -869,7 +869,7 @@ function assignEditorTabs() {
   [...editorPanel.querySelectorAll('.editor-section')].forEach(section => {
     const title = section.querySelector('summary')?.textContent?.trim().toLowerCase() || '';
     if (title === 'peel') section.dataset.editorTab = 'content';
-    if (title === 'color' || title === 'illustration' || title === 'modifiers') section.dataset.editorTab = 'design';
+    if (title === 'color' || title === 'illustration' || title === 'chat bubble' || title === 'modifiers') section.dataset.editorTab = 'design';
     if (title === 'dynamics' || title === 'camera' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'ties & knots' || title === 'tangled lines' || title === 'ingrown lines' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
   });
   fontSearch.closest('.editor-row')?.setAttribute('data-editor-tab', 'design');
@@ -2173,6 +2173,8 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
     block.style.opacity = normalizeBlockOpacity(blockOpacityInput.value);
     block.style.variationStrength = Number(variationStrength.value);
     block.style.gradient = collectGradientFromControls();
+    const chatCfg = chatFromControls();
+    if (chatCfg) block.chat = chatCfg; else delete block.chat;
     const attType = attachTypeSelect.value;
     if (!attType) {
       delete block.attachment;
@@ -2236,6 +2238,74 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   }
   return config;
 }
+
+// ── Chat bubble (js/chat.js) ──────────────────────────────────────────────────
+const chatEnabled = document.getElementById('chatEnabled');
+const chatSide = document.getElementById('chatSide');
+const chatTime = document.getElementById('chatTime');
+const chatTicks = document.getElementById('chatTicks');
+const chatTail = document.getElementById('chatTail');
+const chatColor = document.getElementById('chatColor');
+const chatReactPicks = [...document.querySelectorAll('.chat-react-pick')];
+function chatFromControls() {
+  if (!chatEnabled?.checked) return null;
+  const out = { side: chatSide.value === 'out' ? 'out' : 'in' };
+  if (chatTime.value.trim()) out.time = chatTime.value.trim();
+  if (out.side === 'out') out.ticks = chatTicks.value; else if (chatTicks.value !== 'none') out.ticks = chatTicks.value;
+  const reactions = chatReactPicks.filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.react);
+  if (reactions.length) out.reactions = reactions;
+  if (chatColor.value.trim()) out.color = chatColor.value.trim();
+  if (!chatTail.checked) out.tail = false;
+  return out;
+}
+function chatToControls(chat) {
+  const c = normalizeChat(chat);
+  chatEnabled.checked = Boolean(c);
+  chatSide.value = c?.side || 'in';
+  chatTime.value = c?.time || '';
+  chatTicks.value = c?.ticks || 'none';
+  chatTail.checked = c ? c.tail : true;
+  chatColor.value = c?.color || '';
+  chatReactPicks.forEach(b => b.setAttribute('aria-pressed', String(Boolean(c?.reactions.includes(b.dataset.react)))));
+  [chatSide, chatTime, chatTicks, chatTail, chatColor, ...chatReactPicks].forEach(el => { el.disabled = !c; });
+}
+function nextChatTime(time) { // one minute after the selected message
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || '').trim());
+  if (!m) return '';
+  const t = (Number(m[1]) * 60 + Number(m[2]) + 1) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+function makeChatBlock(side, after) {
+  const base = makeNewBlock();
+  return {
+    ...base,
+    id: `msg-${Date.now().toString(36)}`,
+    text: side === 'out' ? 'Mensaje que envías' : 'Mensaje que recibes',
+    peel: { fromBeginning: true, initialUnlockCount: 1 },
+    style: { ...base.style, ...(after?.style ? { fontFamily: after.style.fontFamily, color: after.style.color } : {}) },
+    transform: { ...base.transform, ...(after?.transform ? { width: after.transform.width } : {}) },
+    chat: { side, time: nextChatTime(after?.chat?.time) || after?.chat?.time || '', ...(side === 'out' ? { ticks: 'read' } : {}) }
+  };
+}
+function addChatBlockAfterSelected(side) {
+  const nextConfig = buildConfigFromVisualControls();
+  const blocks = getEditableBlocks(nextConfig);
+  blocks.splice(selectedBlockIdx + 1, 0, makeChatBlock(side, blocks[selectedBlockIdx]));
+  selectedBlockIdx += 1;
+  saveConfigAndReload(nextConfig);
+}
+[chatEnabled, chatSide, chatTime, chatTicks, chatTail, chatColor].forEach(el => el?.addEventListener('change', () => {
+  chatToControls(chatFromControls() || (chatEnabled.checked ? { side: 'in' } : null));
+  triggerAutoReload();
+}));
+chatReactPicks.forEach(b => b.addEventListener('click', () => {
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  if (on && chatReactPicks.filter(x => x.getAttribute('aria-pressed') === 'true').length >= 4) return;
+  b.setAttribute('aria-pressed', String(on));
+  triggerAutoReload();
+}));
+document.getElementById('chatAddIn')?.addEventListener('click', () => addChatBlockAfterSelected('in'));
+document.getElementById('chatAddOut')?.addEventListener('click', () => addChatBlockAfterSelected('out'));
 
 function makeNewBlock() {
   return {
@@ -3567,6 +3637,7 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   updateAttachFieldVisibility();
   updateShapeFieldVisibility();
 
+  chatToControls(selectedBlock.chat);
   const att = selectedBlock.attachment || {};
   if (att.type) saveLastAttachmentSettings(att);
   attachTypeSelect.value   = att.type  || '';

@@ -2740,3 +2740,12 @@ body.mobile-runtime #atmospherePanel {
   background: #4a4a4a; color: #fff; font: 700 10px Manrope, sans-serif;
 }
 .ig-editor .ig-line.is-selected .ig-line-num { background: #1f6f52; }
+
+/* ── Chat bubble editor ─────────────────────────────────────────────────── */
+.chat-react-picks { display: flex; flex-wrap: wrap; gap: 4px; }
+.chat-react-pick { min-width: 30px; height: 26px; padding: 0 6px !important; border-radius: 13px; opacity: 0.55; }
+.chat-react-pick[aria-pressed="true"] { opacity: 1; background: #1f6f52; border-color: #1f6f52; box-shadow: 0 0 0 2px rgba(31, 111, 82, 0.2); }
+.chat-react-pick:disabled { opacity: 0.25; }
+/* chat messages sit on their bubble: the bubble's peelable lines are drawn on
+   #effectsCanvas (z 18), so the message letters go above it */
+.letter.chat-letter { z-index: 19; }

@@ -66,6 +66,7 @@ const { createSession, refreshSession, deleteSession, fetchAuthorFeed, uploadBlo
         facetsToBbcode, parseAtUri } = await import(`./bluesky.js?v=${_v}`);
 const { buildFeedScene } = await import(`./feed-generator.js?v=${_v}`);
 const { createIngrownGame } = await import(`./ingrown.js?v=${_v}`);
+const { normalizeChat, chatTheme, chatTimeMarkup, chatAttachment, measureChatWidths, buildChatStrokes } = await import(`./chat.js?v=${_v}`);
 const { renderIngrownEditor, defaultIngrownConfig } = await import(`./ingrown-editor.js?v=${_v}`);
 console.log("Tirita: Local offline modules imported successfully.");
 
@@ -712,9 +713,20 @@ function setAudioMuted(muted) {
 
 await waitForTextFonts();
 
+// Text a block shows: its English version when the page is in English (textEn),
+// plus, for chat messages, the time as small peelable letters.
+function blockSourceText(bc) {
+  const text = storedLocale === 'en' && bc.textEn ? bc.textEn : bc.text;
+  const chat = normalizeChat(bc.chat);
+  return chat ? text + chatTimeMarkup(chat, chatTheme(pieceConfig.chat), state.baseFontPx || 20) : text;
+}
+function blockGraphemeWidths(bc, parsed, blockIdx) {
+  return bc.chat ? measureChatWidths(parsed.graphemes, parsed.inlineStyles, measureCtx, getBlockFont(blockIdx)) : parsed.graphemes.map(g => measureCtx.measureText(g).width);
+}
+
 const textBlocks = activeBlocks.map((blockConfig, blockIdx) => {
   measureCtx.font = getBlockFont(blockIdx);
-  const parsedText = parseBBCode(blockConfig.text);
+  const parsedText = parseBBCode(blockSourceText(blockConfig));
   const graphemes = parsedText.graphemes;
   const transform = {
     x: Number(blockConfig.transform?.x ?? 0),
@@ -733,7 +745,8 @@ const textBlocks = activeBlocks.map((blockConfig, blockIdx) => {
     graphemes,
     inlineStyles: parsedText.inlineStyles,
     wordRanges: buildWordRanges(parsedText.plainText, graphemes),
-    attachment: blockConfig.attachment || null,
+    attachment: blockConfig.chat ? chatAttachment(blockConfig.chat) : (blockConfig.attachment || null),
+    chat: normalizeChat(blockConfig.chat),
     peel: blockConfig.peel || {},
     hint: blockConfig.hint || {},
     triggers: blockConfig.triggers || [],
@@ -749,7 +762,7 @@ const textBlocks = activeBlocks.map((blockConfig, blockIdx) => {
     groupPeelReveal: Boolean(blockConfig.groupPeelReveal),
     eraseCompleted: Boolean(blockConfig.eraseCompleted),
     hidden: Boolean(blockConfig.hidden),
-    widths: graphemes.map(g => measureCtx.measureText(g).width)
+    widths: blockGraphemeWidths(blockConfig, parsedText, blockIdx)
   };
 });
 state.textBlocks = textBlocks;
@@ -1019,7 +1032,7 @@ let censorRevealedFlags = [];
 
 for (const l of letters) {
   let span = document.createElement('span');
-  span.className = 'letter';
+  span.className = textBlocks[l.blockIdx]?.chat ? 'letter chat-letter' : 'letter';
   span.textContent = l.ch;
   span.style.opacity = '0';
   span.style.pointerEvents = 'none';
@@ -1529,7 +1542,8 @@ async function initializePeelStrokesForBlock(block, blockIdx) {
   if (block.attachment?.type !== 'lineart') return;
   const att = block.attachment;
   const extractedDefs = att.src ? await extractStrokesFromSvg(att.src) : [];
-  const manualDefs = (att.strokes || []).filter(stroke => stroke?.source === 'manual' || !att.src);
+  const chatGeom = att.chat ? positions[blockIdx]?.attachment?.chat : null;
+  const manualDefs = chatGeom ? buildChatStrokes(chatGeom, chatTheme(pieceConfig.chat)) : (att.strokes || []).filter(stroke => stroke?.source === 'manual' || !att.src);
   const strokeDefs = extractedDefs.length ? extractedDefs.concat(manualDefs) : manualDefs;
   if (!strokeDefs.length) return;
 
@@ -5170,12 +5184,12 @@ async function performSoftReload() {
   const activeBlocksSrc = nextConfig.blocks || [];
   const newBlocks = activeBlocksSrc.map((bc, idx) => {
     measureCtx.font = getBlockFont(idx);
-    const parsed = parseBBCode(bc.text);
+    const parsed = parseBBCode(blockSourceText(bc));
     return {
       id: bc.id, text: bc.text, plainText: parsed.plainText, style: getBlockStyle(idx), font: getBlockFont(idx),
       transform: { x: Number(bc.transform?.x ?? 0), y: Number(bc.transform?.y ?? 0), scale: Number(bc.transform?.scale ?? 1), width: Number(bc.transform?.width ?? getMaxWidth()), height: Number(bc.transform?.height ?? 0) },
       graphemes: parsed.graphemes, inlineStyles: parsed.inlineStyles, wordRanges: buildWordRanges(parsed.plainText, parsed.graphemes),
-      attachment: bc.attachment || null, peel: bc.peel || {}, hint: bc.hint || {}, triggers: bc.triggers || [],
+      attachment: bc.chat ? chatAttachment(bc.chat) : (bc.attachment || null), chat: normalizeChat(bc.chat), peel: bc.peel || {}, hint: bc.hint || {}, triggers: bc.triggers || [],
       linkButton: bc.linkButton || null, timedButton: bc.timedButton || null, clipShape: bc.clipShape || null, drawPath: bc.drawPath || null,
       ringPath: bc.ringPath || null,
       groupNext: Number(bc.groupNext) || 0,
@@ -5184,7 +5198,7 @@ async function performSoftReload() {
       groupPeelReveal: Boolean(bc.groupPeelReveal),
       eraseCompleted: Boolean(bc.eraseCompleted),
       hidden: Boolean(bc.hidden),
-      widths: parsed.graphemes.map(g => measureCtx.measureText(g).width)
+      widths: blockGraphemeWidths(bc, parsed, idx)
     };
   });
 
@@ -5221,7 +5235,7 @@ async function performSoftReload() {
   lastRenderedAngle = new Array(letters.length).fill(NaN); state.lastRenderedAngle = lastRenderedAngle;
   els = letters.map(l => {
     const s = document.createElement('span');
-    s.className = 'letter';
+    s.className = textBlocks[l.blockIdx]?.chat ? 'letter chat-letter' : 'letter';
     s.textContent = l.ch;
     s.style.opacity = '0';
     s.style.pointerEvents = 'none';

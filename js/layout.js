@@ -392,6 +392,11 @@ export function layoutBlockAtWidth(block, maxWidth, startY, blockIdx = null) {
   const containerWidth = maxWidth + state.MARGIN * 2;
   const fitWidth = (containerWidth - state.MARGIN - offsetX) / scale - state.MARGIN;
   const blockWidth = Math.max(80, Math.min(maxWidth, fitWidth, block.transform.width || maxWidth));
+  // chat bubbles (js/chat.js): the text wraps inside the bubble, which is at most 78% of the block
+  const chat = block.chat || null;
+  const chatPadX = chat ? lineHeight * 0.48 : 0, chatPadY = chat ? lineHeight * 0.22 : 0, chatTail = chat?.tail ? lineHeight * 0.3 : 0;
+  const wrapWidth = chat ? Math.max(40, blockWidth * 0.78 - 2 * chatPadX - chatTail) : blockWidth;
+  let maxLineW = 0;
   const rawPositions = [];
   const lineIndices = [[]];
   let currentX = 0;
@@ -414,13 +419,13 @@ export function layoutBlockAtWidth(block, maxWidth, startY, blockIdx = null) {
       for (let j = gi + 1; j < block.graphemes.length && block.graphemes[j] !== ' ' && block.graphemes[j] !== '\n'; j++) {
         wordW += block.widths[j];
       }
-      if (currentX + w + wordW > blockWidth) {
+      if (currentX + w + wordW > wrapWidth) {
         currentX = 0;
         currentY += lineHeight;
         lineIndices.push([]);
       }
     }
-    if (g !== ' ' && currentX > 0 && currentX + w > blockWidth) {
+    if (g !== ' ' && currentX > 0 && currentX + w > wrapWidth) {
       currentX = 0;
       currentY += lineHeight;
       lineIndices.push([]);
@@ -434,14 +439,58 @@ export function layoutBlockAtWidth(block, maxWidth, startY, blockIdx = null) {
     });
     lineIndices[lineIndices.length - 1].push(gi);
     currentX += w;
+    if (g !== ' ') maxLineW = Math.max(maxLineW, currentX);
   }
 
+  if (chat) return layoutChatBubble(block, chat, rawPositions, lineIndices, { startY, lineHeight, blockWidth, maxLineW, textUnits: currentY + lineHeight, chatPadX, chatPadY, chatTail });
   return {
     positions: rawPositions,
     lineIndices,
     textHeight: Math.max((currentY + lineHeight) * block.transform.scale, Number(block.transform.height || 0)),
     attachment: getAttachmentLayout(block, rawPositions, (currentY + lineHeight) * block.transform.scale),
     height: Math.max((currentY + lineHeight) * block.transform.scale, Number(block.transform.height || 0)) + getAttachmentHeight(block)
+  };
+}
+
+// Places a chat block's letters inside its bubble and returns the bubble as the
+// block's attachment box, with the geometry chat.js needs to build its lines.
+function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
+  const sc = block.transform.scale;
+  const originX = state.MARGIN * sc + block.transform.x;
+  let last = rawPositions.length - 1;
+  while (last > 0 && (block.graphemes[last] === ' ' || block.graphemes[last] === '\n')) last--;
+  const tickW = chat.side === 'out' && chat.ticks !== 'none' ? 19 : 0;
+  const lastRight = last >= 0 ? (rawPositions[last].x + rawPositions[last].w - originX) / sc : 0;
+  const innerW = Math.max(o.maxLineW, lastRight + (tickW ? tickW + 3 : 0), o.lineHeight);
+  const bubbleW = innerW + 2 * o.chatPadX;
+  const bubbleX = chat.side === 'out' ? originX + (o.blockWidth - o.chatTail - bubbleW) * sc : originX + o.chatTail * sc;
+  const bubbleY = o.startY + block.transform.y;
+  const dx = bubbleX + o.chatPadX * sc - originX, dy = o.chatPadY * sc;
+  const basePx = (state.baseFontPx || 20) * sc;
+  rawPositions.forEach((p, i) => {
+    p.x += dx; p.y += dy;
+    const size = block.inlineStyles?.[i]?.size; // the small time sits on the baseline, not the top of the line
+    if (size && size < basePx) p.y += (basePx - size) * 0.78;
+  });
+  const Hb = (o.textUnits + 2 * o.chatPadY) * sc, W = bubbleW * sc;
+  let total = Hb + 2;
+  const reactions = [];
+  if (chat.reactions.length) {
+    const h = Math.round(o.lineHeight * 0.95 * sc), w = h * 1.3 + (chat.reactions.length - 1) * h * 0.82;
+    const x = chat.side === 'out' ? W - w - 8 * sc : 8 * sc;
+    reactions.push({ x, y: Hb - h * 0.3, w, h, kinds: chat.reactions });
+    total = Hb + h * 0.7 + 4;
+  }
+  const lp = last >= 0 ? rawPositions[last] : null;
+  const tsz = lp && block.inlineStyles?.[last]?.size ? block.inlineStyles[last].size : basePx;
+  const ticks = tickW && lp ? { x: lp.x + lp.w - bubbleX + 4, y: lp.y - bubbleY + tsz * 0.5 - 4 } : null;
+  const geom = { side: chat.side, W, Hb, total, tail: chat.tail, tailW: o.chatTail * sc, ticks, tickKind: chat.ticks, reactions, color: chat.color };
+  return {
+    positions: rawPositions,
+    lineIndices,
+    textHeight: total,
+    attachment: { x: bubbleX, y: bubbleY, width: W, height: total, label: '', chat: geom },
+    height: Math.max(total, Number(block.transform.height || 0))
   };
 }
 

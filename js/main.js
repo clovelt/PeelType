@@ -65,8 +65,8 @@ const { createSession, refreshSession, deleteSession, fetchAuthorFeed, uploadBlo
         createRecord, getRecord, createPost, publishScene, loadSession, saveSession,
         facetsToBbcode, parseAtUri } = await import(`./bluesky.js?v=${_v}`);
 const { buildFeedScene } = await import(`./feed-generator.js?v=${_v}`);
-const { createSkinGame } = await import(`./ingrown.js?v=${_v}`);
-const { renderSkinEditor, defaultSkinConfig } = await import(`./skin-editor.js?v=${_v}`);
+const { createIngrownGame } = await import(`./ingrown.js?v=${_v}`);
+const { renderIngrownEditor, defaultIngrownConfig } = await import(`./ingrown-editor.js?v=${_v}`);
 console.log("Tirita: Local offline modules imported successfully.");
 
 let spanishHyphenator = null;
@@ -1992,56 +1992,50 @@ document.body.addEventListener('mouseover', (e) => {
   target.addEventListener('mouseout', onOut);
 });
 
-// Skin attachments run the ingrown-lines game (js/ingrown.js) on their own canvas.
-// One live game per block; the editor reaches them through state.skinGames.
-const skinGames = new Map(); state.skinGames = skinGames;
-function mountSkinGame(el, attachment, blockIdx) {
-  skinGames.get(blockIdx)?.destroy();
-  const block = textBlocks[blockIdx];
-  const game = createSkinGame(el, attachment, {
-    lang: storedLocale === 'en' ? 'en' : 'es',
-    fontFamily: block?.style?.fontFamily ? quoteFontFamily(block.style.fontFamily) + ', Georgia, serif' : '',
+// Ingrown lines (js/ingrown.js): text buried under the page itself. One
+// full-bleed layer at the top of the scene; the editor reaches it through
+// state.ingrownGame / state.remountIngrown.
+let ingrownGame = null;
+function mountIngrown() {
+  ingrownGame?.destroy(); ingrownGame = null; state.ingrownGame = null;
+  container.querySelectorAll('.ingrown-layer').forEach(el => el.remove());
+  const cfg = pieceConfig?.ingrown;
+  if (!cfg) return null;
+  const layer = document.createElement('div');
+  layer.className = 'ingrown-layer';
+  container.appendChild(layer);
+  const family = pieceConfig.style?.fontFamily || (state.FONT || '').replace(/^[\d.]+px\s*/, '').trim();
+  ingrownGame = createIngrownGame(layer, cfg, {
+    fontFamily: family ? quoteFontFamily(family.replace(/["']/g, '')) + ', Georgia, serif' : '',
+    ink: pieceConfig.style?.color || '#4a4a4a',
     isEditor: () => document.body.classList.contains('editor-open'),
     isMuted: () => Boolean(globalThis.__tiritaAudioState?.audioMuted),
     armAudio: () => armAudio(),
-    // canvas-local point → container coords, so particles etc. land on the skin
-    runAction: (action, p) => {
-      const layout = positions[blockIdx]?.attachment;
-      const anchor = layout ? { x: layout.x + p.x, y: layout.y + getBlockRenderOffsetY(blockIdx) + p.y, vx: 0, vy: -1 } : { x: p.x, y: p.y, vx: 0, vy: -1 };
-      runTriggerAction(action, anchor);
+    runAction: (action, p) => { // layer-local point → container coords
+      const lr = layer.getBoundingClientRect(), cr = container.getBoundingClientRect();
+      runTriggerAction(action, { x: lr.left - cr.left + p.x, y: lr.top - cr.top + p.y, vx: 0, vy: -1 });
     },
-    onEdit: (patchIdx, lineIdx, change) => state.onSkinEdit?.(blockIdx, patchIdx, lineIdx, change),
-    onEditSelect: (patchIdx, lineIdx) => state.onSkinEditSelect?.(blockIdx, patchIdx, lineIdx),
-    onEditToolOff: () => { if (state.skinEditState?.blockIdx === blockIdx) state.skinEditState.tool = 'off'; }
+    onEdit: (patchIdx, lineIdx, change) => state.onIngrownEdit?.(patchIdx, lineIdx, change),
+    onEditSelect: (patchIdx, lineIdx) => state.onIngrownEditSelect?.(patchIdx, lineIdx),
+    onEditToolOff: () => { if (state.ingrownEditState) state.ingrownEditState.tool = 'off'; }
   });
-  skinGames.set(blockIdx, game);
-  // keep the editor's canvas tool across soft reloads
-  const ed = state.skinEditState;
-  if (ed && ed.blockIdx === blockIdx && ed.tool !== 'off') {
-    game.setEditTool(ed.tool);
-    if (ed.patchIdx >= 0) game.showPatch(ed.patchIdx);
-    if (ed.lineIdx >= 0) game.select(ed.lineIdx);
+  state.ingrownGame = ingrownGame;
+  const ed = state.ingrownEditState; // keep the editor's canvas tool across soft reloads
+  if (ed && ed.tool !== 'off') {
+    ingrownGame.setEditTool(ed.tool);
+    if (ed.patchIdx >= 0) ingrownGame.showPatch(ed.patchIdx);
+    if (ed.lineIdx >= 0) ingrownGame.select(ed.lineIdx);
   }
-  return game;
+  return ingrownGame;
 }
+state.remountIngrown = mountIngrown;
 
-// Rebuild one skin game in place (editor edits), without a full scene reload.
-state.remountSkinGame = (blockIdx) => {
-  const item = attachments.find(a => a?.blockIdx === blockIdx);
-  const att = textBlocks[blockIdx]?.attachment;
-  if (!item || att?.type !== 'skin') return null;
-  return mountSkinGame(item.el, att, blockIdx);
-};
-
-function createAttachmentElement(attachment, blockIdx = -1) {
+function createAttachmentElement(attachment) {
   const el = document.createElement('div');
   el.className = `scene-attachment type-${attachment.type || 'placeholder'}`;
   el.style.display = 'none';
   el.style.opacity = '0';
-  if (attachment.type === 'skin') {
-    // mounted after the element is in the DOM (see the attachments map below)
-    el.dataset.skinBlock = String(blockIdx);
-  } else if ((attachment.type === 'image' || attachment.type === 'lineart') && attachment.src) {
+  if ((attachment.type === 'image' || attachment.type === 'lineart') && attachment.src) {
     // Lineart can be purely procedural (strokes only, no SVG); skip the <img>
     // when there's no source so we don't render a broken-image icon.
     const img = document.createElement('img');
@@ -2054,7 +2048,7 @@ function createAttachmentElement(attachment, blockIdx = -1) {
       if (attachment.svgOpacity !== undefined) img.style.opacity = String(attachment.svgOpacity);
     }
     el.appendChild(img);
-  } else if (attachment.type !== 'image' && attachment.type !== 'lineart' && attachment.type !== 'skin') {
+  } else if (attachment.type !== 'image' && attachment.type !== 'lineart') {
     el.textContent = attachment.label || 'Illustration placeholder';
   }
   return el;
@@ -2117,11 +2111,11 @@ function beginAttachmentExit(blockIdx, driftY = 22) {
 
 let attachments = textBlocks.map((block, blockIdx) => {
   if (!block.attachment) return null;
-  const el = createAttachmentElement(block.attachment, blockIdx);
+  const el = createAttachmentElement(block.attachment);
   container.appendChild(el);
-  if (block.attachment.type === 'skin') mountSkinGame(el, block.attachment, blockIdx);
   return { blockIdx, el };
 });
+mountIngrown();
 const looseParts = [];
 const loosePartDrags = new Map();
 const peelStrokes = [];
@@ -2407,7 +2401,6 @@ function positionAttachments() {
       attachment.el.style.height = `${layout.height}px`;
       attachment.el.style.transform = transform;
       attachment.el.style.opacity = opacity;
-      skinGames.get(attachment.blockIdx)?.poke();
     }
   }
 }
@@ -3784,10 +3777,7 @@ function getVisibleBlockWindow() {
       const range = blockRanges[i];
       if (!range) continue;
       const lastLetter = letters[range.end];
-      // a block reaches down to the bottom of its attachment (a tall illustration
-      // or skin patch is still on screen after its text has scrolled away)
-      const bottom = Math.max((lastLetter?.oy ?? 0) + LINE_HEIGHT, attachmentBottomY(i));
-      if (bottom < vTop) start = i + 1;
+      if (Math.max((lastLetter?.oy ?? 0) + LINE_HEIGHT, attachmentBottomY(i)) < vTop) start = i + 1;
       else break;
     }
     for (let i = blockRanges.length - 1; i >= start; i--) {
@@ -3839,8 +3829,8 @@ function getStepVisibleCountForBlock(blockIdx) {
   return Math.max(1, Number(override ?? activeBehaviors?.stepParagraphs?.visibleCount) || 2);
 }
 
-// Layout bottom of a block's attachment (−∞ without one): a tall illustration or
-// skin patch keeps its block alive after the text itself has scrolled away.
+// Layout bottom of a block's attachment (−∞ without one): a tall illustration
+// keeps its block alive after the text itself has scrolled away.
 function attachmentBottomY(blockIdx) {
   const att = positions[blockIdx]?.attachment;
   return att ? att.y + att.height : -Infinity;
@@ -5288,14 +5278,12 @@ async function performSoftReload() {
     return createClipShapeFrame(blockIdx, block.clipShape);
   });
 
-  skinGames.forEach(game => game.destroy()); skinGames.clear();
   attachments = textBlocks.map((block, blockIdx) => {
     if (!block.attachment) return null;
-    const el = createAttachmentElement(block.attachment, blockIdx);
-    container.appendChild(el);
-    if (block.attachment.type === 'skin') mountSkinGame(el, block.attachment, blockIdx);
-    return { blockIdx, el };
+    const el = createAttachmentElement(block.attachment);
+    container.appendChild(el); return { blockIdx, el };
   });
+  mountIngrown();
 
   // Re-init loose parts
   textBlocks.forEach((block, blockIdx) => {

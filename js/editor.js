@@ -657,6 +657,50 @@ function renderTieList() {
   });
 }
 
+// ── Ingrown lines editor ──────────────────────────────────────────────────────
+// Scene-level (pieceConfig.ingrown). The panel lives in ingrown-editor.js; its
+// changes go live through applyLiveEditorState + a remount of the layer.
+const ingrownEditorRoot = document.getElementById('ingrownEditorRoot');
+let currentIngrown = null, ingrownLoaded = false; // until the editor has read the scene, never drop its config
+const ingrownUi = { patchIdx: 0, lineIdx: -1, tool: 'off' };
+function syncIngrownEditState() { state.ingrownEditState = { tool: ingrownUi.tool, patchIdx: ingrownUi.patchIdx, lineIdx: ingrownUi.lineIdx }; }
+function commitIngrown(remount = true) {
+  applyLiveEditorState();
+  if (remount) state.remountIngrown?.();
+}
+function setIngrownTool(tool) {
+  ingrownUi.tool = tool; syncIngrownEditState();
+  const game = state.ingrownGame;
+  if (!game) return;
+  game.setEditTool(tool);
+  if (tool !== 'off') { game.showPatch(ingrownUi.patchIdx); game.select(ingrownUi.lineIdx); }
+}
+function renderIngrownPanel() {
+  if (!ingrownEditorRoot) return;
+  renderIngrownEditor(ingrownEditorRoot, currentIngrown, {
+    ui: ingrownUi,
+    blockIds: (textBlocks || []).map(b => b?.id).filter(Boolean),
+    onEnable: () => { currentIngrown = defaultIngrownConfig(); commitIngrown(); renderIngrownPanel(); },
+    onDisable: () => { setIngrownTool('off'); currentIngrown = null; commitIngrown(); renderIngrownPanel(); },
+    onChange: (_cfg, { remount }) => commitIngrown(remount),
+    onTool: tool => setIngrownTool(tool),
+    onShowPatch: idx => { syncIngrownEditState(); state.ingrownGame?.showPatch(idx); },
+    onSelectLine: idx => { syncIngrownEditState(); state.ingrownGame?.select(idx); },
+    onRestart: () => { setIngrownTool('off'); renderIngrownPanel(); state.ingrownGame?.restart(); }
+  });
+  syncIngrownEditState();
+}
+// page → panel: a line was moved/turned on the page, or clicked
+state.onIngrownEdit = (patchIdx, lineIdx, change) => {
+  const line = currentIngrown?.patches?.[patchIdx]?.lines?.[lineIdx];
+  if (!line) return;
+  Object.assign(line, change);
+  ingrownUi.patchIdx = patchIdx; ingrownUi.lineIdx = lineIdx;
+  commitIngrown(false); // the layer already shows it
+  renderIngrownPanel();
+};
+state.onIngrownEditSelect = (patchIdx, lineIdx) => { ingrownUi.patchIdx = patchIdx; ingrownUi.lineIdx = lineIdx; renderIngrownPanel(); };
+
 // ── Tangled-lines editor ──────────────────────────────────────────────────────
 const TL_TYPES = ['knot', 'loop', 'braid'];
 const TL_ACTIONS = ['none', 'revealBlock', 'hideBlock', 'sound', 'particles', 'setFlag', 'bgColor'];
@@ -826,7 +870,7 @@ function assignEditorTabs() {
     const title = section.querySelector('summary')?.textContent?.trim().toLowerCase() || '';
     if (title === 'peel') section.dataset.editorTab = 'content';
     if (title === 'color' || title === 'illustration' || title === 'modifiers') section.dataset.editorTab = 'design';
-    if (title === 'dynamics' || title === 'camera' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'ties & knots' || title === 'tangled lines' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
+    if (title === 'dynamics' || title === 'camera' || title === 'timed button' || title === 'events & effects' || title === 'force fields' || title === 'ties & knots' || title === 'tangled lines' || title === 'ingrown lines' || title === 'global' || title === 'bulk import' || title === 'history') section.dataset.editorTab = 'behavior';
   });
   fontSearch.closest('.editor-row')?.setAttribute('data-editor-tab', 'design');
 }
@@ -1157,59 +1201,8 @@ shapeTypeSelect.addEventListener('change', updateShapeFieldVisibility);
 // Initial call to set correct visibility on load
 updateShapeFieldVisibility();
 
-// ── Skin (ingrown lines) editor ───────────────────────────────────────────────
-// The panel itself lives in skin-editor.js; here it is fed the selected block's
-// skin config and its changes are pushed into the live scene.
-const skinEditorRows = document.getElementById('skinEditorRows');
-let currentSkin = null;
-const skinEditUi = { patchIdx: 0, lineIdx: -1, tool: 'off', blockIdx: -1 };
-function syncSkinEditState() {
-  state.skinEditState = { blockIdx: selectedBlockIdx, tool: skinEditUi.tool, patchIdx: skinEditUi.patchIdx, lineIdx: skinEditUi.lineIdx };
-}
-function setSkinTool(tool) {
-  skinEditUi.tool = tool;
-  state.skinGames?.forEach((game, idx) => game.setEditTool(idx === selectedBlockIdx ? tool : 'off'));
-  const game = state.skinGames?.get(selectedBlockIdx);
-  if (game && tool !== 'off') { game.showPatch(skinEditUi.patchIdx); game.select(skinEditUi.lineIdx); }
-  syncSkinEditState();
-}
-function renderSkinPanel() {
-  if (!skinEditorRows) return;
-  if (attachTypeSelect.value !== 'skin') { skinEditorRows.innerHTML = ''; return; }
-  currentSkin ||= defaultSkinConfig();
-  if (skinEditUi.blockIdx !== selectedBlockIdx) { skinEditUi.blockIdx = selectedBlockIdx; skinEditUi.patchIdx = 0; skinEditUi.lineIdx = -1; }
-  renderSkinEditor(skinEditorRows, currentSkin, {
-    ui: skinEditUi,
-    blockIds: (textBlocks || []).map(b => b?.id).filter(Boolean),
-    onChange: (_skin, { remount }) => {
-      applyLiveEditorState();
-      if (remount) state.remountSkinGame?.(selectedBlockIdx);
-    },
-    onTool: tool => setSkinTool(tool),
-    onShowPatch: idx => { syncSkinEditState(); state.skinGames?.get(selectedBlockIdx)?.showPatch(idx); },
-    onSelectLine: idx => { syncSkinEditState(); state.skinGames?.get(selectedBlockIdx)?.select(idx); },
-    onRestart: () => { setSkinTool('off'); renderSkinPanel(); state.skinGames?.get(selectedBlockIdx)?.restart(); }
-  });
-  syncSkinEditState();
-}
-// Canvas → panel: a line was moved/turned on the skin, or clicked.
-state.onSkinEdit = (blockIdx, patchIdx, lineIdx, change) => {
-  if (blockIdx !== selectedBlockIdx || !currentSkin?.patches?.[patchIdx]?.lines?.[lineIdx]) return;
-  Object.assign(currentSkin.patches[patchIdx].lines[lineIdx], change);
-  skinEditUi.patchIdx = patchIdx; skinEditUi.lineIdx = lineIdx;
-  applyLiveEditorState(); // the game already shows the change: no remount
-  renderSkinPanel();
-};
-state.onSkinEditSelect = (blockIdx, patchIdx, lineIdx) => {
-  if (blockIdx !== selectedBlockIdx) return;
-  skinEditUi.patchIdx = patchIdx; skinEditUi.lineIdx = lineIdx;
-  renderSkinPanel();
-};
-
 function updateAttachFieldVisibility() {
   const t = attachTypeSelect.value;
-  if (skinEditorRows) skinEditorRows.style.display = t === 'skin' ? 'block' : 'none';
-  if (t !== 'skin' && skinEditUi.tool !== 'off') setSkinTool('off');
   attachFields.style.display              = t ? 'grid' : 'none';
   attachLabelRow.style.display            = t === 'placeholder' ? 'grid' : 'none';
   attachSrcRow.style.display              = (t === 'image' || t === 'lineart') ? 'grid' : 'none';
@@ -1397,14 +1390,10 @@ function applyLastAttachmentSettingsToControls(type) {
 
 attachTypeSelect.addEventListener('change', () => {
   applyLastAttachmentSettingsToControls(attachTypeSelect.value);
-  if (attachTypeSelect.value === 'skin') {
-    currentSkin ||= defaultSkinConfig();
-    if (illustrationSizeLooksAuto() || Number(attachHeight.value) < 360) { setControlValue(attachWidth, 680); setControlValue(attachHeight, 540); }
-  } else if (attachTypeSelect.value && illustrationSizeLooksAuto()) {
+  if (attachTypeSelect.value && illustrationSizeLooksAuto()) {
     setControlValue(attachHeight, 195);
   }
   updateAttachFieldVisibility();
-  renderSkinPanel();
 });
 
 function setLineartCanvasTool(tool) {
@@ -2031,6 +2020,8 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
   const tiesFromEditor = getTiesFromEditor();
   if (tiesFromEditor.length) config.ties = tiesFromEditor;
   else delete config.ties;
+  if (currentIngrown) config.ingrown = structuredClone(currentIngrown);
+  else if (ingrownLoaded) delete config.ingrown;
   const tlFromEditor = getTangledLinesFromEditor();
   if (tlFromEditor.length) config.tangledLines = tlFromEditor;
   else delete config.tangledLines;
@@ -2236,10 +2227,6 @@ buildConfigFromVisualControls = function buildConfigFromVisualControls(config = 
             height: prevAttachment.loose?.height ?? 92
           };
         }
-      }
-      if (attType === 'skin') {
-        delete next.strokes;
-        next.skin = structuredClone(currentSkin || (currentAttachment.type === 'skin' ? currentAttachment.skin : null) || defaultSkinConfig());
       }
       next.x = Number(attachX.value) || 0;
       next.y = Number(attachY.value) || 0;
@@ -3546,6 +3533,9 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   setForceFieldsInEditor(config.forceFields || []);
   setTiesInEditor(config.ties || []);
   setTangledLinesInEditor(config.tangledLines || []);
+  currentIngrown = config.ingrown ? structuredClone(config.ingrown) : null;
+  ingrownLoaded = true;
+  renderIngrownPanel();
   const selectedVisibleKey = selectedBlock.id || String(selectedBlockIdx);
   blockVisibleOverride.value = config.behaviors?.stepParagraphs?.perBlockVisibleCount?.[selectedVisibleKey] ?? '';
   const blockDelay = config.behaviors?.stepParagraphs?.perBlockAdvanceDelayMs?.[selectedVisibleKey];
@@ -3606,9 +3596,7 @@ refreshVisualEditor = function refreshVisualEditor(config = getMutableConfigFrom
   attachHeight.value          = att.height  ?? 180;
   attachGap.value             = att.gap     ?? 16;
   attachOffsetY.value         = att.opticalOffsetY ?? 0;
-  currentSkin = att.type === 'skin' ? structuredClone(att.skin || defaultSkinConfig()) : null;
   updateAttachFieldVisibility();
-  renderSkinPanel();
   updateLocaleSyncMarkers();
   blockHiddenToggle.checked = Boolean(selectedBlock.hidden);
   if (groupNextInput) groupNextInput.value = selectedBlock.groupNext || '';

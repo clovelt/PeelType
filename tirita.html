@@ -695,12 +695,10 @@
                 <option value="placeholder">Placeholder</option>
                 <option value="image">Image (PNG/GIF/…)</option>
                 <option value="lineart">Line art SVG</option>
-                <option value="skin">Skin · ingrown lines</option>
               </select>
             </div>
           </div>
           <div id="attachFields" style="display:none">
-            <div id="skinEditorRows" class="skin-editor-rows" style="display:none"></div>
             <div class="editor-row" id="attachLabelRow">
               <label for="attachLabel" data-help="Alt-text or placeholder label for the illustration.">Label</label>
               <input id="attachLabel" type="text" placeholder="Illustration placeholder">
@@ -980,6 +978,12 @@
           <div class="editor-actions">
             <button id="tangledLinesAddGroup" type="button" data-help="Add a new tangle group (2 strands, 1 crossing)">Add tangle</button>
           </div>
+        </div>
+      </details>
+      <details class="editor-section" open>
+        <summary data-help="Lines of text buried under the page. Rub a line's dark tip to open its pore, then pull it out slowly: too fast and it snaps; go back toward the pore to grip lower and reel the rest in. What comes out is a physical strand of letters.">Ingrown lines</summary>
+        <div class="editor-section-body">
+          <div id="ingrownEditorRoot"></div>
         </div>
       </details>
     </div>
@@ -1389,6 +1393,6 @@
     });
   })();
   </script>
-  <script type="module" src="./js/main.js?v=166"></script>
+  <script type="module" src="./js/main.js?v=167"></script>
 </body>
 </html>

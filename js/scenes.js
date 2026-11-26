@@ -1939,136 +1939,51 @@ export function buildExampleScenes(defaultPieceConfig) {
       }
     }
     ,
-    // ── Ingrown lines: dig buried text out of a patch of skin ─────────────────
-    // The skin is a block attachment (type 'skin', js/ingrown.js). Each line of
-    // text is grown in under the skin: rub its dark end to open the pore, pinch
-    // what shows and pull slowly; too fast and it snaps. Back toward the pore
-    // to grip lower and reel the rest in. Gaps between words can snag (a firm
-    // tug frees them). Whatever comes out is laid on the tissue; at the end the
-    // tissue shows every pulled line, in order.
+    // ── Ingrown lines: text grown in under the page (js/ingrown.js) ──────────
+    // No blocks, no interface: only the page, its pores and the buried lines.
+    // Rub a dark tip to open its pore, pull slowly (too fast and it snaps),
+    // go back toward the pore to grip lower and reel the rest in. What comes
+    // out is a strand of letters with PeelType's physics; it falls and stays.
     ingrownLines: {
       label: 'Ingrown lines',
       config: {
         ...structuredClone(defaultPieceConfig),
         id: 'tirita-ingrown-lines',
-        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 72, bottomMargin: 220 },
         behaviors: {
           fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
           stepParagraphs: { enabled: false, visibleCount: 2, compactFlow: false }
         },
-        blocks: [
-          {
-            id: 'piel-intro',
-            text: 'Bajo esta piel crecieron frases hacia dentro. [i]Frota la punta oscura[/i] para abrir el poro, pinza lo que asome y tira despacio: si tiras rápido, se parte. Vuelve hacia el poro para agarrar más abajo y recoger el resto.',
-            transform: { x: 0, y: 0, scale: 1, width: 660 },
-            peel: { fromBeginning: true, initialUnlockCount: 2 },
-            style: { color: '#4a3a36', colorMode: 'solid', fontFamily: 'EB Garamond' },
-            attachment: {
-              type: 'skin', width: 680, height: 560, gap: 26, opticalOffsetY: 0, scale: 1, opacity: 1,
-              skin: {
-                mode: 'chill', fontSize: 15, sway: true, zoom: true, place: true, hints: true,
-                resistance: 1, snapTolerance: 1, openEffort: 1, painRate: 1,
-                skinText: 'piel que guarda lo que no sale',
-                patches: [
-                  {
-                    name: 'antebrazo', tone: '#f5ceb2', fuzz: 12, fuzzWords: 'sí no ya tú yo y de',
-                    lines: [
-                      { text: 'lo que no dije se quedó debajo', type: 'arc' },
-                      { text: 'una frase que creció hacia dentro', type: 'wave' },
-                      { text: 'volvió sobre sí misma antes de salir', type: 'pin', snags: 1 }
-                    ],
-                    onClear: { type: 'revealBlock', blockId: 'piel-1' }
-                  },
-                  {
-                    name: 'espinilla', tone: '#f0c3a2', fuzz: 18, fuzzWords: 'aún más casi nada luz',
-                    lines: [
-                      { text: 'se curvó al final, como un anzuelo', type: 'hook' },
-                      { text: 'dio una vuelta y se cruzó consigo', type: 'loop', chain: true },
-                      { text: 'esta salió pálida de tanto esperar', type: 'arc', white: true },
-                      { text: 'dos frases compartían el mismo poro', type: 'wave', twin: 'y la segunda era más tímida' }
-                    ],
-                    onClear: { type: 'revealBlock', blockId: 'piel-2' }
-                  },
-                  {
-                    name: 'nuca', tone: '#f7d4bb', fuzz: 10, fuzzWords: 'shh ven ah oh',
-                    lines: [
-                      { text: 'me enredé tantas veces en la misma idea que ya era un nudo', type: 'knot', snags: 2 },
-                      { text: 'se enroscó despacio, vuelta a vuelta, esperando que alguien tirara con paciencia', type: 'coil' },
-                      { text: 'la más honda llevaba años ahí, enroscada como una raíz, y salió entera solo porque nadie tuvo prisa', type: 'giant', hidden: 0.25, snags: 1 }
-                    ]
-                  }
-                ],
-                onComplete: [{ type: 'revealBlock', blockId: 'piel-fin' }, { type: 'particles', preset: 'spark', count: 18, color: '#f1e5d2' }]
-              }
+        ingrown: {
+          fontSize: 21,
+          patches: [
+            {
+              fuzz: 9, fuzzWords: 'sí no ya tú yo y de',
+              lines: [
+                { text: 'lo que no dije se quedó debajo', type: 'arc' },
+                { text: 'una frase que creció hacia dentro', type: 'wave' },
+                { text: 'volvió sobre sí misma antes de salir', type: 'pin', snags: 1 }
+              ]
+            },
+            {
+              fuzz: 12, fuzzWords: 'aún más casi nada luz',
+              lines: [
+                { text: 'se curvó al final, como un anzuelo', type: 'hook' },
+                { text: 'dio una vuelta y se cruzó consigo', type: 'loop', chain: true },
+                { text: 'esta salió pálida de tanto esperar', type: 'arc', white: true },
+                { text: 'dos frases compartían el mismo poro', type: 'wave', twin: 'y la segunda era más tímida' }
+              ]
+            },
+            {
+              fuzz: 6, fuzzWords: 'shh ven ah oh',
+              lines: [
+                { text: 'me enredé tantas veces en la misma idea que ya era un nudo', type: 'knot', snags: 2 },
+                { text: 'se enroscó despacio, vuelta a vuelta, esperando que alguien tirara con paciencia', type: 'coil' },
+                { text: 'la más honda llevaba años ahí, enroscada como una raíz, y salió entera solo porque nadie tuvo prisa', type: 'giant', hidden: 0.25, snags: 1 }
+              ]
             }
-          },
-          {
-            id: 'piel-1', hidden: true,
-            text: 'La primera piel quedó lisa. Debajo había otra, más fina, que también guardaba cosas.',
-            transform: { x: 0, y: 0, scale: 1, width: 600 },
-            peel: { fromBeginning: true, initialUnlockCount: 2 },
-            style: { color: '#7a4a3a', colorMode: 'solid', fontFamily: 'EB Garamond' }
-          },
-          {
-            id: 'piel-2', hidden: true,
-            text: 'Algunas salían de dos en dos. Otras arrastraban a sus vecinas. Ninguna quería romperse.',
-            transform: { x: 0, y: 0, scale: 1, width: 600 },
-            peel: { fromBeginning: true, initialUnlockCount: 2 },
-            style: { color: '#7a4a3a', colorMode: 'solid', fontFamily: 'EB Garamond' }
-          },
-          {
-            id: 'piel-fin', hidden: true,
-            text: 'Todo lo que salió quedó en el pañuelo, una línea debajo de otra. [i]Léelo: es lo que tenías dentro.[/i]',
-            transform: { x: 0, y: 0, scale: 1, width: 620 },
-            peel: { fromBeginning: true, initialUnlockCount: 2 },
-            style: { color: '#3b1f2a', colorMode: 'solid', fontFamily: 'EB Garamond' }
-          }
-        ]
-      }
-    },
-    // Same mechanics against the clock: 60 s, +12 s per cleared patch, endless
-    // random patches drawn from the text pool. Ends with a rank.
-    ingrownAttack: {
-      label: 'Ingrown lines: 60 seconds',
-      config: {
-        ...structuredClone(defaultPieceConfig),
-        id: 'tirita-ingrown-attack',
-        layout: { ...structuredClone(defaultPieceConfig.layout), topMargin: 72, bottomMargin: 160 },
-        behaviors: {
-          fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
-          stepParagraphs: { enabled: false, visibleCount: 2, compactFlow: false }
+          ]
         },
-        blocks: [
-          {
-            id: 'reloj-intro',
-            text: 'Sesenta segundos. ¿Cuántas letras puedes sacar de la piel sin que se partan? Cada piel lisa suma doce segundos.',
-            transform: { x: 0, y: 0, scale: 1, width: 640 },
-            peel: { fromBeginning: true, initialUnlockCount: 2 },
-            style: { color: '#4a3a36', colorMode: 'solid', fontFamily: 'EB Garamond' },
-            attachment: {
-              type: 'skin', width: 680, height: 600, gap: 24, scale: 1, opacity: 1,
-              skin: {
-                mode: 'timed', timeLimit: 60, clearBonus: 12, endless: true, fontSize: 14, sway: false,
-                textPool: [
-                  'cada pelo es una frase sin terminar', 'lo dije hacia dentro', 'no sale si tiras con rabia',
-                  'despacio, que se rompe', 'esto también era mío', 'raíz blanca, palabra entera',
-                  'se quedó a medio decir', 'una vuelta más y ya', 'la piel recuerda dónde', 'nadie lo vio crecer',
-                  'tira, suelta, vuelve, tira', 'debajo de todo había una coma'
-                ],
-                patches: [
-                  { name: 'espinilla', tone: '#f0c3a2', fuzz: 16, lines: [
-                    { text: 'empieza por aquí, con calma', type: 'arc' },
-                    { text: 'la segunda ya ondula un poco', type: 'wave' }
-                  ] },
-                  { name: 'antebrazo', tone: '#f5ceb2', fuzz: 8, lines: [] },
-                  { name: 'barbilla', tone: '#ecbc9e', fuzz: 30, lines: [] },
-                  { name: 'pantorrilla', tone: '#e4b28f', fuzz: 14, lines: [] },
-                  { name: 'nuca', tone: '#f7d4bb', fuzz: 6, lines: [] }
-                ]
-              }
-            }
-          }
-        ]
+        blocks: []
       }
     }
   };

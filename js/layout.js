@@ -504,9 +504,7 @@ export function getAttachmentLayout(block, rawPositions, textHeight) {
   const left = rawPositions.length ? Math.min(...rawPositions.map(p => p.x)) : state.MARGIN + block.transform.x;
   const right = rawPositions.length ? Math.max(...rawPositions.map(p => p.x + p.w)) : left + block.transform.width;
   const scale = Math.max(0.1, Math.min(5, Number(attachment.scale ?? 1) || 1));
-  let width = Math.max(80, Number(attachment.width || Math.min(420, right - left))) * scale;
-  // a skin patch is played by hand: never wider than the column (phones)
-  if (attachment.type === 'skin') width = Math.min(width, Math.max(160, getMaxWidth()));
+  const width = Math.max(80, Number(attachment.width || Math.min(420, right - left))) * scale;
   const height = Math.max(40, Number(attachment.height || 180)) * scale;
   const x = left + Math.max(0, (right - left - width) / 2) + Number(attachment.x || 0);
   const y = (rawPositions[0]?.y ?? 0) + textHeight + Number(attachment.gap || 16) + Number(attachment.opticalOffsetY || 0) + Number(attachment.y || 0);

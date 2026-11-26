@@ -72,7 +72,7 @@ Fade letters ahead to build a specific narrative for your story, or add narrativ
   <img src="docs/media/fade.gif" alt="Meaning shift and fade reveal" width="520">
 </p>
 
-Ingrown lines bury text under a patch of skin: rub the dark tip open, pinch it and pull slowly, going back and forth to reel the rest in — pull too fast and it snaps. Lines can snag on word gaps, share a pore with a twin, or drag their neighbours out, and everything you pull ends up on a tissue as a found poem. Add one with the Illustration type **Skin · ingrown lines**; the editor has rules, per-patch skins, per-line shape/depth/snags/events and a canvas tool to move and turn lines (scenes *Ingrown lines* and *Ingrown lines: 60 seconds*).
+Ingrown lines bury text under the page itself — no frame, no interface, only its pores. Rub a line's dark tip to open its pore, pull slowly and go back and forth to reel the rest in; pull too fast and it snaps. Lines snag on word gaps, share a pore with a twin, or drag their neighbours out. Every letter that comes out is part of a strand with PeelType's own letter physics: it hangs from your hand and, when you let go, falls to the floor of the page, where it can be picked up again. Set it up in the editor's **Ingrown lines** section (scene *Ingrown lines*).
 
 Check out the rest of the examples for much, much more ways you can use interactive text and apply it to your own stories.
 

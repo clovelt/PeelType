@@ -395,14 +395,11 @@ export function layoutBlockAtWidth(block, maxWidth, startY, blockIdx = null) {
   const blockWidth = Math.max(80, Math.min(maxWidth, fitWidth, block.transform.width || maxWidth));
   // chat bubbles (js/chat.js): the text wraps inside the bubble, which is at most 78% of the block
   const chat = block.chat || null;
-  // bubble proportions measured on a chat app, in units of the font size (f):
-  // left pad .64f, right pad .73f, tail .45f, one-line bubble 2.05f tall with the text centred at .44
+  // bubble proportions in units of the font size (f). A letter's box is exactly f tall
+  // (line-height 1), so the text block is (lines − 1) × lineHeight + f, centred with .42f above and below
   const fpx = state.baseFontPx || 20;
-  const chatPad = chat ? {
-    l: fpx * 0.64, r: fpx * 0.73, tail: chat.tail ? fpx * 0.45 : 0,
-    top: Math.max(2, fpx * 0.9 - lineHeight / 2)
-  } : null;
-  if (chatPad) chatPad.bottom = Math.max(fpx * 0.3, fpx * 2.05 - lineHeight - chatPad.top);
+  const chatPad = chat ? { l: fpx * 0.62, r: fpx * 0.62, tail: chat.tail ? fpx * 0.45 : 0, top: fpx * 0.42, bottom: fpx * 0.42 } : null;
+  if (chatPad && chat.side === 'out' && chat.ticks !== 'none') chatPad.r = fpx * 0.45; // tighter after the ticks
   const wrapWidth = chat ? Math.max(40, blockWidth * 0.78 - chatPad.l - chatPad.r - chatPad.tail) : blockWidth;
   let maxLineW = 0;
   const rawPositions = [];
@@ -450,7 +447,7 @@ export function layoutBlockAtWidth(block, maxWidth, startY, blockIdx = null) {
     if (g !== ' ') maxLineW = Math.max(maxLineW, currentX);
   }
 
-  if (chat) return layoutChatBubble(block, chat, rawPositions, lineIndices, { startY, lineHeight, blockWidth, maxLineW, textUnits: currentY + lineHeight, pad: chatPad, fpx });
+  if (chat) return layoutChatBubble(block, chat, rawPositions, lineIndices, { startY, lineHeight, blockWidth, maxLineW, textUnits: currentY + fpx, pad: chatPad, fpx });
   return {
     positions: rawPositions,
     lineIndices,
@@ -467,7 +464,7 @@ function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
   const originX = state.MARGIN * sc + block.transform.x;
   let last = rawPositions.length - 1;
   while (last > 0 && (block.graphemes[last] === ' ' || block.graphemes[last] === '\n')) last--;
-  const tickRoom = chat.side === 'out' && chat.ticks !== 'none' ? o.fpx * 0.95 : 0;
+  const tickRoom = chat.side === 'out' && chat.ticks !== 'none' ? o.fpx * 0.2 + 13.5 / sc : 0; // gap + ✓✓ (13.5px)
   const lastRight = last >= 0 ? (rawPositions[last].x + rawPositions[last].w - originX) / sc : 0;
   const innerW = Math.max(o.maxLineW, lastRight + tickRoom, o.fpx);
   const bubbleW = innerW + P.l + P.r;
@@ -476,8 +473,8 @@ function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
   const W = bubbleW * sc, Hb = (o.textUnits + P.top + P.bottom) * sc;
   const dx = bubbleX + P.l * sc - originX, dy = P.top * sc;
   rawPositions.forEach(p => { p.x += dx; p.y += dy; });
-  // the time: smaller, pushed to the bottom-right corner, its baseline .4f above the bottom edge
-  const timeBase = bubbleY + Hb - f * 0.4;
+  // the time: smaller, pushed to the bottom-right corner, its baseline .36f above the bottom edge
+  const timeBase = bubbleY + Hb - f * 0.36;
   const timeIdx = []; for (let i = 0; i < rawPositions.length; i++) if (block.inlineStyles?.[i]?.size) timeIdx.push(i);
   if (timeIdx.length) {
     const timeRight = Math.max(...timeIdx.map(i => rawPositions[i].x + rawPositions[i].w));
@@ -486,17 +483,17 @@ function layoutChatBubble(block, chat, rawPositions, lineIndices, o) {
   }
   // the ticks sit on the time's baseline, just after it
   const lp = last >= 0 ? rawPositions[last] : null;
-  const ticks = tickRoom && lp ? { x: lp.x + lp.w - bubbleX + f * 0.22, y: timeBase - bubbleY - 8.5 } : null;
-  // reactions: round badges 1.5f across, overlapping the bottom edge by .27f;
-  // under the time on outgoing messages, near the left corner on incoming ones
+  const ticks = tickRoom && lp ? { x: lp.x + lp.w - bubbleX + f * 0.2, y: timeBase - bubbleY - 8.5 } : null;
+  // reactions: round badges 1.15f across, overlapping the bottom edge by .22f;
+  // at the bottom-right corner on outgoing messages, bottom-left on incoming ones
   let total = Hb + 2;
   const reactions = [];
   if (chat.reactions.length) {
-    const h = f * 1.5, w = h + (chat.reactions.length - 1) * (h + 3);
-    const cx = chat.side === 'out' ? W - f * 3.2 : f * 2.2;
-    const x = Math.max(f * 0.6, Math.min(W - f * 0.6 - w, cx - w / 2));
-    reactions.push({ x, y: Hb - f * 0.27, w, h, kinds: chat.reactions });
-    total = Hb - f * 0.27 + h + 4;
+    const h = f * 1.15, w = h + (chat.reactions.length - 1) * (h + 3);
+    // start right at the bottom corner, just inside its curve (mirrored on incoming messages)
+    const x = chat.side === 'out' ? W - w - f * 0.45 : f * 0.45;
+    reactions.push({ x, y: Hb - f * 0.22, w, h, kinds: chat.reactions });
+    total = Hb - f * 0.22 + h + 4;
   }
   const geom = { side: chat.side, W, Hb, total, tail: chat.tail, tailW: P.tail * sc, ticks, tickKind: chat.ticks, reactions, color: chat.color };
   return {

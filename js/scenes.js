@@ -1958,38 +1958,38 @@ export function buildExampleScenes(defaultPieceConfig) {
           camera: 'right', panTime: 2.2,
           patches: [
             {
-              fuzz: 9, fuzzWords: 'sí no ya tú yo y de',
+              fuzz: 9, fuzzWords: 'sí no ya tú yo y de', fuzzWordsEn: 'yes no so you me and of',
               lines: [
-                { text: 'lo que no dije se quedó debajo', type: 'arc' },
-                { text: 'una frase que creció hacia dentro', type: 'wave' },
-                { text: 'volvió sobre sí misma antes de salir', type: 'pin', snags: 1 }
+                { text: 'lo que no dije se quedó debajo', textEn: "what I didn't say stayed underneath", type: 'arc' },
+                { text: 'una frase que creció hacia dentro', textEn: "a sentence that grew inward", type: 'wave' },
+                { text: 'volvió sobre sí misma antes de salir', textEn: "it turned back on itself before coming out", type: 'pin', snags: 1 }
               ]
             },
             {
-              fuzz: 10, fuzzWords: 'aún más casi nada luz',
+              fuzz: 10, fuzzWords: 'aún más casi nada luz', fuzzWordsEn: 'yet more almost nothing light',
               lines: [
-                { text: 'esta asoma en curva y entra por dos sitios a la vez', type: 'bridge' },
-                { text: 'se rizó sobre sí misma una vuelta y otra y otra', type: 'spring' },
-                { text: 'dos frases compartían el mismo poro', type: 'wave', twin: 'y la segunda salía detrás, sin prisa' },
-                { text: 'se curvó al final, como un anzuelo', type: 'hook' }
+                { text: 'esta asoma en curva y entra por dos sitios a la vez', textEn: "this one shows as a curve and goes in at two places at once", type: 'bridge' },
+                { text: 'se rizó sobre sí misma una vuelta y otra y otra', textEn: "it curled over itself once, and again, and again", type: 'spring' },
+                { text: 'dos frases compartían el mismo poro', textEn: "two sentences shared the same pore", type: 'wave', twin: 'y la segunda salía detrás, sin prisa', twinEn: 'and the second one followed behind, in no hurry' },
+                { text: 'se curvó al final, como un anzuelo', textEn: "it bent at the end, like a fishhook", type: 'hook' }
               ]
             },
             {
-              fuzz: 8, fuzzWords: 'shh ven ah oh',
+              fuzz: 8, fuzzWords: 'shh ven ah oh', fuzzWordsEn: 'shh come ah oh',
               lines: [
-                { text: 'se retorció hasta dibujar un ocho que no cerraba', type: 'eight' },
-                { text: 'fue y vino y volvió a ir, doblándose en zigzag', type: 'fold', snags: 1 },
-                { text: 'dio una vuelta y se cruzó consigo', type: 'loop', chain: true },
-                { text: 'esta salió pálida de tanto esperar', type: 'arc', white: true },
-                { text: 'me enredé tantas veces en la misma idea que ya era un nudo', type: 'knot', snags: 2 }
+                { text: 'se retorció hasta dibujar un ocho que no cerraba', textEn: "it twisted into a figure eight that never closed", type: 'eight' },
+                { text: 'fue y vino y volvió a ir, doblándose en zigzag', textEn: "it went and came back and went again, folding in a zigzag", type: 'fold', snags: 1 },
+                { text: 'dio una vuelta y se cruzó consigo', textEn: "it looped around and crossed itself", type: 'loop', chain: true },
+                { text: 'esta salió pálida de tanto esperar', textEn: "this one came out pale from so much waiting", type: 'arc', white: true },
+                { text: 'me enredé tantas veces en la misma idea que ya era un nudo', textEn: "I got caught in the same thought so many times it became a knot", type: 'knot', snags: 2 }
               ]
             },
             {
-              fuzz: 6, fuzzWords: 'ya casi',
+              fuzz: 6, fuzzWords: 'ya casi', fuzzWordsEn: 'almost there',
               lines: [
-                { text: 'la curva más larga entraba por un poro y salía por el de al lado, como una costura', type: 'bridge' },
-                { text: 'se enroscó despacio, vuelta a vuelta, esperando que alguien tirara con paciencia', type: 'coil' },
-                { text: 'la más honda llevaba años ahí, enroscada como una raíz', type: 'giant', hidden: 0.2, twin: 'y detrás de ella, otra que nadie había visto' }
+                { text: 'la curva más larga entraba por un poro y salía por el de al lado, como una costura', textEn: "the longest curve went in through one pore and out the next, like a stitch", type: 'bridge' },
+                { text: 'se enroscó despacio, vuelta a vuelta, esperando que alguien tirara con paciencia', textEn: "it coiled slowly, turn after turn, waiting for someone to pull with patience", type: 'coil' },
+                { text: 'la más honda llevaba años ahí, enroscada como una raíz', textEn: "the deepest one had been there for years, coiled like a root", type: 'giant', hidden: 0.2, twin: 'y detrás de ella, otra que nadie había visto', twinEn: 'and behind it, another nobody had seen' }
               ]
             }
           ]

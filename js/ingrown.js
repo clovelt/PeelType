@@ -66,27 +66,31 @@ const TICK = 120, DAMP = 0.97, ITER = 10, ANGLE_EASE = 0.94;
 const K = 1.2;
 
 // ── Config ────────────────────────────────────────────────────────────────────
-export function normalizeIngrownLine(raw = {}) {
+// Text fields can carry an English version next to the main (Spanish) one:
+// line.textEn / line.twinEn, patch.fuzzWordsEn, config.textPoolEn. With lang 'en'
+// the English one is used when present.
+const pick = (raw, key, lang) => (lang === 'en' && raw[key + 'En'] !== undefined && String(raw[key + 'En']).trim() !== '' ? raw[key + 'En'] : raw[key]);
+export function normalizeIngrownLine(raw = {}, lang = 'es') {
   const out = {
-    text: String(raw.text ?? '').replace(/\s+/g, ' ').trim(),
+    text: String(pick(raw, 'text', lang) ?? '').replace(/\s+/g, ' ').trim(),
     type: INGROWN_LINE_TYPES.includes(raw.type) ? raw.type : 'arc',
     depth: raw.depth === '' || raw.depth === undefined || raw.depth === null ? null : clamp(num(raw.depth, 0.4), 0, 1),
     hidden: clamp(num(raw.hidden, 0), 0, 0.9),
     white: Boolean(raw.white),
     chain: Boolean(raw.chain),
     snags: clamp(Math.round(num(raw.snags, 0)), 0, 6),
-    twin: String(raw.twin ?? '').replace(/\s+/g, ' ').trim()
+    twin: String(pick(raw, 'twin', lang) ?? '').replace(/\s+/g, ' ').trim()
   };
   for (const k of ['x', 'y']) if (raw[k] !== '' && raw[k] !== null && raw[k] !== undefined && Number.isFinite(Number(raw[k]))) out[k] = clamp(Number(raw[k]), 0, 1);
   if (raw.angle !== '' && raw.angle !== null && raw.angle !== undefined && Number.isFinite(Number(raw.angle))) out.angle = Number(raw.angle);
   if (raw.onExtract) out.onExtract = raw.onExtract;
   return out;
 }
-export function normalizeIngrownPatch(raw = {}) {
+export function normalizeIngrownPatch(raw = {}, lang = 'es') {
   const out = {
     fuzz: clamp(Math.round(num(raw.fuzz, 10)), 0, 80),
-    fuzzWords: words(raw.fuzzWords).join(' '),
-    lines: (Array.isArray(raw.lines) ? raw.lines : []).map(normalizeIngrownLine)
+    fuzzWords: words(pick(raw, 'fuzzWords', lang)).join(' '),
+    lines: (Array.isArray(raw.lines) ? raw.lines : []).map(l => normalizeIngrownLine(l, lang))
   };
   // where this round lies on the page, in screens (only with a camera direction); empty = next along the direction
   const ox = raw.offset?.x, oy = raw.offset?.y;
@@ -94,8 +98,9 @@ export function normalizeIngrownPatch(raw = {}) {
   if (raw.onClear) out.onClear = raw.onClear;
   return out;
 }
-export function normalizeIngrownConfig(raw = {}) {
-  const patches = (Array.isArray(raw.patches) ? raw.patches : []).map(normalizeIngrownPatch);
+export function normalizeIngrownConfig(raw = {}, lang = 'es') {
+  const patches = (Array.isArray(raw.patches) ? raw.patches : []).map(p => normalizeIngrownPatch(p, lang));
+  const pool = pick(raw, 'textPool', lang);
   return {
     height: clamp(num(raw.height, 0), 0, 6000), // 0 = one screen
     fontFamily: String(raw.fontFamily ?? ''),
@@ -112,8 +117,8 @@ export function normalizeIngrownConfig(raw = {}) {
     camera: INGROWN_CAMERA_MODES.includes(raw.camera) ? raw.camera : 'none',
     panTime: clamp(num(raw.panTime, 1.8), 0.3, 6),
     endless: Boolean(raw.endless),
-    textPool: (Array.isArray(raw.textPool) ? raw.textPool : String(raw.textPool || '').split('\n')).map(s => String(s).trim()).filter(Boolean),
-    patches: patches.length ? patches : [normalizeIngrownPatch({ lines: [{ text: 'una línea crecida hacia dentro', type: 'arc' }] })],
+    textPool: (Array.isArray(pool) ? pool : String(pool || '').split('\n')).map(s => String(s).trim()).filter(Boolean),
+    patches: patches.length ? patches : [normalizeIngrownPatch({ lines: [{ text: 'una línea crecida hacia dentro', textEn: 'a line grown inward', type: 'arc' }] }, lang)],
     ...(raw.onComplete ? { onComplete: raw.onComplete } : {})
   };
 }
@@ -170,6 +175,18 @@ function makeSfx(enabled, isMuted) {
     snap() { burst(3200, 0.03, 0.55, 0, 3); beep(180, 90, 0.12, 'square', 0.1, 0.02); },
     peek() { beep(700, 1200, 0.07, 'triangle', 0.2); },
     ouch() { beep(160, 70, 0.4, 'sawtooth', 0.16); beep(170, 75, 0.4, 'sawtooth', 0.12, 0.04); },
+    // letters knocking together: one short pre-made paper tap, pitch-varied
+    tap(vol) {
+      if (!S.ctx || vol <= 0) return;
+      if (!S.tapBuf) {
+        const n = Math.round(S.ctx.sampleRate * 0.03), b = S.ctx.createBuffer(1, n, S.ctx.sampleRate), d = b.getChannelData(0);
+        let lp = 0; for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.35; d[i] = lp * Math.exp(-i / (n * 0.18)); }
+        S.tapBuf = b;
+      }
+      const src = S.ctx.createBufferSource(), gn = S.ctx.createGain();
+      src.buffer = S.tapBuf; src.playbackRate.value = 0.75 + Math.random() * 0.6; gn.gain.value = vol;
+      src.connect(gn); gn.connect(S.master); src.start();
+    },
     close() { try { S.ctx?.close(); } catch (_) {} S.ctx = null; }
   };
 }
@@ -177,7 +194,7 @@ function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } cat
 
 // ── Game ──────────────────────────────────────────────────────────────────────
 export function createIngrownGame(host, rawConfig, hooks = {}) {
-  const cfg = normalizeIngrownConfig(rawConfig || {});
+  const cfg = normalizeIngrownConfig(rawConfig || {}, hooks.lang === 'en' ? 'en' : 'es');
   const fontFamily = cfg.fontFamily ? `"${cfg.fontFamily}", Georgia, serif` : (hooks.fontFamily || "'EB Garamond', Georgia, serif");
   const INK = rgbArr(cfg.ink || hooks.ink || '#4a4a4a'), PALE = rgbArr(cfg.paleInk);
   const INK_S = rgbStr(INK), PALE_S = rgbStr(PALE);
@@ -448,9 +465,9 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
     const o = roundOrigin(lv);
     rounds.set(lv, { x0: o.x, y0: o.y, x1: o.x + W, y1: o.y + H });
     const out = [];
-    const place = mulberry(hash32(`place:${lv}:${pc.lines.map(l => l.text).join('|')}`));
+    const place = mulberry(hash32(`place:${lv}:${pc.lines.map(l => l.type).join('|')}`));
     const R = placeRegion(o);
-    const specs = pc.lines.map((l, i) => ({ ...l, idx: i, seed: hash32(`${lv}:${i}:${l.text}`), easy: lv === 0 && i < 2 && l.depth == null })).filter(l => l.text);
+    const specs = pc.lines.map((l, i) => ({ ...l, idx: i, seed: hash32(`${lv}:${i}:${l.type}`), easy: lv === 0 && i < 2 && l.depth == null })).filter(l => l.text);
     specs.filter(s => s.x !== undefined && s.y !== undefined).forEach(s => out.push(makeLine(s, o.x + lerp(0, W, s.x), o.y + lerp(y0, yMax, s.y), lv)));
     const sample = h => { const a = []; eachPts(h, pts => { for (let i = 0; i < pts.length; i += 4) a.push(pts[i]); }); return a; };
     const others = out.concat(avoid).filter(o2 => !o2.surface).map(o2 => sample(o2));
@@ -542,7 +559,7 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
     const fl = (p0 ? floorAt(p0.x, p0.y) : H - 6) - F * 0.45, wl = wallL + F * 0.4, wr = wallR - F * 0.4;
     for (let i = i0; i < N; i++) {
       const p = nodes[i];
-      if (p.y > fl) { p.y = fl; p.py = fl; p.px = p.x - (p.x - p.px) * 0.5; }
+      if (p.y > fl) { if (p.y - p.py > impact) impact = p.y - p.py; p.y = fl; p.py = fl; p.px = p.x - (p.x - p.px) * 0.5; }
       if (p.x < wl) { p.x = wl; p.px = wl; } else if (p.x > wr) { p.x = wr; p.px = wr; }
     }
     return motion;
@@ -552,6 +569,7 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
   // tick after tick: nothing is allocated here.
   const radOf = gl => clamp(Math.max(gl.w * 0.45, F * 0.27), 2.5, F * 0.36);
   const grid = new Map(); let gridT = -1;
+  let impact = 0, lastTap = 0; // hardest knock this frame (px/tick), for the tap sound
   function gridAdd(c) {
     const cell = F;
     for (let i = c.i0 || 0; i < c.n; i++) {
@@ -579,6 +597,7 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
           const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy), rr = p.r + q.r;
           if (d >= rr || d < 1e-4) continue;
           const k = (rr - d) / d * 0.5;
+          if (q.c !== c) { const iv = Math.abs(p.x - p.px - q.x + q.px) + Math.abs(p.y - p.py - q.y + q.py); if (iv > impact) impact = iv; } // only strand against strand: a strand's own letters jostle all the time
           p.x -= dx * k; p.y -= dy * k; q.x += dx * k; q.y += dy * k;
           if (q.c !== c) q.c.still = 0; // a resting strand that gets bumped wakes up
         }
@@ -829,19 +848,11 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
     if (px !== glyphPx) { g.font = font(px); glyphPx = px; g.textAlign = 'center'; g.textBaseline = 'middle'; }
     g.globalAlpha = alpha; g.fillStyle = col; g.fillText(ch, 0, 0);
   }
-  function strokePath(pts, u1, w, style) {
-    if (u1 <= 0 || pts.length < 2) return;
-    const b = pointOn(pts, u1);
-    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i * 3 < u1 && i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
-    g.lineTo(b.x, b.y); g.lineWidth = w; g.strokeStyle = style; g.stroke();
-  }
   function drawPore(x, y, open, col, ap) {
     const r = (open ? 5 : 1.6) * S;
     g.fillStyle = open ? 'rgba(186,70,74,.55)' : rgbStr(col, 0.5 * ap);
     g.beginPath(); g.ellipse(x, y, r, r * 0.8, 0.4, 0, 7); g.fill();
   }
-  function drawBead(x, y, col, ap) { g.strokeStyle = rgbStr(col, 0.35 * ap); g.fillStyle = 'rgba(255,252,246,.9)'; g.lineWidth = 0.8; g.beginPath(); g.arc(x, y, F * 0.16, 0, 7); g.fill(); g.stroke(); }
   function drawUnder(h, now) {
     const ap = h.appear;
     if (h.surface) { // just its pore
@@ -860,7 +871,6 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
     g.lineCap = 'round';
     // channel B (every line): text beyond ext, from the pore inward
     const rem = h.L - h.ext, vis = Math.min(rem, h.visL), deep = rem > h.visL;
-    strokePath(h.pts, vis, Math.max(0.6, 0.6 * S), rgbStr(col, 0.16 * ap)); // the line itself, a hair of ink
     for (let i = h.n; i < h.glyphs.length; i++) {
       const gl = h.glyphs[i], u = gl.sc - h.ext;
       if (u < 0) continue; if (u > vis) break;
@@ -872,7 +882,6 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
     }
     // channel A (bridges): text before sA, from pore A inward, read backwards
     if (h.bridge) {
-      strokePath(h.ptsA, Math.min(h.sA, h.visLA), Math.max(0.6, 0.6 * S), rgbStr(col, 0.16 * ap));
       for (let i = h.i0 - 1; i >= 0; i--) {
         const gl = h.glyphs[i], u = h.sA - gl.sc;
         if (u > h.visLA) break;
@@ -881,8 +890,6 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
       }
     }
     setM(base.a, base.e, base.f);
-    if (h.joinAt > h.ext && h.joinAt - h.ext < vis) { const jp = pointOn(h.pts, h.joinAt - h.ext); drawBead(jp.x, jp.y, col, ap); } // where the twin is joined
-    if (!deep && !h.noBead) { const rp = pointOn(h.pts, rem + F * 0.3); drawBead(rp.x, rp.y, col, ap); } // the root
     drawPore(h.hole.x, h.hole.y, h.cover < 1, col, ap);
     if (h.bridge) drawPore(h.holeA.x, h.holeA.y, true, col, ap);
   }
@@ -895,11 +902,6 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
       glyph(gl.ch, p.x + (strained ? Math.sin(now * 0.09 + i) * hot * 1.6 * S : 0), p.y, p.a, px, color, alpha);
     }
     setM(base.a, base.e, base.f);
-    if (c.joinAt > 0) { // the bead joining a twin to the first line
-      for (let i = i0; i < c.n - 1; i++) if (c.glyphs[i].sc < c.joinAt && c.glyphs[i + 1].sc > c.joinAt) {
-        const a = c.nodes[i], b = c.nodes[i + 1]; drawBead((a.x + b.x) / 2, (a.y + b.y) / 2, col, alpha); break;
-      }
-    }
   }
 
   // ── Editor: move a line (drag its body) or turn it (drag its tip) ──
@@ -1041,6 +1043,8 @@ export function createIngrownGame(host, rawConfig, hooks = {}) {
         }
       }
       if (acc > 3) acc = 0;
+      if (impact > 2.2 && now - lastTap > 70) { lastTap = now; sfx.tap(Math.min(0.08, 0.012 + (impact - 2.2) * 0.009)); }
+      impact = 0;
       for (const h of hairs) if (h.state === 'done' && h.heal > 0) h.heal = Math.max(0, h.heal - dt * 0.25);
       for (let i = scratches.length - 1; i >= 0; i--) if ((scratches[i].t += dt) > 8) scratches.splice(i, 1); // scratches fade back into the page
     }

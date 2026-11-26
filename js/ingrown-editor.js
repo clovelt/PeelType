@@ -80,7 +80,9 @@ export function renderIngrownEditor(root, cfg, api) {
         ${row('Pale', 'Pale ink, like a white hair.', `<input data-lk="white" type="checkbox" ${n.white ? 'checked' : ''}>`)}
         ${row('Chain', 'Pulling it out drags the tips of nearby buried lines out too.', `<input data-lk="chain" type="checkbox" ${n.chain ? 'checked' : ''}>`)}
       </div>
+      ${row('Text EN', 'English version of the text (used when the page is in English). Empty = the main text.', `<input data-lk="textEn" type="text" value="${esc(l.textEn || '')}" placeholder="(same as main)">`, 'editor-row')}
       ${row('Twin', 'A second line joined to the root of this one: as you pull, it follows the first out.', `<input data-lk="twin" type="text" value="${esc(n.twin)}" placeholder="(none)">`, 'editor-row')}
+      ${row('Twin EN', 'English version of the twin.', `<input data-lk="twinEn" type="text" value="${esc(l.twinEn || '')}" placeholder="(same as main)">`, 'editor-row')}
       <div class="editor-grid-2">
         ${row('X', 'Centre across the page (0–1). Empty = placed automatically. Drag it with Move lines.', `<input data-lk="x" type="number" min="0" max="1" step="0.01" value="${n.x ?? ''}" placeholder="auto">`)}
         ${row('Y', 'Centre down the buried area (0–1). Empty = automatic.', `<input data-lk="y" type="number" min="0" max="1" step="0.01" value="${n.y ?? ''}" placeholder="auto">`)}
@@ -122,6 +124,7 @@ export function renderIngrownEditor(root, cfg, api) {
         <div class="editor-row inline" style="display:${complete.action === 'none' ? 'none' : 'grid'}"><label>Target</label><input data-k="completeTarget" type="text" list="${dl}" value="${esc(complete.target)}"></div>
       </div>
       ${row('Text pool', 'One line per row. Endless mode grows random lines from these.', `<textarea data-k="textPool" rows="3" placeholder="one line per row">${esc(pool)}</textarea>`, 'editor-row')}
+      ${row('Pool EN', 'English text pool, one line per row. Empty = the main pool.', `<textarea data-k="textPoolEn" rows="3" placeholder="one line per row">${esc(Array.isArray(cfg.textPoolEn) ? cfg.textPoolEn.join('\n') : (cfg.textPoolEn || ''))}</textarea>`, 'editor-row')}
       <div class="editor-row inline">
         <label data-help="Each round is a set of buried lines. When all are out, the next round grows in.">Round</label>
         <div class="ig-round-row">
@@ -134,6 +137,7 @@ export function renderIngrownEditor(root, cfg, api) {
       <div class="editor-grid-2">
         ${row('Fuzz', 'Short words already standing out of pores (pinch and pluck).', `<input data-pk="fuzz" type="number" min="0" max="80" step="1" value="${patch.fuzz ?? 10}">`)}
         ${row('Fuzz words', 'Words for the fuzz, separated by spaces.', `<input data-pk="fuzzWords" type="text" value="${esc(patch.fuzzWords || '')}" placeholder="sí no ya…">`)}
+        ${row('Fuzz EN', 'English fuzz words. Empty = the main ones.', `<input data-pk="fuzzWordsEn" type="text" value="${esc(patch.fuzzWordsEn || '')}" placeholder="yes no so…">`)}
         ${row('Offset X', 'Where this round lies, in screens across (camera mode only). Empty = next along the camera direction.', `<input data-pk="offsetX" type="number" step="0.1" value="${patch.offset?.x ?? ''}" placeholder="auto">`)}
         ${row('Offset Y', 'Where this round lies, in screens down (camera mode only). Empty = next along the camera direction.', `<input data-pk="offsetY" type="number" step="0.1" value="${patch.offset?.y ?? ''}" placeholder="auto">`)}
         ${row('On clear', 'What happens when this round’s lines are all out.', actionSel('data-pk', 'clearAction', clear.action))}
@@ -160,7 +164,7 @@ export function renderIngrownEditor(root, cfg, api) {
       setAction(cfg, 'onComplete', root.querySelector('[data-k="completeAction"]').value, root.querySelector('[data-k="completeTarget"]').value.trim());
       changed(true, k === 'completeAction'); return;
     }
-    if (k === 'textPool') cfg.textPool = String(v).split('\n').map(s => s.trim()).filter(Boolean);
+    if (k === 'textPool' || k === 'textPoolEn') { const list = String(v).split('\n').map(s => s.trim()).filter(Boolean); if (list.length || k === 'textPool') cfg[k] = list; else delete cfg[k]; }
     else if (el.type === 'number') { if (v === '') delete cfg[k]; else cfg[k] = Number(v); }
     else if (el.type === 'text' && !String(v).trim()) delete cfg[k];
     else cfg[k] = v;
@@ -196,7 +200,7 @@ export function renderIngrownEditor(root, cfg, api) {
       }
       if (el.type === 'checkbox') { if (v) line[k] = true; else delete line[k]; }
       else if (el.type === 'number') { if (v === '') delete line[k]; else line[k] = Number(v); }
-      else if (k === 'twin' && !String(v).trim()) delete line.twin;
+      else if ((k === 'twin' || k === 'textEn' || k === 'twinEn') && !String(v).trim()) delete line[k];
       else line[k] = v;
       changed(true, false, e.type === 'input' ? 500 : 0);
     }));

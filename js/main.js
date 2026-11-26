@@ -2006,6 +2006,7 @@ function mountIngrown() {
   container.appendChild(layer);
   const family = pieceConfig.style?.fontFamily || (state.FONT || '').replace(/^[\d.]+px\s*/, '').trim();
   ingrownGame = createIngrownGame(layer, cfg, {
+    lang: storedLocale === 'en' ? 'en' : 'es',
     fontFamily: family ? quoteFontFamily(family.replace(/["']/g, '')) + ', Georgia, serif' : '',
     ink: pieceConfig.style?.color || '#4a4a4a',
     isEditor: () => document.body.classList.contains('editor-open'),

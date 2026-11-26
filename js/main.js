@@ -718,7 +718,7 @@ await waitForTextFonts();
 function blockSourceText(bc) {
   const text = storedLocale === 'en' && bc.textEn ? bc.textEn : bc.text;
   const chat = normalizeChat(bc.chat);
-  return chat ? text + chatTimeMarkup(chat, chatTheme(pieceConfig.chat), state.baseFontPx || 20) : text;
+  return chat ? text + chatTimeMarkup(chat, chatTheme(pieceConfig.chat, bc.style?.color || pieceConfig.style?.color), state.baseFontPx || 20) : text;
 }
 function blockGraphemeWidths(bc, parsed, blockIdx) {
   return bc.chat ? measureChatWidths(parsed.graphemes, parsed.inlineStyles, measureCtx, getBlockFont(blockIdx)) : parsed.graphemes.map(g => measureCtx.measureText(g).width);
@@ -1543,7 +1543,7 @@ async function initializePeelStrokesForBlock(block, blockIdx) {
   const att = block.attachment;
   const extractedDefs = att.src ? await extractStrokesFromSvg(att.src) : [];
   const chatGeom = att.chat ? positions[blockIdx]?.attachment?.chat : null;
-  const manualDefs = chatGeom ? buildChatStrokes(chatGeom, chatTheme(pieceConfig.chat)) : (att.strokes || []).filter(stroke => stroke?.source === 'manual' || !att.src);
+  const manualDefs = chatGeom ? buildChatStrokes(chatGeom, chatTheme(pieceConfig.chat, textBlocks[blockIdx]?.style?.color || pieceConfig.style?.color)) : (att.strokes || []).filter(stroke => stroke?.source === 'manual' || !att.src);
   const strokeDefs = extractedDefs.length ? extractedDefs.concat(manualDefs) : manualDefs;
   if (!strokeDefs.length) return;
 

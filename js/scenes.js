@@ -2008,13 +2008,11 @@ export function buildExampleScenes(defaultPieceConfig) {
       config: {
         ...structuredClone(defaultPieceConfig),
         id: 'tirita-chat',
-        style: { ...structuredClone(defaultPieceConfig.style), backgroundColor: '#efeae2', color: '#111b21' },
-        layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 10, topMargin: 90, bottomMargin: 120 },
+        layout: { ...structuredClone(defaultPieceConfig.layout), blockGap: 14, topMargin: 90, bottomMargin: 120 },
         behaviors: {
           fadeReveal: { enabled: false, visibleLetters: 24, fadeSteps: 8 },
           stepParagraphs: { enabled: true, visibleCount: 6, compactFlow: true, advanceDelayMs: 250 }
         },
-        chat: { inColor: '#ffffff', outColor: '#d9fdd3' },
         blocks: [
             {
               "id": "msg-01",
@@ -2023,18 +2021,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2048,18 +2041,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2074,18 +2062,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2099,18 +2082,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2128,18 +2106,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2156,18 +2129,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2182,18 +2150,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2208,18 +2171,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2233,18 +2191,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2263,18 +2216,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2291,18 +2239,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2317,18 +2260,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2345,18 +2283,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",
@@ -2371,18 +2304,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "in",
@@ -2399,18 +2327,13 @@ export function buildExampleScenes(defaultPieceConfig) {
               "transform": {
                 "x": 0,
                 "y": 0,
-                "scale": 0.86,
+                "scale": 1,
                 "width": 660
               },
               "peel": {
                 "fromBeginning": true,
                 "initialUnlockCount": 1,
                 "mode": "linear"
-              },
-              "style": {
-                "color": "#111b21",
-                "colorMode": "solid",
-                "fontFamily": "Inter"
               },
               "chat": {
                 "side": "out",

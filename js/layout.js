@@ -11,7 +11,8 @@ export function getBlockStyle(blockIdx) {
   return {
     color: state.pieceConfig.style.color,
     colorMode: 'solid',
-    fontFamily: state.FONT.replace(state.baseFontSize, '').trim() || 'Georgia',
+    // FONT already quotes the family; strip the quotes, getBlockFont re-quotes it
+    fontFamily: state.FONT.replace(state.baseFontSize, '').trim().replace(/["']/g, '') || 'Georgia',
     ...blockStyle,
     gradient: normalizeGradient(blockStyle.gradient)
   };
